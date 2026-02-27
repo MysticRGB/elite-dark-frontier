@@ -3,471 +3,397 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ELITE CARGO 314 • ТЕРРАФОРМИНГ</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <title>СПУТНИКОВЫЙ СКАНЕР • ELITE</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #0a0310;
-            font-family: 'VT323', monospace;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-            color: #ffaa00;
-        }
-        #transport-constructor {
-            position: relative;
-            width: 560px;
-            height: 380px;
-            pointer-events: all;
-            z-index: 2000;
-        }
-        .constructor-frame {
-            background: rgba(0, 0, 0, 0.95);
-            border: 4px solid #ffaa00;
-            box-shadow: 0 0 20px #cc8800, inset 0 0 15px #442200;
-            padding: 8px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        .constructor-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-            padding: 0 4px;
-        }
-        .constructor-title {
-            color: #ffff88;
-            font-size: 22px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 5px #ffaa00;
-            cursor: help;
-            border-bottom: 1px dashed #ffaa00;
-        }
-        .button-group {
-            display: flex;
-            gap: 6px;
-        }
-        .btn-small {
-            background: rgba(40, 30, 10, 0.95);
-            border: 2px solid #ffaa00;
-            color: #ffff88;
-            font-family: 'VT323', monospace;
-            font-size: 18px;
-            padding: 2px 16px;
-            cursor: pointer;
-            box-shadow: 0 0 6px #cc8800;
-            transition: 0.1s;
-            letter-spacing: 1px;
-        }
-        .btn-small:hover {
-            background: rgba(80, 50, 20, 0.95);
-            border-color: #ffff88;
-            box-shadow: 0 0 10px #ffaa00;
-        }
-        .btn-small.reset {
-            background: rgba(60, 20, 20, 0.95);
-        }
-        .constructor-canvas {
-            flex: 1;
-            position: relative;
-            background: rgba(10, 5, 0, 0.9);
-            border: 2px solid #ffaa00;
-            overflow: hidden;
-            cursor: default;
-        }
-        .stats-panel {
-            display: flex;
-            flex-wrap: wrap;
-            margin-top: 8px;
-            padding: 8px 4px;
-            border-top: 1px dashed #ffaa00;
-            font-size: 16px;
-            gap: 12px;
-            background: rgba(0,0,0,0.6);
-            justify-content: space-around;
-        }
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: help;
-            font-size: 14px;
-        }
-        .stat-label { color: #cc8800; }
-        .stat-value { color: #ffff88; font-weight: bold; letter-spacing: 2px; }
-        .tooltip {
-            position: absolute;
-            background: rgba(10, 5, 0, 0.98);
-            border: 2px solid #ffaa00;
-            padding: 8px 12px;
-            font-size: 16px;
-            color: #ffff88;
-            white-space: nowrap;
-            pointer-events: none;
-            box-shadow: 0 0 15px #cc8800;
-            z-index: 3000;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.15s;
-            border-radius: 0;
-            font-family: 'VT323', monospace;
-        }
-        .tooltip.active { opacity: 1; }
-        canvas.terrain-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            image-rendering: pixelated;
-        }
-        /* Прицел толщиной 1px по центру */
-        .crosshair {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 2500;
-        }
-        .crosshair-h {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 1px;
-            background: rgba(255, 170, 0, 0.7);
-            transform: translateY(-50%);
-            box-shadow: 0 0 4px #ffaa00;
-        }
-        .crosshair-v {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 1px;
-            height: 100%;
-            background: rgba(255, 170, 0, 0.7);
-            transform: translateX(-50%);
-            box-shadow: 0 0 4px #ffaa00;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#010005; font-family:'VT323',monospace; color:#ffaa00; height:100vh; overflow:hidden; }
+        #scan-wrap { position:relative; width:100%; height:100%; }
+        canvas#terrain { display:block; width:100%; height:100%; image-rendering:pixelated; }
+
+        /* scan lines overlay */
+        .scanlines { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;
+            background: repeating-linear-gradient(0deg, rgba(0,255,100,0.03) 0px, transparent 1px, transparent 2px);
+            mix-blend-mode: screen; }
+        .vignette { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:11;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%); }
+
+        /* sweep line */
+        #sweep { position:absolute; top:0; left:0; width:100%; height:2px; pointer-events:none; z-index:15;
+            background: linear-gradient(90deg, transparent, rgba(0,255,100,0.6), transparent);
+            box-shadow: 0 0 20px rgba(0,255,100,0.4); animation: sweep 4s linear infinite; }
+        @keyframes sweep { from{top:0} to{top:100%} }
+
+        /* crosshair */
+        .xhair { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:20; }
+        .xhair::before,.xhair::after { content:''; position:absolute; background:rgba(255,170,0,0.6); }
+        .xhair::before { width:40px; height:1px; left:-20px; top:0; box-shadow:0 0 6px #ffaa00; }
+        .xhair::after { width:1px; height:40px; top:-20px; left:0; box-shadow:0 0 6px #ffaa00; }
+        .xhair-ring { position:absolute; top:50%; left:50%; width:60px; height:60px; transform:translate(-50%,-50%);
+            border:1px solid rgba(255,170,0,0.3); border-radius:50%; pointer-events:none; z-index:20;
+            animation: xring 3s ease-in-out infinite; }
+        @keyframes xring { 0%,100%{transform:translate(-50%,-50%) scale(1); opacity:0.3} 50%{transform:translate(-50%,-50%) scale(1.3); opacity:0.1} }
+
+        /* HUD panels */
+        .hud { position:absolute; pointer-events:none; z-index:30; font-size:14px; }
+        .hud-panel { background:rgba(0,0,0,0.75); border:1px solid rgba(255,170,0,0.4); padding:8px 12px;
+            backdrop-filter:blur(2px); }
+
+        /* top-left: scan data */
+        #hud-tl { top:10px; left:10px; }
+        #hud-tl .title { font-family:'Press Start 2P',cursive; font-size:9px; color:#ffff88; margin-bottom:6px;
+            text-shadow:0 0 8px #ffaa00; letter-spacing:1px; }
+        .data-row { display:flex; justify-content:space-between; gap:16px; padding:2px 0;
+            border-bottom:1px dotted rgba(255,170,0,0.15); }
+        .data-label { color:#886622; }
+        .data-val { color:#ffff88; font-weight:bold; }
+
+        /* top-right: resources found */
+        #hud-tr { top:10px; right:10px; max-width:220px; }
+        #hud-tr .title { font-family:'Press Start 2P',cursive; font-size:8px; color:#88ff88; margin-bottom:6px; }
+        .res-item { display:flex; align-items:center; gap:6px; padding:2px 0;
+            border-bottom:1px dotted rgba(0,255,100,0.15); font-size:13px; }
+        .res-dot { width:6px; height:6px; border-radius:50%; }
+        .res-name { color:#ccffcc; flex:1; }
+        .res-qty { color:#ffff88; }
+
+        /* bottom: news ticker */
+        #news-bar { position:absolute; bottom:0; left:0; right:0; height:32px; z-index:30;
+            background:rgba(0,0,0,0.85); border-top:1px solid rgba(255,170,0,0.4);
+            display:flex; align-items:center; overflow:hidden; }
+        #news-label { background:#ffaa00; color:#000; font-family:'Press Start 2P',cursive;
+            font-size:7px; padding:4px 8px; white-space:nowrap; flex-shrink:0; letter-spacing:1px; }
+        #news-scroll { flex:1; overflow:hidden; position:relative; }
+        #news-text { white-space:nowrap; color:#ffdd88; font-size:15px; position:absolute;
+            animation: ticker 40s linear infinite; }
+        @keyframes ticker { from{transform:translateX(100%)} to{transform:translateX(-100%)} }
+
+        /* bottom-left: palette indicator */
+        #hud-bl { bottom:42px; left:10px; }
+        .palette-row { display:flex; gap:2px; margin-top:4px; }
+        .pal-swatch { width:16px; height:10px; border:1px solid rgba(255,170,0,0.3); }
+
+        /* center bottom: controls */
+        #hud-bc { bottom:42px; left:50%; transform:translateX(-50%); }
+        .scan-btn { background:rgba(20,15,5,0.9); border:2px solid #ffaa00; color:#ffff88;
+            font-family:'VT323',monospace; font-size:18px; padding:4px 18px; cursor:pointer;
+            pointer-events:all; transition:.15s; letter-spacing:2px; margin:0 4px; }
+        .scan-btn:hover { background:#664422; box-shadow:0 0 12px rgba(255,170,0,0.5); }
+
+        /* signal meter */
+        #signal-meter { position:absolute; top:50%; right:10px; transform:translateY(-50%);
+            width:20px; height:200px; z-index:30; pointer-events:none; }
+        .sig-bar { width:100%; background:rgba(0,0,0,0.6); border:1px solid rgba(0,255,100,0.3);
+            height:100%; position:relative; }
+        .sig-fill { position:absolute; bottom:0; width:100%; background:linear-gradient(0deg,#00ff44,#ffaa00,#ff4400);
+            transition:height .3s; }
+        .sig-label { text-align:center; font-size:10px; color:#00ff88; margin-top:4px; }
     </style>
 </head>
 <body>
-    <div id="transport-constructor">
-        <div class="constructor-frame">
-            <div class="constructor-header">
-                <span class="constructor-title" id="terrain-title">ТЕРРАФОРМИНГ</span>
-                <div class="button-group">
-                    <button class="btn-small" id="randomize-btn">🎲</button>
-                </div>
-            </div>
-            <div class="constructor-canvas" id="terrain-container">
-                <!-- Canvas будет вставлен сюда скриптом -->
-                <!-- Прицел поверх canvas -->
-                <div class="crosshair">
-                    <div class="crosshair-h"></div>
-                    <div class="crosshair-v"></div>
-                </div>
-            </div>
-            <div class="stats-panel" id="stats-panel">
-                <div class="stat-item"><span class="stat-label">SEED:</span><span class="stat-value" id="seed-val">----</span></div>
-                <div class="stat-item"><span class="stat-label">SCALE:</span><span class="stat-value" id="scale-val">0.00</span></div>
-                <div class="stat-item"><span class="stat-label">TILE:</span><span class="stat-value" id="tile-val">256</span></div>
-                <div class="stat-item"><span class="stat-label">SPEED:</span><span class="stat-value" id="speed-val">1.0</span></div>
-            </div>
+<div id="scan-wrap">
+    <canvas id="terrain"></canvas>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div id="sweep"></div>
+    <div class="xhair"></div>
+    <div class="xhair-ring"></div>
+
+    <!-- HUD: Scan Data -->
+    <div class="hud" id="hud-tl">
+        <div class="hud-panel">
+            <div class="title">СПУТНИК СКАН v3.14</div>
+            <div class="data-row"><span class="data-label">SEED:</span><span class="data-val" id="v-seed">----</span></div>
+            <div class="data-row"><span class="data-label">МАСШТАБ:</span><span class="data-val" id="v-scale">0.000</span></div>
+            <div class="data-row"><span class="data-label">ТАЙЛ:</span><span class="data-val" id="v-tile">256</span></div>
+            <div class="data-row"><span class="data-label">СКОРОСТЬ:</span><span class="data-val" id="v-speed">1.0</span></div>
+            <div class="data-row"><span class="data-label">ПАЛИТРА:</span><span class="data-val" id="v-palette">Земная</span></div>
+            <div class="data-row"><span class="data-label">ВРЕМЯ:</span><span class="data-val" id="v-time">00:00</span></div>
+            <div class="data-row"><span class="data-label">ВЫСОТА:</span><span class="data-val" id="v-alt">420 км</span></div>
+            <div class="data-row"><span class="data-label">ВИТКОВ:</span><span class="data-val" id="v-orbits">0</span></div>
         </div>
     </div>
-    <div class="tooltip" id="tooltip"></div>
 
-    <script>
-        (function() {
-            const container = document.getElementById('terrain-container');
-            const canvas = document.createElement('canvas');
-            canvas.className = 'terrain-canvas';
-            container.appendChild(canvas);
-            
-            const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
-            if (!gl) { alert('WebGL not supported'); return; }
-            
-            function resize() {
-                const rect = container.getBoundingClientRect();
-                canvas.width = Math.floor(rect.width);
-                canvas.height = Math.floor(rect.height);
-                gl.viewport(0, 0, canvas.width, canvas.height);
-            }
-            resize();
-            window.addEventListener('resize', resize);
-            
-            // Vertex shader (оригинальный)
-            const vsSource = `
-                attribute vec2 aPosition;
-                uniform vec2 uCamera;
-                uniform float uZoom;
-                uniform float uOffset;
-                uniform float uScale;
-                uniform float uTileSize;
-                uniform vec2 uSeedOffset;
-                uniform vec3 uColor1; uniform vec3 uColor2; uniform vec3 uColor3;
-                uniform vec3 uColor4; uniform vec3 uColor5; uniform vec3 uColor6;
-                uniform vec3 uColor7; uniform vec3 uColor8;
-                varying float vHeight;
-                varying vec3 vColor;
-                
-                vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-                float snoise(vec2 v) {
-                    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-                    vec2 i  = floor(v + dot(v, C.yy) );
-                    vec2 x0 = v - i + dot(i, C.xx);
-                    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-                    vec4 x12 = x0.xyxy + C.xxzz;
-                    x12.xy -= i1;
-                    i = mod(i, 289.0);
-                    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-                    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-                    m = m*m; m = m*m;
-                    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-                    vec3 h = abs(x) - 0.5;
-                    vec3 ox = floor(x + 0.5);
-                    vec3 a0 = x - ox;
-                    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-                    vec3 g;
-                    g.x = a0.x * x0.x + h.x * x0.y;
-                    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                    return 130.0 * dot(m, g);
-                }
-                
-                float tileableNoise(vec2 p, float tileSize) {
-                    vec2 tilePos = p - tileSize * floor(p / tileSize);
-                    vec2 uv = tilePos / tileSize;
-                    vec2 su = uv * uv * (3.0 - 2.0 * uv);
-                    
-                    float n00 = snoise(p);
-                    float n10 = snoise(p + vec2(tileSize, 0.0));
-                    float n01 = snoise(p + vec2(0.0, tileSize));
-                    float n11 = snoise(p + vec2(tileSize, tileSize));
-                    
-                    float nx0 = mix(n00, n10, su.x);
-                    float nx1 = mix(n01, n11, su.x);
-                    return mix(nx0, nx1, su.y);
-                }
-                
-                float tileableRidged(vec2 p, int octaves, float tileSize) {
-                    float value = 0.0;
-                    float weight = 1.0;
-                    float frequency = 1.0;
-                    float amplitude = 0.5;
-                    
-                    for (int i = 0; i < 6; i++) {
-                        if (i >= octaves) break;
-                        float currentTile = tileSize * float(i + 1);
-                        float n = tileableNoise(p * frequency, currentTile);
-                        n = 1.0 - abs(n);
-                        n *= n;
-                        n *= weight;
-                        value += n * amplitude;
-                        weight = min(n * 2.0, 1.0);
-                        frequency *= 2.0;
-                        amplitude *= 0.5;
-                    }
-                    return value;
-                }
-                
-                vec3 getColor(float h) {
-                    if (h < 0.125) return uColor1;
-                    if (h < 0.25) return uColor2;
-                    if (h < 0.375) return uColor3;
-                    if (h < 0.5) return uColor4;
-                    if (h < 0.625) return uColor5;
-                    if (h < 0.75) return uColor6;
-                    if (h < 0.875) return uColor7;
-                    return uColor8;
-                }
-                
-                void main() {
-                    vec2 localPos = aPosition;
-                    vec2 viewPos = localPos + uCamera;
-                    
-                    // Apply seed offset to noise coordinates for true randomization
-                    vec2 noisePos = viewPos * uScale + uSeedOffset;
-                    noisePos.y += uOffset * uScale;
-                    
-                    float h = tileableRidged(noisePos, 6, uTileSize);
-                    h += tileableNoise(noisePos * 0.5, uTileSize * 2.0) * 0.1;
-                    h = clamp(h * 1.2, 0.0, 1.0);
-                    
-                    float finalHeight = (1.0 - h) * 100.0 * uZoom;
-                    
-                    vec2 screenPos = viewPos * (0.003 * uZoom);
-                    screenPos.y -= finalHeight * 0.0035;
-                    
-                    gl_Position = vec4(screenPos, 0.0, 1.0);
-                    gl_PointSize = 1.5 * uZoom;
-                    
-                    vHeight = h;
-                    vColor = getColor(h);
-                }
-            `;
-            
-            const fsSource = `
-                precision mediump float;
-                varying vec3 vColor;
-                void main() {
-                    gl_FragColor = vec4(vColor, 1.0);
-                }
-            `;
-            
-            function compile(type, src) {
-                const s = gl.createShader(type);
-                gl.shaderSource(s, src);
-                gl.compileShader(s);
-                if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-                    console.error(gl.getShaderInfoLog(s));
-                    return null;
-                }
-                return s;
-            }
-            
-            const program = gl.createProgram();
-            gl.attachShader(program, compile(gl.VERTEX_SHADER, vsSource));
-            gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fsSource));
-            gl.linkProgram(program);
-            gl.useProgram(program);
-            
-            const SIZE = 512;
-            const TILE_SIZE = 256.0;
-            const PARTICLE_SPACING = 3.0;
-            
-            let seed = Math.random() * 10000;
-            let seedOffset = { x: Math.random() * 1000, y: Math.random() * 1000 };
-            let scale = 0.003;
-            let positions = new Float32Array(SIZE * SIZE * 2);
-            let colors = [];
-            
-            // Color palettes (8 colors each)
-            const colorPalettes = [
-                // Ocean/Earth
-                [[0.02, 0.05, 0.15], [0.95, 0.55, 0.15], [0.85, 0.75, 0.25], [0.45, 0.70, 0.35],
-                 [0.25, 0.55, 0.25], [0.25, 0.50, 0.80], [0.60, 0.85, 0.90], [0.95, 0.95, 0.98]],
-                // Mars/Desert
-                [[0.15, 0.05, 0.02], [0.80, 0.35, 0.15], [0.90, 0.55, 0.20], [0.70, 0.45, 0.25],
-                 [0.55, 0.35, 0.20], [0.40, 0.25, 0.15], [0.60, 0.40, 0.25], [0.85, 0.70, 0.55]],
-                // Ice/Tundra
-                [[0.05, 0.10, 0.20], [0.40, 0.55, 0.70], [0.60, 0.75, 0.85], [0.75, 0.85, 0.90],
-                 [0.85, 0.90, 0.95], [0.70, 0.80, 0.75], [0.55, 0.70, 0.60], [0.95, 0.98, 0.98]],
-                // Volcanic
-                [[0.05, 0.02, 0.02], [0.60, 0.15, 0.10], [0.80, 0.30, 0.15], [0.90, 0.50, 0.20],
-                 [0.70, 0.40, 0.25], [0.50, 0.30, 0.20], [0.40, 0.35, 0.30], [0.75, 0.65, 0.60]],
-                // Alien/Jungle
-                [[0.05, 0.15, 0.10], [0.30, 0.20, 0.40], [0.50, 0.35, 0.55], [0.40, 0.60, 0.35],
-                 [0.55, 0.75, 0.45], [0.70, 0.80, 0.50], [0.60, 0.85, 0.70], [0.85, 0.95, 0.80]],
-                // Monochrome
-                [[0.05, 0.05, 0.08], [0.15, 0.15, 0.18], [0.25, 0.25, 0.28], [0.35, 0.35, 0.38],
-                 [0.50, 0.50, 0.52], [0.65, 0.65, 0.67], [0.80, 0.80, 0.82], [0.95, 0.95, 0.98]],
-                // Sunset
-                [[0.10, 0.05, 0.15], [0.60, 0.20, 0.35], [0.80, 0.35, 0.30], [0.90, 0.55, 0.25],
-                 [0.95, 0.70, 0.30], [0.90, 0.75, 0.45], [0.80, 0.75, 0.60], [0.95, 0.90, 0.75]],
-                // Deep Sea
-                [[0.02, 0.02, 0.10], [0.05, 0.08, 0.25], [0.10, 0.15, 0.40], [0.15, 0.25, 0.55],
-                 [0.20, 0.35, 0.65], [0.30, 0.50, 0.75], [0.45, 0.65, 0.85], [0.70, 0.85, 0.95]]
-            ];
-            
-            function generateTerrain() {
-                seed = Math.random() * 10000;
-                seedOffset = { x: Math.random() * 10000, y: Math.random() * 10000 };
-                scale = 0.002 + Math.random() * 0.0025;
-                
-                // Pick random palette and add slight variation
-                const paletteIndex = Math.floor(Math.random() * colorPalettes.length);
-                const basePalette = colorPalettes[paletteIndex];
-                colors = basePalette.map(c => c.map(v => Math.max(0, Math.min(1, v + (Math.random() - 0.5) * 0.15))));
-                
-                for (let y = 0; y < SIZE; y++) {
-                    for (let x = 0; x < SIZE; x++) {
-                        const idx = y * SIZE + x;
-                        positions[idx * 2] = (x - SIZE / 2) * PARTICLE_SPACING;
-                        positions[idx * 2 + 1] = (y - SIZE / 2) * PARTICLE_SPACING;
-                    }
-                }
-                
-                gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-                
-                for (let i = 0; i < 8; i++) {
-                    const loc = gl.getUniformLocation(program, `uColor${i + 1}`);
-                    gl.uniform3fv(loc, colors[i]);
-                }
-                
-                document.getElementById('seed-val').textContent = Math.floor(seed).toString().slice(0, 6);
-                document.getElementById('scale-val').textContent = scale.toFixed(4);
-                document.getElementById('tile-val').textContent = Math.floor(TILE_SIZE);
-            }
-            
-            const posBuffer = gl.createBuffer();
-            
-            const aPosition = gl.getAttribLocation(program, 'aPosition');
-            const uCamera = gl.getUniformLocation(program, 'uCamera');
-            const uZoom = gl.getUniformLocation(program, 'uZoom');
-            const uOffset = gl.getUniformLocation(program, 'uOffset');
-            const uScale = gl.getUniformLocation(program, 'uScale');
-            const uTileSize = gl.getUniformLocation(program, 'uTileSize');
-            const uSeedOffset = gl.getUniformLocation(program, 'uSeedOffset');
-            
-            gl.enableVertexAttribArray(aPosition);
-            gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-            gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
-            
-            const camera = { x: 0, y: 0, zoom: 0.55 };
-            let speed = 1.0;
-            
-            document.getElementById('randomize-btn').addEventListener('click', () => {
-                speed = 0.7 + Math.random() * 0.6;
-                document.getElementById('speed-val').textContent = speed.toFixed(1);
-                generateTerrain();
-            });
-            
-            const title = document.getElementById('terrain-title');
-            const tooltip = document.getElementById('tooltip');
-            title.addEventListener('mouseenter', () => {
-                tooltip.innerHTML = '🎲 Randomize: New terrain + colors<br>⬆️ 1 particle/second scroll<br>📷 Camera: Fixed center view';
-                tooltip.classList.add('active');
-            });
-            title.addEventListener('mouseleave', () => tooltip.classList.remove('active'));
-            
-            let startTime = performance.now();
-            function render() {
-                const elapsed = (performance.now() - startTime) / 1000;
-                const offset = elapsed * speed * PARTICLE_SPACING;
-                
-                gl.clearColor(0.02, 0.02, 0.05, 1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                
-                gl.uniform2f(uCamera, camera.x, camera.y);
-                gl.uniform1f(uZoom, camera.zoom);
-                gl.uniform1f(uOffset, offset);
-                gl.uniform1f(uScale, scale);
-                gl.uniform1f(uTileSize, TILE_SIZE);
-                gl.uniform2f(uSeedOffset, seedOffset.x, seedOffset.y);
-                
-                gl.drawArrays(gl.POINTS, 0, SIZE * SIZE);
-                requestAnimationFrame(render);
-            }
-            
-            generateTerrain();
-            render();
-        })();
-    </script>
+    <!-- HUD: Resources -->
+    <div class="hud" id="hud-tr">
+        <div class="hud-panel">
+            <div class="title">ОБНАРУЖЕНО</div>
+            <div id="res-list"></div>
+        </div>
+    </div>
+
+    <!-- HUD: Palette -->
+    <div class="hud" id="hud-bl">
+        <div class="hud-panel">
+            <div style="font-size:11px;color:#886622;">ПАЛИТРА БИОМА</div>
+            <div class="palette-row" id="pal-row"></div>
+        </div>
+    </div>
+
+    <!-- Signal Meter -->
+    <div id="signal-meter">
+        <div class="sig-bar"><div class="sig-fill" id="sig-fill" style="height:50%"></div></div>
+        <div class="sig-label">SIG</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="hud" id="hud-bc">
+        <button class="scan-btn" id="btn-randomize">🎲 НОВЫЙ СКАН</button>
+        <button class="scan-btn" id="btn-extract">⛏ РАЗВЕДКА</button>
+    </div>
+
+    <!-- News Ticker -->
+    <div id="news-bar">
+        <div id="news-label">НОВОСТИ</div>
+        <div id="news-scroll">
+            <div id="news-text"></div>
+        </div>
+    </div>
+</div>
+
 <script>
-window._gs = null;
-window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
-if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
-window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+(function(){
+    const canvas = document.getElementById('terrain');
+    const wrap = document.getElementById('scan-wrap');
+
+    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+    if (!gl) { document.body.innerHTML = '<h1 style="color:red;padding:40px;">WebGL не поддерживается</h1>'; return; }
+
+    function resize() {
+        canvas.width = wrap.clientWidth || 800;
+        canvas.height = wrap.clientHeight || 600;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const vsSource = `
+        attribute vec2 aPosition;
+        uniform vec2 uCamera; uniform float uZoom; uniform float uOffset;
+        uniform float uScale; uniform float uTileSize; uniform vec2 uSeedOffset;
+        uniform vec3 uColor1,uColor2,uColor3,uColor4,uColor5,uColor6,uColor7,uColor8;
+        varying float vHeight; varying vec3 vColor;
+        vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}
+        float snoise(vec2 v){
+            const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+            vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);
+            vec2 i1=(x0.x>x0.y)?vec2(1,0):vec2(0,1);
+            vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);
+            vec3 p=permute(permute(i.y+vec3(0,i1.y,1))+i.x+vec3(0,i1.x,1));
+            vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+            m=m*m;m=m*m;
+            vec3 x2=2.0*fract(p*C.www)-1.0;vec3 h=abs(x2)-0.5;
+            vec3 ox=floor(x2+0.5);vec3 a0=x2-ox;
+            m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+            vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;
+            return 130.0*dot(m,g);
+        }
+        float tileableNoise(vec2 p,float ts){
+            vec2 tp=p-ts*floor(p/ts);vec2 uv=tp/ts;vec2 su=uv*uv*(3.0-2.0*uv);
+            float n00=snoise(p),n10=snoise(p+vec2(ts,0)),n01=snoise(p+vec2(0,ts)),n11=snoise(p+vec2(ts,ts));
+            return mix(mix(n00,n10,su.x),mix(n01,n11,su.x),su.y);
+        }
+        float tileableRidged(vec2 p,int oct,float ts){
+            float v=0.0,w=1.0,f=1.0,a=0.5;
+            for(int i=0;i<6;i++){if(i>=oct)break;float ct=ts*float(i+1);
+            float n=tileableNoise(p*f,ct);n=1.0-abs(n);n*=n;n*=w;v+=n*a;w=min(n*2.0,1.0);f*=2.0;a*=0.5;}
+            return v;
+        }
+        vec3 getColor(float h){
+            if(h<0.125)return uColor1;if(h<0.25)return uColor2;if(h<0.375)return uColor3;
+            if(h<0.5)return uColor4;if(h<0.625)return uColor5;if(h<0.75)return uColor6;
+            if(h<0.875)return uColor7;return uColor8;
+        }
+        void main(){
+            vec2 vp=aPosition+uCamera;
+            vec2 np=vp*uScale+uSeedOffset;np.y+=uOffset*uScale;
+            float h=tileableRidged(np,6,uTileSize);h+=tileableNoise(np*0.5,uTileSize*2.0)*0.1;h=clamp(h*1.2,0.0,1.0);
+            float fh=(1.0-h)*100.0*uZoom;
+            vec2 sp=vp*(0.003*uZoom);sp.y-=fh*0.0035;
+            gl_Position=vec4(sp,0.0,1.0);gl_PointSize=1.5*uZoom;
+            vHeight=h;vColor=getColor(h);
+        }`;
+    const fsSource = `precision mediump float;varying vec3 vColor;void main(){gl_FragColor=vec4(vColor,1.0);}`;
+
+    function compile(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);
+        if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(sh));return null;}return sh;}
+    const prog=gl.createProgram();
+    gl.attachShader(prog,compile(gl.VERTEX_SHADER,vsSource));
+    gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,fsSource));
+    gl.linkProgram(prog);gl.useProgram(prog);
+
+    const SIZE=512,TILE_SIZE=256,SPACING=3;
+    let seed=0, seedOffset={x:0,y:0}, scale=0.003, colors=[], currentPalIdx=0;
+    let positions=new Float32Array(SIZE*SIZE*2);
+
+    const paletteNames = ['Земная','Марс','Тундра','Вулкан','Джунгли','Монохром','Закат','Глубины'];
+    const colorPalettes = [
+        [[0.02,0.05,0.15],[0.95,0.55,0.15],[0.85,0.75,0.25],[0.45,0.70,0.35],[0.25,0.55,0.25],[0.25,0.50,0.80],[0.60,0.85,0.90],[0.95,0.95,0.98]],
+        [[0.15,0.05,0.02],[0.80,0.35,0.15],[0.90,0.55,0.20],[0.70,0.45,0.25],[0.55,0.35,0.20],[0.40,0.25,0.15],[0.60,0.40,0.25],[0.85,0.70,0.55]],
+        [[0.05,0.10,0.20],[0.40,0.55,0.70],[0.60,0.75,0.85],[0.75,0.85,0.90],[0.85,0.90,0.95],[0.70,0.80,0.75],[0.55,0.70,0.60],[0.95,0.98,0.98]],
+        [[0.05,0.02,0.02],[0.60,0.15,0.10],[0.80,0.30,0.15],[0.90,0.50,0.20],[0.70,0.40,0.25],[0.50,0.30,0.20],[0.40,0.35,0.30],[0.75,0.65,0.60]],
+        [[0.05,0.15,0.10],[0.30,0.20,0.40],[0.50,0.35,0.55],[0.40,0.60,0.35],[0.55,0.75,0.45],[0.70,0.80,0.50],[0.60,0.85,0.70],[0.85,0.95,0.80]],
+        [[0.05,0.05,0.08],[0.15,0.15,0.18],[0.25,0.25,0.28],[0.35,0.35,0.38],[0.50,0.50,0.52],[0.65,0.65,0.67],[0.80,0.80,0.82],[0.95,0.95,0.98]],
+        [[0.10,0.05,0.15],[0.60,0.20,0.35],[0.80,0.35,0.30],[0.90,0.55,0.25],[0.95,0.70,0.30],[0.90,0.75,0.45],[0.80,0.75,0.60],[0.95,0.90,0.75]],
+        [[0.02,0.02,0.10],[0.05,0.08,0.25],[0.10,0.15,0.40],[0.15,0.25,0.55],[0.20,0.35,0.65],[0.30,0.50,0.75],[0.45,0.65,0.85],[0.70,0.85,0.95]]
+    ];
+
+    const ELEMENTS = ['Fe','Au','Ag','Cu','Ti','Pt','U','He3','Si','Al','Li','Ni','Co','Zr','W','Ir','Pd','Os','Nd','Sm'];
+    let foundResources = [];
+    let orbits = 0;
+    let speed = 1.0;
+
+    const posBuffer = gl.createBuffer();
+    const aPos = gl.getAttribLocation(prog,'aPosition');
+    const uCamera = gl.getUniformLocation(prog,'uCamera');
+    const uZoom = gl.getUniformLocation(prog,'uZoom');
+    const uOffset = gl.getUniformLocation(prog,'uOffset');
+    const uScale = gl.getUniformLocation(prog,'uScale');
+    const uTileSize = gl.getUniformLocation(prog,'uTileSize');
+    const uSeedOff = gl.getUniformLocation(prog,'uSeedOffset');
+    gl.enableVertexAttribArray(aPos);
+    gl.bindBuffer(gl.ARRAY_BUFFER,posBuffer);
+    gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+
+    function generateTerrain(){
+        seed = Math.random()*10000;
+        seedOffset = {x:Math.random()*10000, y:Math.random()*10000};
+        scale = 0.002+Math.random()*0.0025;
+        currentPalIdx = Math.floor(Math.random()*colorPalettes.length);
+        const base = colorPalettes[currentPalIdx];
+        colors = base.map(c=>c.map(v=>Math.max(0,Math.min(1,v+(Math.random()-0.5)*0.15))));
+        for(let y=0;y<SIZE;y++) for(let x=0;x<SIZE;x++){
+            const i=y*SIZE+x;
+            positions[i*2]=(x-SIZE/2)*SPACING;
+            positions[i*2+1]=(y-SIZE/2)*SPACING;
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER,posBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER,positions,gl.STATIC_DRAW);
+        for(let i=0;i<8;i++) gl.uniform3fv(gl.getUniformLocation(prog,`uColor${i+1}`),colors[i]);
+
+        document.getElementById('v-seed').textContent = Math.floor(seed).toString().slice(0,6);
+        document.getElementById('v-scale').textContent = scale.toFixed(4);
+        document.getElementById('v-tile').textContent = TILE_SIZE;
+        document.getElementById('v-palette').textContent = paletteNames[currentPalIdx];
+
+        updatePaletteRow();
+        discoverResources();
+    }
+
+    function updatePaletteRow(){
+        const row = document.getElementById('pal-row');
+        row.innerHTML = '';
+        colors.forEach(c=>{
+            const d=document.createElement('div');d.className='pal-swatch';
+            d.style.background=`rgb(${c[0]*255|0},${c[1]*255|0},${c[2]*255|0})`;
+            row.appendChild(d);
+        });
+    }
+
+    function discoverResources(){
+        foundResources = [];
+        const count = 3+Math.floor(Math.random()*6);
+        const used = new Set();
+        for(let i=0;i<count;i++){
+            let el; do{ el=ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)]; }while(used.has(el));
+            used.add(el);
+            foundResources.push({sym:el, qty:Math.floor(Math.random()*5000)+100, depth:Math.floor(Math.random()*800)+50});
+        }
+        renderResources();
+    }
+
+    function renderResources(){
+        const list = document.getElementById('res-list');
+        list.innerHTML = '';
+        foundResources.forEach(r=>{
+            const hue = 0; let h=0; for(let i=0;i<r.sym.length;i++) h+=r.sym.charCodeAt(i);
+            const clr = `hsl(${h%360},80%,60%)`;
+            list.innerHTML += `<div class="res-item"><div class="res-dot" style="background:${clr}"></div><span class="res-name">${r.sym}</span><span class="res-qty">${r.qty}т</span></div>`;
+        });
+    }
+
+    // News
+    const NEWS = [
+        '⚡ Корпорация AXIOM обнаружила залежи He-3 в секторе Delta-7 — акции выросли на 340%',
+        '🛰️ Орбитальный сканер Mk.IV завершил картирование системы Kepler-442b — 18 новых месторождений',
+        '💎 Алмазная планета HD 131399Ab подтверждена — начата подготовка экспедиции',
+        '⚠️ Вулканическая активность на Io-7 уничтожила 3 добывающих станции — убытки ₹2.4B',
+        '🚀 Транспортник "ЛЕВИАФАН" доставил 450 000 тонн руды на станцию Proxima Hub',
+        '📊 Цена Иридия достигла исторического максимума — 89 000 CR/тонна',
+        '🔬 Терраформинг Марса: этап 3 из 7 завершён, атмосферное давление растёт',
+        '🤖 Флот роверов серии "Кирилл" обнаружил подземный океан на Европе-9',
+        '⛏️ Шахта "Глубокий Горизонт" достигла глубины 47 км — рекорд для астероидных выработок',
+        '📡 Потеряна связь со сканером в секторе Omega — причина: солнечный шторм класса X4',
+        '🌍 Планета Gliese 667Cc официально классифицирована как "Терра" — начата колонизация',
+        '💰 Биржа закрылась на максимумах: индекс DEEP SPACE +12.7% за неделю',
+        '🔴 ВНИМАНИЕ: обнаружен крупный астероид класса S на встречном курсе с конвоем "Орион"',
+        '🧊 Ледяная планета Trappist-1f: под 200м льда найдены органические соединения',
+    ];
+    let newsIdx = 0;
+    function updateNews(){
+        const el = document.getElementById('news-text');
+        el.textContent = NEWS.concat(NEWS).join('   ●   ');
+    }
+    updateNews();
+
+    const cam = {x:0, y:0, zoom:0.55};
+    const startTime = performance.now();
+
+    document.getElementById('btn-randomize').addEventListener('click',()=>{
+        speed = 0.7+Math.random()*0.6;
+        document.getElementById('v-speed').textContent = speed.toFixed(1);
+        orbits = 0;
+        generateTerrain();
+    });
+
+    document.getElementById('btn-extract').addEventListener('click',()=>{
+        if(foundResources.length>0){
+            const r = foundResources[0];
+            if(window.hubMsg){
+                window.hubMsg({type:'cargo_add', name:r.sym, qty:1, price:Math.floor(Math.random()*500)+100});
+                window.hubMsg({type:'stat_increment', stat:'planetsScanned', amount:1});
+                window.hubMsg({type:'status_msg', text:`Разведка: добыт ${r.sym} (${r.qty}т) на глубине ${r.depth}м`});
+            }
+            foundResources.shift();
+            renderResources();
+        }
+    });
+
+    function render(){
+        const elapsed = (performance.now()-startTime)/1000;
+        const offset = elapsed*speed*SPACING;
+        orbits = Math.floor(elapsed/30);
+
+        gl.clearColor(0.01,0.01,0.03,1);gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.uniform2f(uCamera,cam.x,cam.y);
+        gl.uniform1f(uZoom,cam.zoom);
+        gl.uniform1f(uOffset,offset);
+        gl.uniform1f(uScale,scale);
+        gl.uniform1f(uTileSize,TILE_SIZE);
+        gl.uniform2f(uSeedOff,seedOffset.x,seedOffset.y);
+        gl.drawArrays(gl.POINTS,0,SIZE*SIZE);
+
+        const mm = Math.floor(elapsed/60), ss = Math.floor(elapsed%60);
+        document.getElementById('v-time').textContent = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+        document.getElementById('v-alt').textContent = (380+Math.sin(elapsed*0.1)*40).toFixed(0)+' км';
+        document.getElementById('v-orbits').textContent = orbits;
+        document.getElementById('v-speed').textContent = speed.toFixed(1);
+
+        const sig = 50+Math.sin(elapsed*0.7)*20+Math.sin(elapsed*2.3)*10;
+        document.getElementById('sig-fill').style.height = Math.max(5,Math.min(95,sig))+'%';
+
+        requestAnimationFrame(render);
+    }
+
+    generateTerrain();
+    render();
+})();
+</script>
+<script>
+window._gs=null;
+window.addEventListener('message',e=>{if(e.data&&e.data.type==='game_state')window._gs=e.data.state;});
+if(window.parent!==window)window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg=function(msg){if(window.parent!==window)window.parent.postMessage(msg,'*');};
 </script>
 </body>
 </html>

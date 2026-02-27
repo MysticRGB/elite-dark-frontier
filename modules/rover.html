@@ -2406,6 +2406,10 @@
                     scene.remove(node.sprite);
                     resourceNodes.splice(i, 1);
                     totalCargoLaunched++;
+                    if(window.hubMsg){
+                        window.hubMsg({type:'cargo_add', name:node.element.symbol+' руда', qty:1, price:Math.floor(Math.random()*300)+50});
+                        window.hubMsg({type:'stat_increment', stat:'roversDeployed', amount:1});
+                    }
                     const newStars = Math.floor(totalCargoLaunched / 1000);
                     if (newStars > starsCount) {
                         starsCount = newStars;

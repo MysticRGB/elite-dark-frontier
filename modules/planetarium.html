@@ -15,16 +15,16 @@
             background: #0a0310;
             font-family: 'VT323', monospace;
             color: #ffaa00;
-            min-height: 100vh;
+            margin: 0;
+            height: 100vh;
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
-            padding: 20px;
             overflow: hidden;
         }
         .constructor-card {
-            width: 1200px;
-            height: 800px;
+            width: 100%;
+            height: 100vh;
             pointer-events: all;
             z-index: 2000;
         }
@@ -231,6 +231,23 @@
             letter-spacing: 1px;
             backdrop-filter: blur(2px);
         }
+        /* Planet type selector */
+        .planet-types-bar {
+            display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
+            padding: 6px 4px; border-bottom: 1px dashed #ffaa00;
+            background: rgba(0,0,0,0.5);
+        }
+        .ptype-btn {
+            background: rgba(20,15,5,0.95); border: 2px solid #443311;
+            color: #cc8800; font-family: 'VT323', monospace; font-size: 15px;
+            padding: 3px 10px; cursor: pointer; transition: .15s; letter-spacing: 1px;
+        }
+        .ptype-btn:hover { border-color: #ffaa00; color: #ffff88; box-shadow: 0 0 8px rgba(255,170,0,0.4); }
+        .ptype-btn.active { background: #664422; border-color: #ffaa00; color: #ffff88; box-shadow: 0 0 12px rgba(255,170,0,0.5); }
+        .ptype-btn .dot {
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            margin-right: 4px; vertical-align: middle;
+        }
         /* Орбитальные подписи */
         .orbit-label {
             font-family: sans-serif;
@@ -258,6 +275,7 @@
                     <button class="btn-small station" id="station-add-btn" title="🛰️ повесить станцию">🛰️</button>
                 </div>
             </div>
+            <div class="planet-types-bar" id="planet-types-bar"></div>
             <div class="constructor-canvas" id="planetarium-canvas"></div>
             <div class="stats-panel" id="planetarium-stats-panel"></div>
         </div>
@@ -333,19 +351,26 @@
                 "Уран": "#99cc66", "Плутоний": "#b3b3b3"
             };
             
-            // ==================== ТИПЫ ПЛАНЕТ ====================
+            // ==================== ТИПЫ ПЛАНЕТ (расширенные) ====================
             const PLANET_TYPES = [
-                { name: 'Terran', colors: [0x2288ff, 0x44aaff, 0x88ccff, 0x44aa44, 0x66bb66, 0x88dd88, 0xaa8866, 0xccaa88, 0xeeddbb, 0xffffff, 0xeeeeee, 0xcccccc] },
-                { name: 'Martian', colors: [0xaa4400, 0xcc6600, 0xee8822, 0x882200, 0xaa4422, 0xcc6644, 0x552200, 0x773300, 0x994411] },
-                { name: 'Jovian', colors: [0xeedd99, 0xffcc88, 0xffaa66, 0xccaa88, 0xbb9977, 0xaa8866, 0x886644, 0x775533, 0x664422, 0xffffff, 0xeeeeee, 0xcccccc] },
-                { name: 'Neptunian', colors: [0x3366cc, 0x4477dd, 0x5588ee, 0x2255aa, 0x3366bb, 0x4477cc, 0x114488, 0x225599, 0x3366aa, 0xffffff, 0xeeeeee, 0xcccccc] },
-                { name: 'Volcanic', colors: [0x883322, 0xaa5533, 0xcc7744, 0x442211, 0x663322, 0x884433, 0xff6600, 0xff8833, 0xffaa44, 0x331100, 0x552200, 0x773300] }
+                { name: 'Терра', icon: '🌍', colors: [0x2288ff, 0x44aaff, 0x88ccff, 0x44aa44, 0x66bb66, 0x88dd88, 0xaa8866, 0xccaa88, 0xeeddbb, 0xffffff, 0xeeeeee, 0xcccccc], atmosphere: 0x4488ff, atmosphereOpacity: 0.15, hasRings: false, rotSpeed: 0.002 },
+                { name: 'Марс', icon: '🔴', colors: [0xaa4400, 0xcc6600, 0xee8822, 0x882200, 0xaa4422, 0xcc6644, 0x552200, 0x773300, 0x994411], atmosphere: 0xcc6633, atmosphereOpacity: 0.08, hasRings: false, rotSpeed: 0.0018 },
+                { name: 'Юпитер', icon: '🟠', colors: [0xeedd99, 0xffcc88, 0xffaa66, 0xccaa88, 0xbb9977, 0xaa8866, 0x886644, 0x775533, 0x664422, 0xffffff, 0xeeeeee, 0xcccccc], atmosphere: 0xffcc66, atmosphereOpacity: 0.2, hasRings: true, ringColor: 0xccaa66, ringOpacity: 0.3, rotSpeed: 0.004 },
+                { name: 'Нептун', icon: '🔵', colors: [0x3366cc, 0x4477dd, 0x5588ee, 0x2255aa, 0x3366bb, 0x4477cc, 0x114488, 0x225599, 0x3366aa, 0xffffff, 0xeeeeee, 0xcccccc], atmosphere: 0x3366ff, atmosphereOpacity: 0.18, hasRings: true, ringColor: 0x6688cc, ringOpacity: 0.15, rotSpeed: 0.003 },
+                { name: 'Вулкан', icon: '🌋', colors: [0x883322, 0xaa5533, 0xcc7744, 0x442211, 0x663322, 0x884433, 0xff6600, 0xff8833, 0xffaa44, 0x331100, 0x552200, 0x773300], atmosphere: 0xff4400, atmosphereOpacity: 0.12, hasRings: false, rotSpeed: 0.001 },
+                { name: 'Лёд', icon: '🧊', colors: [0xaaddff, 0xbbeeFF, 0xddf5ff, 0x88bbdd, 0x99ccee, 0xaaddee, 0x667799, 0x7788aa, 0x8899bb, 0xffffff, 0xf0f5ff, 0xe0eeff], atmosphere: 0x88ccff, atmosphereOpacity: 0.2, hasRings: true, ringColor: 0xaaccee, ringOpacity: 0.2, rotSpeed: 0.0015 },
+                { name: 'Токсик', icon: '☢️', colors: [0x33aa33, 0x44bb22, 0x66cc11, 0x228822, 0x117711, 0x339933, 0x88ff00, 0xaaff33, 0xccff66, 0x004400, 0x005500, 0x003300], atmosphere: 0x44ff22, atmosphereOpacity: 0.22, hasRings: false, rotSpeed: 0.0025 },
+                { name: 'Алмаз', icon: '💎', colors: [0xccccff, 0xddddff, 0xeeeeff, 0xaaaaee, 0x9999dd, 0x8888cc, 0xbbbbff, 0xffffff, 0xddccff], atmosphere: 0xaaaaff, atmosphereOpacity: 0.25, hasRings: true, ringColor: 0xccbbff, ringOpacity: 0.4, rotSpeed: 0.0035 }
             ];
+            let atmosphereMesh = null;
+            let ringMesh = null;
             
             // ==================== СОСТОЯНИЕ ====================
             let scene, camera, renderer, labelRenderer, controls;
             let planetGroup = new THREE.Group();
             let sphereMesh;
+            let currentPlanetType = null;
+            let currentPalette = null;
             let particles;
             let orbitLines = [];
             let orbitLabels = [];
@@ -455,6 +480,54 @@
                 sphereMesh = new THREE.Mesh(geometry, material);
                 planetGroup.add(sphereMesh);
                 return sphereMesh;
+            }
+            
+            // ==================== АТМОСФЕРА (светящаяся оболочка) ====================
+            function createAtmosphere(color, opacity) {
+                if (atmosphereMesh) planetGroup.remove(atmosphereMesh);
+                const geo = new THREE.SphereGeometry(SPHERE_RADIUS * 1.08, 64, 32);
+                const mat = new THREE.ShaderMaterial({
+                    uniforms: { glowColor: { value: new THREE.Color(color) }, coeff: { value: 0.8 }, power: { value: 3.5 } },
+                    vertexShader: `varying vec3 vNormal; varying vec3 vPositionNormal; void main(){ vNormal = normalize(normalMatrix * normal); vPositionNormal = normalize((modelViewMatrix * vec4(position,1.0)).xyz); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+                    fragmentShader: `uniform vec3 glowColor; uniform float coeff; uniform float power; varying vec3 vNormal; varying vec3 vPositionNormal; void main(){ float intensity = pow(coeff - dot(vNormal, vPositionNormal), power); gl_FragColor = vec4(glowColor, intensity * ${opacity.toFixed(2)}); }`,
+                    side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+                });
+                atmosphereMesh = new THREE.Mesh(geo, mat);
+                planetGroup.add(atmosphereMesh);
+            }
+            
+            // ==================== КОЛЬЦА ====================
+            function createRings(color, opacity) {
+                if (ringMesh) planetGroup.remove(ringMesh);
+                const innerR = SPHERE_RADIUS * 1.4;
+                const outerR = SPHERE_RADIUS * 2.2;
+                const geo = new THREE.RingGeometry(innerR, outerR, 128);
+                const pos = geo.attributes.position;
+                const uv = geo.attributes.uv;
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i), z = pos.getZ(i);
+                    const dist = Math.sqrt(x*x + z*z);
+                    const t = (dist - innerR) / (outerR - innerR);
+                    uv.setXY(i, t, 0.5);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 1;
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createLinearGradient(0,0,256,0);
+                const c = new THREE.Color(color);
+                grad.addColorStop(0, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0)`);
+                grad.addColorStop(0.15, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},${opacity})`);
+                grad.addColorStop(0.3, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},${opacity*0.3})`);
+                grad.addColorStop(0.5, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},${opacity*0.8})`);
+                grad.addColorStop(0.7, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},${opacity*0.2})`);
+                grad.addColorStop(0.85, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},${opacity*0.6})`);
+                grad.addColorStop(1, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0)`);
+                ctx.fillStyle = grad; ctx.fillRect(0,0,256,1);
+                const tex = new THREE.CanvasTexture(canvas);
+                const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.NormalBlending });
+                ringMesh = new THREE.Mesh(geo, mat);
+                ringMesh.rotation.x = Math.PI / 2 + 0.3;
+                planetGroup.add(ringMesh);
             }
             
             // ==================== ЧАСТИЦЫ (СТАТИЧНЫ) ====================
@@ -687,8 +760,9 @@
             }
             
             // ==================== ГЕНЕРАЦИЯ НОВОЙ ПЛАНЕТЫ ====================
-            function generateNewPlanet() {
-                // Очищаем станции при смене планеты (или оставляем? лучше удалить)
+            let selectedTypeIndex = null;
+            
+            function generateNewPlanet(forceTypeIndex) {
                 stations.forEach(s => {
                     planetGroup.remove(s.mesh);
                     planetGroup.remove(s.label);
@@ -697,21 +771,57 @@
                 stations = [];
                 stationsCount = 0;
                 
+                if (atmosphereMesh) { planetGroup.remove(atmosphereMesh); atmosphereMesh = null; }
+                if (ringMesh) { planetGroup.remove(ringMesh); ringMesh = null; }
+                
                 currentSeed = Date.now() + Math.floor(Math.random() * 1e6);
-                const typeIndex = Math.floor(Math.random() * PLANET_TYPES.length);
+                const typeIndex = (forceTypeIndex !== undefined) ? forceTypeIndex : Math.floor(Math.random() * PLANET_TYPES.length);
+                selectedTypeIndex = typeIndex;
                 currentPlanetType = PLANET_TYPES[typeIndex];
                 currentPalette = currentPlanetType.colors.slice();
                 currentResources = randomResources();
                 createSphere(currentSeed, currentPalette);
                 createParticles(20000, currentPalette);
+                
+                createAtmosphere(currentPlanetType.atmosphere, currentPlanetType.atmosphereOpacity);
+                if (currentPlanetType.hasRings) {
+                    createRings(currentPlanetType.ringColor, currentPlanetType.ringOpacity);
+                }
+                
                 const numTags = Math.floor(Math.random() * 11) + 5;
                 createResourceTags(numTags);
                 createOrbits();
                 updateStats(); updateOrbitActivity();
+                updateTypeButtons();
             }
             
-            function increaseLevel() { currentLevel = currentLevel < MAX_LEVEL ? currentLevel + 1 : 1; generateNewPlanet(); }
-            function decreaseLevel() { currentLevel = currentLevel > 1 ? currentLevel - 1 : MAX_LEVEL; generateNewPlanet(); }
+            function increaseLevel() { currentLevel = currentLevel < MAX_LEVEL ? currentLevel + 1 : 1; generateNewPlanet(selectedTypeIndex); }
+            function decreaseLevel() { currentLevel = currentLevel > 1 ? currentLevel - 1 : MAX_LEVEL; generateNewPlanet(selectedTypeIndex); }
+            
+            // ==================== КНОПКИ ТИПОВ ПЛАНЕТ ====================
+            function buildTypeButtons() {
+                const bar = document.getElementById('planet-types-bar');
+                PLANET_TYPES.forEach((pt, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'ptype-btn';
+                    const c = new THREE.Color(pt.atmosphere);
+                    btn.innerHTML = `<span class="dot" style="background:#${c.getHexString()}"></span>${pt.icon} ${pt.name}`;
+                    btn.addEventListener('click', () => { generateNewPlanet(i); });
+                    bar.appendChild(btn);
+                });
+                const rndBtn = document.createElement('button');
+                rndBtn.className = 'ptype-btn';
+                rndBtn.textContent = '🎲 СЛУЧАЙНАЯ';
+                rndBtn.addEventListener('click', () => { generateNewPlanet(); });
+                bar.appendChild(rndBtn);
+            }
+            
+            function updateTypeButtons() {
+                const btns = document.querySelectorAll('.ptype-btn');
+                btns.forEach((b, i) => {
+                    b.classList.toggle('active', i === selectedTypeIndex);
+                });
+            }
             
             // ==================== СОЗДАНИЕ СТАНЦИИ ====================
             function createStation() {
@@ -811,6 +921,12 @@
                         fullMessageDiv.textContent = `✅ ВЫРАБОТКА ЗАВЕРШЕНА (${tag.userData.resource})`;
                         fullMessageDiv.classList.add('show');
                         setTimeout(() => fullMessageDiv.classList.remove('show'), 2000);
+                        if(window.hubMsg){
+                            window.hubMsg({type:'cargo_add', name:tag.userData.resource, qty:tag.userData.amount, price:parseFloat(tag.userData.price)});
+                            window.hubMsg({type:'credits_change', amount: Math.floor(tag.userData.amount * parseFloat(tag.userData.price))});
+                            window.hubMsg({type:'stat_increment', stat:'planetsScanned', amount:1});
+                            window.hubMsg({type:'status_msg', text:`Добыто: ${tag.userData.resource} × ${tag.userData.amount}`});
+                        }
                     }
                 }, 1000);
                 
@@ -984,6 +1100,7 @@
                 
                 scene.add(planetGroup);
                 
+                buildTypeButtons();
                 generateNewPlanet();
                 
                 document.getElementById('planetarium-add-btn').addEventListener('click', increaseLevel);
@@ -999,7 +1116,17 @@
                 let clock = new THREE.Clock();
                 function animate() {
                     requestAnimationFrame(animate);
+                    const dt = clock.getDelta();
                     controls.update();
+                    if (sphereMesh && currentPlanetType) {
+                        sphereMesh.rotation.y += currentPlanetType.rotSpeed || 0.002;
+                    }
+                    if (atmosphereMesh) {
+                        atmosphereMesh.rotation.y += 0.0005;
+                    }
+                    if (ringMesh) {
+                        ringMesh.rotation.z += 0.0003;
+                    }
                     updateLabelsVisibility();
                     renderer.render(scene, camera);
                     labelRenderer.render(scene, camera);

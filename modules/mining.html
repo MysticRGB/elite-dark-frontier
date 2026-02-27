@@ -20,8 +20,9 @@
         }
         #ship-constructor {
             position: relative;
-            width: 560px;
-            height: 380px;
+            width: 100%;
+            max-width: 900px;
+            height: 95vh;
             pointer-events: all;
             z-index: 2000;
         }
@@ -91,6 +92,7 @@
             background: rgba(10, 5, 0, 0.9);
             border: 2px solid #ffaa00;
             overflow: hidden;
+            min-height: 250px;
             cursor: move;
         }
         .stats-panel {
@@ -756,6 +758,12 @@
                                     if (cargo < maxCargo) {
                                         cargo++;
                                         updateStats();
+                                        const ores = ['Fe','Cu','Ti','Ni','Au','Ag','Pt','Co','Si','Al'];
+                                        const ore = ores[Math.floor(Math.random()*ores.length)];
+                                        if(window.hubMsg){
+                                            window.hubMsg({type:'cargo_add', name:ore+' руда', qty:1, price:Math.floor(Math.random()*200)+50});
+                                            window.hubMsg({type:'stat_increment', stat:'mined', amount:1});
+                                        }
                                     }
                                 }
                             }, 30);
