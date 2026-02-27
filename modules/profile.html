@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>ЛИЧНАЯ КАРТОЧКА ПИЛОТА · ЭЛИТ: ТЁМНЫЙ ФРОНТИР</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0c10;
+            font-family: 'VT323', monospace;
+            color: #ffdd99;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        #screen-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            background: repeating-linear-gradient(0deg, rgba(255,200,100,0.03) 0px, rgba(0,0,0,0.2) 2px, transparent 3px);
+            z-index: 1500;
+            mix-blend-mode: multiply;
+        }
+
+        .profile-card {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            border: 4px solid #ffaa00;
+            box-shadow: 0 0 30px #cc8800, inset 0 0 20px #442200;
+            padding: 25px 30px;
+            position: relative;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ffaa00;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .card-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 22px;
+            color: #ffff88;
+            text-shadow: 0 0 8px #ffaa00;
+            letter-spacing: 2px;
+            word-break: break-word;
+        }
+
+        .lang-switcher {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .lang-btn {
+            background: #332211;
+            border: 2px solid #ffaa00;
+            color: #ffdd99;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .lang-btn:hover {
+            background: #aa6633;
+            box-shadow: 0 0 15px #ff8800;
+            border-color: #ffff88;
+        }
+
+        .lang-btn.active {
+            background: #aa6633;
+            box-shadow: 0 0 15px #ff8800;
+            border-color: #ffff88;
+            color: #ffff88;
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .section {
+            border: 1px solid #ffaa00;
+            padding: 15px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 0 10px #221100;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: #ffff88;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #ffaa00;
+            padding-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            word-break: break-word;
+        }
+
+        .section-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 18px;
+            line-height: 1.4;
+            border-bottom: 1px dotted rgba(255,170,0,0.3);
+            padding-bottom: 4px;
+            gap: 10px;
+        }
+
+        .info-label {
+            color: #cc8800;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .info-value {
+            color: #ffff88;
+            font-weight: bold;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .reputation-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .bar {
+            flex: 1;
+            min-width: 100px;
+            height: 14px;
+            background: #221100;
+            border: 1px solid #ffaa00;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffaa00, #ffff88);
+            width: 0%;
+        }
+
+        .stars {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+        }
+
+        .star {
+            color: #666666;
+            font-size: 18px;
+        }
+        .star.filled {
+            color: #ffff88;
+            text-shadow: 0 0 6px #ffaa00;
+        }
+
+        .stocks-mini {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px 15px;
+            margin-top: 5px;
+        }
+
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            gap: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 14px;
+            background: #221100;
+            border: 1px solid #ffaa00;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #ff6666;
+            width: 0%;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #cc8800;
+            border-top: 1px dashed #ffaa00;
+            padding-top: 12px;
+        }
+
+        /* ===== АДАПТАЦИЯ ДЛЯ ПЛАНШЕТОВ И СМАРТФОНОВ ===== */
+        @media (max-width: 900px) {
+            .profile-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .profile-card {
+                padding: 15px;
+            }
+            .card-title {
+                font-size: 18px;
+            }
+            .lang-btn {
+                font-size: 10px;
+                padding: 6px 10px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+                align-items: flex-start; /* чтобы карточка начиналась от верхнего края */
+            }
+            .profile-card {
+                padding: 12px;
+                border-width: 3px;
+            }
+            .card-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+            .card-title {
+                font-size: 16px;
+                text-align: center;
+            }
+            .lang-switcher {
+                justify-content: center;
+            }
+            .lang-btn {
+                font-size: 9px;
+                padding: 5px 8px;
+            }
+            .section {
+                padding: 10px 12px;
+                margin-bottom: 15px;
+            }
+            .section-title {
+                font-size: 12px;
+                margin-bottom: 10px;
+            }
+            .info-row {
+                font-size: 16px;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            .info-label {
+                width: 100%; /* на узких экранах метка сверху */
+                text-align: left;
+            }
+            .info-value {
+                width: 100%;
+                text-align: left;
+                padding-left: 10px;
+            }
+            .reputation-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .reputation-bar .bar {
+                width: 100%;
+            }
+            .stocks-mini {
+                grid-template-columns: 1fr;
+                gap: 3px;
+            }
+            .stock-item {
+                font-size: 14px;
+            }
+            .footer-note {
+                font-size: 12px;
+            }
+            .stars {
+                font-size: 14px;
+            }
+        }
+
+        /* Для очень маленьких экранов (до 400px) */
+        @media (max-width: 400px) {
+            .info-row {
+                font-size: 14px;
+            }
+            .section-title {
+                font-size: 11px;
+            }
+            .lang-btn {
+                font-size: 8px;
+                padding: 4px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="screen-overlay"></div>
+
+    <div class="profile-card">
+        <div class="card-header">
+            <div class="card-title" data-i18n="card_title">ЛИЧНАЯ КАРТОЧКА ПИЛОТА</div>
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="ru">РУС</button>
+                <button class="lang-btn" data-lang="en">ENG</button>
+                <button class="lang-btn" data-lang="zh">中文</button>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            <!-- Левая колонка -->
+            <div class="left-col">
+                <div class="section">
+                    <div class="section-title" data-i18n="general_title">ОБЩАЯ ИНФОРМАЦИЯ</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="player_name">Имя:</span><span class="info-value" id="player-name">Алексей "Койот" Воронов</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="player_id">ID:</span><span class="info-value">EF-314159-К</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="playtime">Игровое время:</span><span class="info-value">247ч 32м</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="current_system">Текущая система:</span><span class="info-value">HIP 73854 (Лавр)</span></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="finance_title">ФИНАНСЫ</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="credits">Кредиты:</span><span class="info-value">₡ 12 847 550</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="credit_history">Кредитная история:</span><span class="info-value"><span class="stars" id="credit-stars">★★★★★</span> (78/100)</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="debts">Долги:</span><span class="info-value">₡ 2 300 000 (5.2%)</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="valuation">Капитализация:</span><span class="info-value">₡ 98 450 000</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="cashflow">Доход/расход:</span><span class="info-value">+₡ 142 500 / -₡ 38 200</span></div>
+                        <div class="info-row" style="border-bottom: none; margin-top: 5px;">
+                            <span class="info-label" data-i18n="stocks_short">Акции (топ-4):</span>
+                            <div class="stocks-mini">
+                                <div class="stock-item"><span>Sirius Corp</span><span>1 200</span></div>
+                                <div class="stock-item"><span>Galactic Mining</span><span>850</span></div>
+                                <div class="stock-item"><span>Federation Bank</span><span>2 100</span></div>
+                                <div class="stock-item"><span>DarkNet Inc</span><span>500</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="reputation_title">РЕПУТАЦИЯ И ФРАКЦИИ</div>
+                    <div class="section-content">
+                        <div class="info-row reputation-bar">
+                            <span class="info-label" data-i18n="faction_corps">Корпорации:</span>
+                            <div class="bar"><div class="bar-fill" style="width: 85%;"></div></div>
+                            <span>85%</span>
+                        </div>
+                        <div class="info-row reputation-bar">
+                            <span class="info-label" data-i18n="faction_pirates">Пираты:</span>
+                            <div class="bar"><div class="bar-fill" style="width: 32%;"></div></div>
+                            <span>32%</span>
+                        </div>
+                        <div class="info-row reputation-bar">
+                            <span class="info-label" data-i18n="faction_empire">Империя:</span>
+                            <div class="bar"><div class="bar-fill" style="width: 68%;"></div></div>
+                            <span>68%</span>
+                        </div>
+                        <div class="info-row reputation-bar">
+                            <span class="info-label" data-i18n="faction_natives">Аборигены:</span>
+                            <div class="bar"><div class="bar-fill" style="width: 12%;"></div></div>
+                            <span>12%</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label" data-i18n="black_market">Чёрный рынок:</span>
+                            <span class="info-value"><span class="stars" id="black-market-stars">★★★☆☆</span> (уровень 3)</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label" data-i18n="charisma">Харизма:</span>
+                            <span class="info-value"><span class="stars" id="charisma-stars">★★★★☆</span> (7/10)</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label" data-i18n="political_faction">Полит. фракция:</span>
+                            <span class="info-value">Корпоративный альянс</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="assets_title">АКТИВЫ</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="ships_count">Корабли:</span><span class="info-value">5 (флагман: "Койот")</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="transporters">Транспортники:</span><span class="info-value">12</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="rovers">Роверы/экскаваторы:</span><span class="info-value">24</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="stations">Станции:</span><span class="info-value">3 (2 орбитальные, 1 наземная)</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="planets_dev">Планеты в разработке:</span><span class="info-value">2 (+3 разведываются)</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="offices">Представительства:</span><span class="info-value">7 систем</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка -->
+            <div class="right-col">
+                <div class="section">
+                    <div class="section-title" data-i18n="crew_title">ПЕРСОНАЛ И ЭКИПАЖ</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="employees_total">Сотрудников всего:</span><span class="info-value">347</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="key_crew">Ключевой экипаж:</span><span class="info-value">12 чел.</span></div>
+                        <div class="info-row">
+                            <span class="info-label" data-i18n="morale">Мораль:</span>
+                            <span class="info-value" style="display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap;">
+                                <div class="progress-bar" style="width: 100px;"><div class="progress-fill" style="width: 76%; background: #88cc88;"></div></div>
+                                76%
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label" data-i18n="psychosis">Психоз:</span>
+                            <span class="info-value" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <div class="progress-bar" style="width: 100px;"><div class="progress-fill" style="width: 23%; background: #ff6666;"></div></div>
+                                23%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="progress_title">ПРОГРЕСС И СТАТИСТИКА</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="rating">Рейтинг:</span><span class="info-value">Профессионал (Dangerous)</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="flights">Полётов:</span><span class="info-value">1 342</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="kills">Убийств:</span><span class="info-value">87</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="systems_explored">Исследовано систем:</span><span class="info-value">43</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="artifacts">Артефактов/данных:</span><span class="info-value">6</span></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="tech_title">ТЕХНОЛОГИИ</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="tech_level">Уровень технологий:</span><span class="info-value">8 (передовой)</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="research_points">Исследовательские очки:</span><span class="info-value">45 600</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="discovered_techs">Открыто технологий:</span><span class="info-value">34 / 120</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="current_research">Текущие исследования:</span><span class="info-value">Квантовые движки IV (70%)</span></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="corp_title">КОРПОРАТИВНЫЕ</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="market_share">Доля рынка:</span><span class="info-value">2.8%</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="influence">Влияние:</span><span class="info-value">56 / 100</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="contracts">Активные контракты:</span><span class="info-value">9</span></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title" data-i18n="quantum_title">КВАНТОВАЯ МЕХАНИКА</div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="info-label" data-i18n="jump_counter">Счётчик прыжков:</span><span class="info-value">347</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="jump_range">Дальность прыжка:</span><span class="info-value">21.5 св. лет</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="calc_requirements">Требования к просчёту:</span><span class="info-value">12.4 TFlops/ч</span></div>
+                        <div class="info-row"><span class="info-label" data-i18n="next_jump_time">Время до след. прыжка:</span><span class="info-value">3ч 20м</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note" data-i18n="footer">Данные обновлены: 2347.03.07 / 14:55 ST</div>
+    </div>
+
+    <script>
+        (function() {
+            const i18n = {
+                ru: {
+                    card_title: "ЛИЧНАЯ КАРТОЧКА ПИЛОТА",
+                    general_title: "ОБЩАЯ ИНФОРМАЦИЯ",
+                    player_name: "Имя:",
+                    player_id: "ID:",
+                    playtime: "Игровое время:",
+                    current_system: "Текущая система:",
+                    finance_title: "ФИНАНСЫ",
+                    credits: "Кредиты:",
+                    credit_history: "Кредитная история:",
+                    debts: "Долги:",
+                    valuation: "Капитализация:",
+                    cashflow: "Доход/расход:",
+                    stocks_short: "Акции (топ-4):",
+                    reputation_title: "РЕПУТАЦИЯ И ФРАКЦИИ",
+                    faction_corps: "Корпорации:",
+                    faction_pirates: "Пираты:",
+                    faction_empire: "Империя:",
+                    faction_natives: "Аборигены:",
+                    black_market: "Чёрный рынок:",
+                    charisma: "Харизма:",
+                    political_faction: "Полит. фракция:",
+                    assets_title: "АКТИВЫ",
+                    ships_count: "Корабли:",
+                    transporters: "Транспортники:",
+                    rovers: "Роверы/экскаваторы:",
+                    stations: "Станции:",
+                    planets_dev: "Планеты в разработке:",
+                    offices: "Представительства:",
+                    crew_title: "ПЕРСОНАЛ И ЭКИПАЖ",
+                    employees_total: "Сотрудников всего:",
+                    key_crew: "Ключевой экипаж:",
+                    morale: "Мораль:",
+                    psychosis: "Психоз:",
+                    progress_title: "ПРОГРЕСС И СТАТИСТИКА",
+                    rating: "Рейтинг:",
+                    flights: "Полётов:",
+                    kills: "Убийств:",
+                    systems_explored: "Исследовано систем:",
+                    artifacts: "Артефактов/данных:",
+                    tech_title: "ТЕХНОЛОГИИ",
+                    tech_level: "Уровень технологий:",
+                    research_points: "Исследовательские очки:",
+                    discovered_techs: "Открыто технологий:",
+                    current_research: "Текущие исследования:",
+                    corp_title: "КОРПОРАТИВНЫЕ",
+                    market_share: "Доля рынка:",
+                    influence: "Влияние:",
+                    contracts: "Активные контракты:",
+                    quantum_title: "КВАНТОВАЯ МЕХАНИКА",
+                    jump_counter: "Счётчик прыжков:",
+                    jump_range: "Дальность прыжка:",
+                    calc_requirements: "Требования к просчёту:",
+                    next_jump_time: "Время до след. прыжка:",
+                    footer: "Данные обновлены: 2347.03.07 / 14:55 ST"
+                },
+                en: {
+                    card_title: "PILOT PERSONAL FILE",
+                    general_title: "GENERAL INFO",
+                    player_name: "Name:",
+                    player_id: "ID:",
+                    playtime: "Playtime:",
+                    current_system: "Current system:",
+                    finance_title: "FINANCES",
+                    credits: "Credits:",
+                    credit_history: "Credit history:",
+                    debts: "Debts:",
+                    valuation: "Valuation:",
+                    cashflow: "Income/Expense:",
+                    stocks_short: "Stocks (top-4):",
+                    reputation_title: "REPUTATION & FACTIONS",
+                    faction_corps: "Corporations:",
+                    faction_pirates: "Pirates:",
+                    faction_empire: "Empire:",
+                    faction_natives: "Natives:",
+                    black_market: "Black market:",
+                    charisma: "Charisma:",
+                    political_faction: "Political faction:",
+                    assets_title: "ASSETS",
+                    ships_count: "Ships:",
+                    transporters: "Transporters:",
+                    rovers: "Rovers/excavators:",
+                    stations: "Stations:",
+                    planets_dev: "Planets under dev:",
+                    offices: "Offices:",
+                    crew_title: "CREW & PERSONNEL",
+                    employees_total: "Total employees:",
+                    key_crew: "Key crew:",
+                    morale: "Morale:",
+                    psychosis: "Psychosis:",
+                    progress_title: "PROGRESS & STATS",
+                    rating: "Rating:",
+                    flights: "Flights:",
+                    kills: "Kills:",
+                    systems_explored: "Systems explored:",
+                    artifacts: "Artifacts/data:",
+                    tech_title: "TECHNOLOGY",
+                    tech_level: "Tech level:",
+                    research_points: "Research points:",
+                    discovered_techs: "Techs discovered:",
+                    current_research: "Current research:",
+                    corp_title: "CORPORATE",
+                    market_share: "Market share:",
+                    influence: "Influence:",
+                    contracts: "Active contracts:",
+                    quantum_title: "QUANTUM MECHANICS",
+                    jump_counter: "Jump counter:",
+                    jump_range: "Jump range:",
+                    calc_requirements: "Calc requirements:",
+                    next_jump_time: "Next jump in:",
+                    footer: "Data updated: 2347.03.07 / 14:55 ST"
+                },
+                zh: {
+                    card_title: "飞行员个人档案",
+                    general_title: "基本信息",
+                    player_name: "姓名:",
+                    player_id: "ID:",
+                    playtime: "游戏时间:",
+                    current_system: "当前星系:",
+                    finance_title: "财务状况",
+                    credits: "信用点:",
+                    credit_history: "信用记录:",
+                    debts: "债务:",
+                    valuation: "公司估值:",
+                    cashflow: "收入/支出:",
+                    stocks_short: "股票 (前4):",
+                    reputation_title: "声望与派系",
+                    faction_corps: "企业:",
+                    faction_pirates: "海盗:",
+                    faction_empire: "帝国:",
+                    faction_natives: "土著:",
+                    black_market: "黑市:",
+                    charisma: "魅力:",
+                    political_faction: "政治派系:",
+                    assets_title: "资产",
+                    ships_count: "飞船:",
+                    transporters: "运输船:",
+                    rovers: "漫游车/挖掘机:",
+                    stations: "空间站:",
+                    planets_dev: "开发中的行星:",
+                    offices: "代表处:",
+                    crew_title: "人员与船员",
+                    employees_total: "员工总数:",
+                    key_crew: "关键船员:",
+                    morale: "士气:",
+                    psychosis: "精神错乱:",
+                    progress_title: "进度与统计",
+                    rating: "评级:",
+                    flights: "飞行次数:",
+                    kills: "击毁数:",
+                    systems_explored: "探索星系:",
+                    artifacts: "文物/数据:",
+                    tech_title: "科技",
+                    tech_level: "科技水平:",
+                    research_points: "研究点数:",
+                    discovered_techs: "已解锁科技:",
+                    current_research: "当前研究:",
+                    corp_title: "企业指标",
+                    market_share: "市场份额:",
+                    influence: "影响力:",
+                    contracts: "活跃合同:",
+                    quantum_title: "量子力学",
+                    jump_counter: "跳跃计数器:",
+                    jump_range: "跳跃距离:",
+                    calc_requirements: "计算需求:",
+                    next_jump_time: "下次跳跃时间:",
+                    footer: "数据更新: 2347.03.07 / 14:55 ST"
+                }
+            };
+
+            const langElements = document.querySelectorAll('[data-i18n]');
+            const langBtns = document.querySelectorAll('.lang-btn');
+            let currentLang = 'ru';
+
+            function setLanguage(lang) {
+                if (!i18n[lang]) return;
+                currentLang = lang;
+                langElements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18n[lang][key]) {
+                        el.textContent = i18n[lang][key];
+                    }
+                });
+                langBtns.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.lang === lang) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            langBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setLanguage(btn.dataset.lang);
+                });
+            });
+
+            setLanguage('ru');
+        })();
+    </script>
+</body>
+</html>

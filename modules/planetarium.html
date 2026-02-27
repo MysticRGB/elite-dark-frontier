@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПЛАНЕТАРИЙ • СТАНЦИИ • ВЫРАБОТКА</title>
+    <!-- Three.js и необходимые модули -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0310;
+            font-family: 'VT323', monospace;
+            color: #ffaa00;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .constructor-card {
+            width: 1200px;
+            height: 800px;
+            pointer-events: all;
+            z-index: 2000;
+        }
+        .constructor-frame {
+            background: rgba(0, 0, 0, 0.95);
+            border: 4px solid #ffaa00;
+            box-shadow: 0 0 20px #cc8800, inset 0 0 15px #442200;
+            padding: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .constructor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .constructor-title {
+            color: #ffff88;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 5px #ffaa00;
+            cursor: help;
+            border-bottom: 1px dashed #ffaa00;
+        }
+        .button-group {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-small {
+            background: rgba(40, 30, 10, 0.95);
+            border: 2px solid #ffaa00;
+            color: #ffff88;
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            padding: 2px 20px;
+            cursor: pointer;
+            box-shadow: 0 0 6px #cc8800;
+            transition: 0.1s;
+            letter-spacing: 2px;
+        }
+        .btn-small:hover {
+            background: rgba(80, 50, 20, 0.95);
+            border-color: #ffff88;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+        .btn-small.reset {
+            background: rgba(60, 20, 20, 0.95);
+        }
+        .btn-small.station {
+            background: rgba(20, 40, 60, 0.95);
+        }
+        .constructor-canvas {
+            flex: 1;
+            position: relative;
+            background: rgba(10, 5, 0, 0.9);
+            border: 2px solid #ffaa00;
+            overflow: hidden;
+        }
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding: 8px 4px;
+            border-top: 1px dashed #ffaa00;
+            font-size: 18px;
+            gap: 16px;
+            background: rgba(0,0,0,0.6);
+            justify-content: space-around;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: help;
+        }
+        .stat-label {
+            color: #cc8800;
+        }
+        .stat-value {
+            color: #ffff88;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(10, 5, 0, 0.98);
+            border: 2px solid #ffaa00;
+            padding: 8px 12px;
+            font-size: 18px;
+            color: #ffff88;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 0 15px #cc8800;
+            z-index: 3000;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.15s;
+            border-radius: 0;
+            font-family: 'VT323', monospace;
+        }
+        .tooltip.active {
+            opacity: 1;
+        }
+        .full-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffaa00;
+            padding: 8px 16px;
+            color: #ffff88;
+            font-size: 24px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px #cc8800;
+            z-index: 3500;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .full-message.show {
+            opacity: 1;
+        }
+        .ai-stats-data {
+            display: none;
+        }
+        /* Кастомный тултип для всего */
+        #hover-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffaa00;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            padding: 8px 12px;
+            pointer-events: none;
+            z-index: 10000;
+            box-shadow: 0 0 20px #cc8800;
+            white-space: nowrap;
+            display: none;
+            border-radius: 0;
+            color: #ffff88;
+        }
+        #hover-tooltip table {
+            border-collapse: collapse;
+        }
+        #hover-tooltip td {
+            padding: 2px 8px;
+        }
+        /* Стили для ресурсных плашек (с прогресс-баром) */
+        .resource-tag {
+            font-family: 'Myriad Pro', 'Myriad', 'Segoe UI', sans-serif;
+            font-weight: bold;
+            font-size: 10px;
+            color: white;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px currentColor, 1px 1px 2px black;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid;
+            border-radius: 4px;
+            padding: 2px 4px;
+            white-space: nowrap;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(1px);
+            filter: saturate(1.5);
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .resource-tag span {
+            position: relative;
+            z-index: 12;
+        }
+        .resource-tag .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(0, 255, 0, 0.5);
+            width: 0%;
+            z-index: 11;
+            transition: width 0.2s linear;
+            pointer-events: none;
+        }
+        /* Стили для станций */
+        .station-label {
+            font-family: 'VT323', monospace;
+            font-size: 12px;
+            color: #88ddff;
+            text-shadow: 0 0 8px #00aaff, 1px 1px 1px black;
+            background: rgba(0, 40, 80, 0.9);
+            border: 2px solid #88ddff;
+            border-radius: 12px;
+            padding: 2px 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            letter-spacing: 1px;
+            backdrop-filter: blur(2px);
+        }
+        /* Орбитальные подписи */
+        .orbit-label {
+            font-family: sans-serif;
+            font-size: 10px;
+            color: #ffff88;
+            text-shadow: 0 0 5px currentColor;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 4px;
+            border-radius: 2px;
+            white-space: nowrap;
+            pointer-events: none;
+            border: 1px solid currentColor;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <div class="constructor-card" id="planetarium-card">
+        <div class="constructor-frame">
+            <div class="constructor-header">
+                <span class="constructor-title" id="planetarium-title">ПЛАНЕТАРИЙ</span>
+                <div class="button-group">
+                    <button class="btn-small" id="planetarium-add-btn" title="➕ уровень +">➕</button>
+                    <button class="btn-small reset" id="planetarium-reset-btn" title="− уровень −">−</button>
+                    <button class="btn-small station" id="station-add-btn" title="🛰️ повесить станцию">🛰️</button>
+                </div>
+            </div>
+            <div class="constructor-canvas" id="planetarium-canvas"></div>
+            <div class="stats-panel" id="planetarium-stats-panel"></div>
+        </div>
+        <div class="tooltip" id="planetarium-tooltip"></div>
+        <div class="full-message" id="planetarium-full-message"></div>
+        <div class="ai-stats-data" id="planetarium-ai-data"></div>
+    </div>
+    <div id="hover-tooltip"></div>
+
+    <script>
+        (function() {
+            // ==================== НАСТРОЙКИ ====================
+            const MAX_LEVEL = 7;
+            const BASE_RADIUS = 5.5;
+            const GROWTH_FACTOR = 1.15;
+            const SPHERE_RADIUS = 4.0;
+            const TAG_RADIUS = SPHERE_RADIUS + 1.5; // удлинённые выноски
+            const MAX_STATIONS = 1500;               // максимум станций
+            
+            const ORBIT_COLORS = [0xaaaaaa, 0x44aaff, 0x3366ff, 0x33cc33, 0xffaa00, 0xff6600, 0xff0000];
+            
+            // Названия уровней на пяти языках
+            const LEVEL_NAMES_MULTI = [
+                ["АСТЕРОИДЫ", "ASTEROIDS", "小行星带", "小惑星帯", "ASTEROIDES"],
+                ["НИЗКАЯ", "LOW G", "低重力", "低重力", "BAJA G"],
+                ["СРЕДНЯЯ", "MEDIUM G", "中重力", "中重力", "MEDIA G"],
+                ["ИДЕАЛЬНАЯ", "IDEAL G", "理想重力", "理想重力", "G IDEAL"],
+                ["ПОВЫШЕННАЯ", "HIGH G", "高重力", "高重力", "ALTA G"],
+                ["ВЫСОКАЯ", "VERY HIGH", "非常高", "非常に高い", "MUY ALTA"],
+                ["СМЕРТЕЛЬНАЯ", "DEADLY", "致命", "致命的", "MORTAL"]
+            ];
+            
+            // Расширенный список ресурсов
+            const RESOURCES = [
+                "Водород", "Гелий-3", "Дейтерий", "Тритий", "Литий", "Бериллий", "Бор", 
+                "Углерод", "Азот", "Кислород", "Фтор", "Неон", "Натрий", "Магний", 
+                "Алюминий", "Кремний", "Фосфор", "Сера", "Хлор", "Аргон", "Калий", 
+                "Кальций", "Скандий", "Титан", "Ванадий", "Хром", "Марганец", "Железо", 
+                "Кобальт", "Никель", "Медь", "Цинк", "Галлий", "Германий", "Мышьяк", 
+                "Селен", "Бром", "Криптон", "Рубидий", "Стронций", "Иттрий", "Цирконий", 
+                "Ниобий", "Молибден", "Рутений", "Родий", "Палладий", "Серебро", 
+                "Кадмий", "Индий", "Олово", "Сурьма", "Теллур", "Йод", "Ксенон", 
+                "Цезий", "Барий", "Лантан", "Церий", "Празеодим", "Неодим", "Самарий", 
+                "Европий", "Гадолиний", "Тербий", "Диспрозий", "Гольмий", "Эрбий", 
+                "Тулий", "Иттербий", "Лютеций", "Гафний", "Тантал", "Вольфрам", 
+                "Рений", "Осмий", "Иридий", "Платина", "Золото", "Ртуть", "Таллий", 
+                "Свинец", "Висмут", "Торий", "Уран", "Плутоний"
+            ];
+
+            // Цвета для каждого ресурса (яркие)
+            const RESOURCE_COLORS = {
+                "Водород": "#aaccff", "Гелий-3": "#ffff99", "Дейтерий": "#cce5ff", "Тритий": "#b3d9ff",
+                "Литий": "#ffcc99", "Бериллий": "#ccffcc", "Бор": "#ffb3b3", "Углерод": "#999999",
+                "Азот": "#99ccff", "Кислород": "#99ffff", "Фтор": "#ccff99", "Неон": "#ff99cc",
+                "Натрий": "#ffff99", "Магний": "#ccff99", "Алюминий": "#ccccff", "Кремний": "#c0c0c0",
+                "Фосфор": "#ff9966", "Сера": "#ffff66", "Хлор": "#99ff99", "Аргон": "#cc99ff",
+                "Калий": "#ffb3ff", "Кальций": "#b3b3ff", "Скандий": "#b3ffb3", "Титан": "#b3b3b3",
+                "Ванадий": "#b3b3b3", "Хром": "#b3b3b3", "Марганец": "#b3b3b3", "Железо": "#ff9966",
+                "Кобальт": "#6666ff", "Никель": "#c0c0c0", "Медь": "#ff9933", "Цинк": "#99cc99",
+                "Галлий": "#b3b3b3", "Германий": "#b3b3b3", "Мышьяк": "#b3b3b3", "Селен": "#b3b3b3",
+                "Бром": "#ff6666", "Криптон": "#b3b3b3", "Рубидий": "#b3b3b3", "Стронций": "#b3b3b3",
+                "Иттрий": "#b3b3b3", "Цирконий": "#b3b3b3", "Ниобий": "#b3b3b3", "Молибден": "#b3b3b3",
+                "Рутений": "#b3b3b3", "Родий": "#b3b3b3", "Палладий": "#b3b3b3", "Серебро": "#e6e6e6",
+                "Кадмий": "#b3b3b3", "Индий": "#b3b3b3", "Олово": "#b3b3b3", "Сурьма": "#b3b3b3",
+                "Теллур": "#b3b3b3", "Йод": "#cc99ff", "Ксенон": "#b3b3b3", "Цезий": "#ffd966",
+                "Барий": "#b3b3b3", "Лантан": "#b3b3b3", "Церий": "#b3b3b3", "Празеодим": "#b3b3b3",
+                "Неодим": "#b3b3b3", "Самарий": "#b3b3b3", "Европий": "#b3b3b3", "Гадолиний": "#b3b3b3",
+                "Тербий": "#b3b3b3", "Диспрозий": "#b3b3b3", "Гольмий": "#b3b3b3", "Эрбий": "#b3b3b3",
+                "Тулий": "#b3b3b3", "Иттербий": "#b3b3b3", "Лютеций": "#b3b3b3", "Гафний": "#b3b3b3",
+                "Тантал": "#b3b3b3", "Вольфрам": "#b3b3b3", "Рений": "#b3b3b3", "Осмий": "#b3b3b3",
+                "Иридий": "#b3b3b3", "Платина": "#e6e6e6", "Золото": "#ffcc66", "Ртуть": "#b3b3b3",
+                "Таллий": "#b3b3b3", "Свинец": "#808080", "Висмут": "#ffb3b3", "Торий": "#b3b3b3",
+                "Уран": "#99cc66", "Плутоний": "#b3b3b3"
+            };
+            
+            // ==================== ТИПЫ ПЛАНЕТ ====================
+            const PLANET_TYPES = [
+                { name: 'Terran', colors: [0x2288ff, 0x44aaff, 0x88ccff, 0x44aa44, 0x66bb66, 0x88dd88, 0xaa8866, 0xccaa88, 0xeeddbb, 0xffffff, 0xeeeeee, 0xcccccc] },
+                { name: 'Martian', colors: [0xaa4400, 0xcc6600, 0xee8822, 0x882200, 0xaa4422, 0xcc6644, 0x552200, 0x773300, 0x994411] },
+                { name: 'Jovian', colors: [0xeedd99, 0xffcc88, 0xffaa66, 0xccaa88, 0xbb9977, 0xaa8866, 0x886644, 0x775533, 0x664422, 0xffffff, 0xeeeeee, 0xcccccc] },
+                { name: 'Neptunian', colors: [0x3366cc, 0x4477dd, 0x5588ee, 0x2255aa, 0x3366bb, 0x4477cc, 0x114488, 0x225599, 0x3366aa, 0xffffff, 0xeeeeee, 0xcccccc] },
+                { name: 'Volcanic', colors: [0x883322, 0xaa5533, 0xcc7744, 0x442211, 0x663322, 0x884433, 0xff6600, 0xff8833, 0xffaa44, 0x331100, 0x552200, 0x773300] }
+            ];
+            
+            // ==================== СОСТОЯНИЕ ====================
+            let scene, camera, renderer, labelRenderer, controls;
+            let planetGroup = new THREE.Group();
+            let sphereMesh;
+            let particles;
+            let orbitLines = [];
+            let orbitLabels = [];
+            let resourceTags = [];
+            let tagColliders = [];
+            let tagLines = [];
+            let satellites = [];
+            let currentLevel = 4;
+            let currentSeed = Date.now();
+            let time = 0;
+            
+            // Новые массивы для станций
+            let stations = [];           // { mesh, label, collider, data }
+            let stationsCount = 0;
+            
+            // Данные для тултипа
+            const hoverTooltip = document.getElementById('hover-tooltip');
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            const canvasDiv = document.getElementById('planetarium-canvas');
+            const titleSpan = document.getElementById('planetarium-title');
+            const statsPanel = document.getElementById('planetarium-stats-panel');
+            const tooltipDiv = document.getElementById('planetarium-tooltip');
+            const fullMessageDiv = document.getElementById('planetarium-full-message');
+            const aiDataDiv = document.getElementById('planetarium-ai-data');
+            
+            // Ресурсы для каждого уровня
+            let currentResources = [];
+            
+            // ==================== ШУМОВЫЕ ФУНКЦИИ ====================
+            let p = [];
+            function initPermutation(seed) {
+                let rng = function() { seed = (seed * 1664525 + 1013904223) % 4294967296; return (seed / 4294967296); };
+                p = [];
+                for (let i = 0; i < 256; i++) p[i] = i;
+                for (let i = 255; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+                for (let i = 0; i < 256; i++) p.push(p[i]);
+            }
+            
+            function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+            function grad(hash, x, y, z) {
+                const h = hash & 15;
+                const u = h < 8 ? x : y;
+                const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
+                return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+            }
+            
+            function noise(x, y, z) {
+                const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
+                x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+                const u = fade(x), v = fade(y), w = fade(z);
+                const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z, B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+                return lerp(lerp(lerp(grad(p[AA], x, y, z), grad(p[BA], x-1, y, z), u), lerp(grad(p[AB], x, y-1, z), grad(p[BB], x-1, y-1, z), u), v), lerp(lerp(grad(p[AA+1], x, y, z-1), grad(p[BA+1], x-1, y, z-1), u), lerp(grad(p[AB+1], x, y-1, z-1), grad(p[BB+1], x-1, y-1, z-1), u), v), w);
+            }
+            
+            function lerp(a, b, t) { return a + t * (b - a); }
+            
+            function turbulence(x, y, z, octaves = 7) {
+                let f = 0, amp = 1;
+                for (let i = 0; i < octaves; i++) { f += amp * noise(x, y, z); x *= 2.03; y *= 2.01; z *= 2.02; amp *= 0.5; }
+                return f;
+            }
+            
+            // ==================== ГЕНЕРАЦИЯ ТЕКСТУРЫ ПЛАНЕТЫ ====================
+            function generatePlanetTexture(seed, palette) {
+                initPermutation(seed);
+                const width = 1024, height = 512;
+                const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.createImageData(width, height);
+                const data = imageData.data;
+                const numColors = palette.length;
+                const timeOffset = Math.random() * 1000;
+                
+                for (let y = 0; y < height; y++) {
+                    const v = y / height, phi = v * Math.PI;
+                    for (let x = 0; x < width; x++) {
+                        const u = x / width, theta = u * 2 * Math.PI;
+                        const px = Math.sin(phi) * Math.cos(theta), py = Math.sin(phi) * Math.sin(theta), pz = Math.cos(phi);
+                        let value = turbulence(px, py, pz, 7);
+                        value = (value + 1.5) * 0.4; value = Math.max(0, Math.min(1, value));
+                        const idx = Math.floor(value * (numColors - 1));
+                        const color = palette[idx] || palette[palette.length-1];
+                        const r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
+                        const pos = (y * width + x) * 4;
+                        data[pos] = r; data[pos+1] = g; data[pos+2] = b; data[pos+3] = 255;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.ClampToEdgeWrapping;
+                return texture;
+            }
+            
+            // ==================== СОЗДАНИЕ СФЕРЫ ====================
+            function createSphere(seed, palette) {
+                if (sphereMesh) planetGroup.remove(sphereMesh);
+                const texture = generatePlanetTexture(seed, palette);
+                const material = new THREE.ShaderMaterial({
+                    uniforms: { map: { value: texture }, aberrationStrength: { value: 0.002 } },
+                    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+                    fragmentShader: `uniform sampler2D map; uniform float aberrationStrength; varying vec2 vUv; void main() { float shift = aberrationStrength; vec2 redUv = vec2(vUv.x + shift, vUv.y); vec2 blueUv = vec2(vUv.x - shift, vUv.y); float r = texture2D(map, redUv).r; float g = texture2D(map, vUv).g; float b = texture2D(map, blueUv).b; gl_FragColor = vec4(r, g, b, 1.0); }`,
+                    side: THREE.DoubleSide
+                });
+                const geometry = new THREE.SphereGeometry(SPHERE_RADIUS, 128, 64);
+                sphereMesh = new THREE.Mesh(geometry, material);
+                planetGroup.add(sphereMesh);
+                return sphereMesh;
+            }
+            
+            // ==================== ЧАСТИЦЫ (СТАТИЧНЫ) ====================
+            function createParticles(count = 20000, palette) {
+                if (particles) planetGroup.remove(particles);
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(count * 3);
+                const colors = new Float32Array(count * 3);
+                const numColors = palette.length;
+                
+                for (let i = 0; i < count; i++) {
+                    const theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
+                    const x = Math.sin(phi) * Math.cos(theta), y = Math.sin(phi) * Math.sin(theta), z = Math.cos(phi);
+                    positions[i*3] = x * SPHERE_RADIUS; positions[i*3+1] = y * SPHERE_RADIUS; positions[i*3+2] = z * SPHERE_RADIUS;
+                    let val = turbulence(x, y, z, 7); val = (val + 1.5) * 0.4; val = Math.max(0, Math.min(1, val));
+                    const idx = Math.floor(val * (numColors - 1));
+                    const col = palette[idx] || palette[palette.length-1];
+                    colors[i*3] = ((col >> 16) & 255) / 255; colors[i*3+1] = ((col >> 8) & 255) / 255; colors[i*3+2] = (col & 255) / 255;
+                }
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                
+                const canvas = document.createElement('canvas'); canvas.width = 8; canvas.height = 8;
+                const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(4, 4, 3, 0, 2*Math.PI); ctx.fill();
+                const pointTexture = new THREE.CanvasTexture(canvas);
+                
+                const material = new THREE.PointsMaterial({ size: 0.12, map: pointTexture, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, sizeAttenuation: true });
+                particles = new THREE.Points(geometry, material);
+                particles.frustumCulled = true;
+                planetGroup.add(particles);
+                return particles;
+            }
+            
+            // ==================== ПЛАШКИ С РЕСУРСАМИ (с прогресс-баром) ====================
+            function createResourceTags(numTags = 10) {
+                // Удаляем старые
+                resourceTags.forEach(tag => planetGroup.remove(tag));
+                tagColliders.forEach(c => planetGroup.remove(c));
+                tagLines.forEach(line => planetGroup.remove(line));
+                resourceTags = [];
+                tagColliders = [];
+                tagLines = [];
+                
+                const phi = Math.PI * (3 - Math.sqrt(5));
+                
+                for (let i = 0; i < numTags; i++) {
+                    const y = 1 - (i / (numTags - 1)) * 2;
+                    const radiusAtY = Math.sqrt(1 - y * y);
+                    const theta = phi * i;
+                    const x = Math.cos(theta) * radiusAtY;
+                    const z = Math.sin(theta) * radiusAtY;
+                    
+                    const tagPos = new THREE.Vector3(x * TAG_RADIUS, y * TAG_RADIUS, z * TAG_RADIUS);
+                    const surfacePos = new THREE.Vector3(x * SPHERE_RADIUS, y * SPHERE_RADIUS, z * SPHERE_RADIUS);
+                    
+                    const resName = RESOURCES[Math.floor(Math.random() * RESOURCES.length)];
+                    const amount = Math.floor(Math.random() * 137) + 1;
+                    
+                    const pricePerUnit = (Math.random() * 50 + 10).toFixed(2);
+                    const volume = Math.floor(Math.random() * 1000) + 100;
+                    const extractionRate = (Math.random() * 20 + 1).toFixed(1);
+                    const depth = (Math.random() * 1000 + 50).toFixed(0);
+                    
+                    const textColor = RESOURCE_COLORS[resName] || "#ffffff";
+                    
+                    // Создаем div с прогресс-баром внутри
+                    const div = document.createElement('div');
+                    div.className = 'resource-tag';
+                    div.style.borderColor = textColor;
+                    div.style.color = textColor;
+                    div.innerHTML = `<span>${resName.toUpperCase()} ${amount}</span><div class="progress-bar" style="background: rgba(0,255,0,0.5); width:0%;"></div>`;
+                    
+                    const label = new THREE.CSS2DObject(div);
+                    label.position.copy(tagPos);
+                    label.userData = {
+                        resource: resName,
+                        amount: amount,
+                        price: pricePerUnit,
+                        volume: volume,
+                        rate: extractionRate,
+                        depth: depth,
+                        color: textColor,
+                        index: i,
+                        extractionActive: false,   // флаг процесса выработки
+                        extractionInterval: null,
+                        extractionStart: 0,
+                        progressElement: div.querySelector('.progress-bar')
+                    };
+                    
+                    planetGroup.add(label);
+                    resourceTags.push(label);
+                    
+                    const colliderGeo = new THREE.SphereGeometry(0.3, 8, 8);
+                    const colliderMat = new THREE.MeshBasicMaterial({ visible: false });
+                    const collider = new THREE.Mesh(colliderGeo, colliderMat);
+                    collider.position.copy(tagPos);
+                    collider.userData = { tagIndex: i, type: 'resource' };
+                    planetGroup.add(collider);
+                    tagColliders.push(collider);
+                    
+                    const points = [surfacePos, tagPos];
+                    const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const colorHex = parseInt(textColor.slice(1), 16);
+                    const lineMaterial = new THREE.LineBasicMaterial({ color: colorHex });
+                    const line = new THREE.Line(lineGeometry, lineMaterial);
+                    planetGroup.add(line);
+                    tagLines.push(line);
+                    
+                    const circleGeo = new THREE.SphereGeometry(0.1, 8, 8);
+                    const circleMat = new THREE.MeshBasicMaterial({ color: colorHex });
+                    const circle = new THREE.Mesh(circleGeo, circleMat);
+                    circle.position.copy(surfacePos);
+                    planetGroup.add(circle);
+                    tagLines.push(circle);
+                }
+            }
+            
+            // ==================== ОРБИТЫ И ПОДПИСИ ====================
+            function createOrbits() {
+                orbitLines.forEach(line => planetGroup.remove(line));
+                orbitLabels.forEach(label => planetGroup.remove(label));
+                orbitLines = []; orbitLabels = [];
+                
+                for (let i = 0; i < MAX_LEVEL; i++) {
+                    const radius = BASE_RADIUS * Math.pow(GROWTH_FACTOR, i);
+                    const color = ORBIT_COLORS[i];
+                    
+                    // Линия орбиты
+                    const points = [];
+                    for (let j = 0; j <= 128; j++) {
+                        const angle = (j / 128) * Math.PI * 2;
+                        points.push(new THREE.Vector3(radius * Math.cos(angle), 0, radius * Math.sin(angle)));
+                    }
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const material = new THREE.LineBasicMaterial({ color: color });
+                    const line = new THREE.LineLoop(geometry, material);
+                    line.userData.level = i + 1;
+                    planetGroup.add(line);
+                    orbitLines.push(line);
+                    
+                    // Подписи (4 направления)
+                    const labelAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
+                    const languages = LEVEL_NAMES_MULTI[i];
+                    
+                    for (let k = 0; k < labelAngles.length; k++) {
+                        const angle = labelAngles[k];
+                        const langIndex = k % languages.length;
+                        const text = languages[langIndex];
+                        
+                        const offset = 0.3;
+                        const x = (radius + offset) * Math.cos(angle);
+                        const z = (radius + offset) * Math.sin(angle);
+                        
+                        const div = document.createElement('div');
+                        div.className = 'orbit-label';
+                        div.textContent = text;
+                        div.style.color = '#' + color.toString(16).padStart(6, '0');
+                        div.style.borderColor = '#' + color.toString(16).padStart(6, '0');
+                        
+                        const label = new THREE.CSS2DObject(div);
+                        label.position.set(x, 0, z);
+                        label.userData = { level: i + 1 };
+                        planetGroup.add(label);
+                        orbitLabels.push(label);
+                    }
+                }
+            }
+            
+            // Обновление прозрачности подписей и линий в зависимости от уровня
+            function updateOrbitActivity() {
+                orbitLines.forEach(line => {
+                    const level = line.userData.level;
+                    line.material.opacity = level <= currentLevel ? 1.0 : 0.2;
+                    line.material.transparent = true;
+                });
+                orbitLabels.forEach(label => {
+                    const level = label.userData.level;
+                    label.element.style.opacity = level <= currentLevel ? '1.0' : '0.2';
+                });
+            }
+            
+            // Проверка видимости подписей (скрыты ли за планетой)
+            function updateLabelsVisibility() {
+                if (!sphereMesh) return;
+                const spherePos = sphereMesh.position;
+                const sphereRadius = SPHERE_RADIUS;
+                const cameraPos = camera.position;
+                
+                orbitLabels.forEach(label => {
+                    const worldPos = label.position.clone();
+                    const direction = worldPos.clone().sub(cameraPos).normalize();
+                    const distanceToPoint = cameraPos.distanceTo(worldPos);
+                    
+                    raycaster.set(cameraPos, direction);
+                    const sphereIntersects = raycaster.intersectObject(sphereMesh);
+                    
+                    let hidden = false;
+                    if (sphereIntersects.length > 0) {
+                        const intersectDistance = sphereIntersects[0].distance;
+                        if (intersectDistance < distanceToPoint - 0.1) {
+                            hidden = true;
+                        }
+                    }
+                    
+                    label.visible = !hidden;
+                });
+            }
+            
+            // ==================== СЛУЧАЙНЫЕ РЕСУРСЫ ====================
+            function randomResources() {
+                const res = [];
+                for (let i = 0; i < MAX_LEVEL; i++) res.push({ presumed: Math.floor(Math.random()*5)+1, calculated: Math.floor(Math.random()*5)+1, proven: Math.floor(Math.random()*5)+1, current: Math.floor(Math.random()*5)+1, total: Math.floor(Math.random()*5)+1 });
+                return res;
+            }
+            
+            function updateStats() {
+                const res = currentResources[currentLevel - 1];
+                const star = (val) => { let s = ''; for (let i=0; i<val; i++) s += '<span style="color:#ffff88">★</span>'; for (let i=val; i<5; i++) s += '<span style="color:#666666">☆</span>'; return s; };
+                statsPanel.innerHTML = `
+                    <div class="stat-item" title="Предполагаемые ресурсы"><span class="stat-label">📊ПРЕД:</span><span class="stat-value">${star(res.presumed)}</span></div>
+                    <div class="stat-item" title="Просчитанные ресурсы"><span class="stat-label">🔢ПРОСЧ:</span><span class="stat-value">${star(res.calculated)}</span></div>
+                    <div class="stat-item" title="Доказанные ресурсы"><span class="stat-label">✅ДОК:</span><span class="stat-value">${star(res.proven)}</span></div>
+                    <div class="stat-item" title="Изымаемые прямо сейчас"><span class="stat-label">⛏ИЗЫМ:</span><span class="stat-value">${star(res.current)}</span></div>
+                    <div class="stat-item" title="Выработано всего"><span class="stat-label">🏭ВЫР:</span><span class="stat-value">${star(res.total)}</span></div>
+                    <div class="stat-item" title="Текущий уровень"><span class="stat-label">🌍УРОВ:</span><span class="stat-value">${currentLevel}/${MAX_LEVEL}</span></div>
+                    <div class="stat-item" title="Станций на орбите"><span class="stat-label">🛰️СТ:</span><span class="stat-value">${stationsCount}/${MAX_STATIONS}</span></div>
+                `;
+                titleSpan.textContent = `ПЛАНЕТАРИЙ • ${currentPlanetType ? currentPlanetType.name : ''} УР.${currentLevel}`;
+                aiDataDiv.textContent = JSON.stringify({ level: currentLevel, resources: res });
+            }
+            
+            // ==================== ГЕНЕРАЦИЯ НОВОЙ ПЛАНЕТЫ ====================
+            function generateNewPlanet() {
+                // Очищаем станции при смене планеты (или оставляем? лучше удалить)
+                stations.forEach(s => {
+                    planetGroup.remove(s.mesh);
+                    planetGroup.remove(s.label);
+                    planetGroup.remove(s.collider);
+                });
+                stations = [];
+                stationsCount = 0;
+                
+                currentSeed = Date.now() + Math.floor(Math.random() * 1e6);
+                const typeIndex = Math.floor(Math.random() * PLANET_TYPES.length);
+                currentPlanetType = PLANET_TYPES[typeIndex];
+                currentPalette = currentPlanetType.colors.slice();
+                currentResources = randomResources();
+                createSphere(currentSeed, currentPalette);
+                createParticles(20000, currentPalette);
+                const numTags = Math.floor(Math.random() * 11) + 5;
+                createResourceTags(numTags);
+                createOrbits();
+                updateStats(); updateOrbitActivity();
+            }
+            
+            function increaseLevel() { currentLevel = currentLevel < MAX_LEVEL ? currentLevel + 1 : 1; generateNewPlanet(); }
+            function decreaseLevel() { currentLevel = currentLevel > 1 ? currentLevel - 1 : MAX_LEVEL; generateNewPlanet(); }
+            
+            // ==================== СОЗДАНИЕ СТАНЦИИ ====================
+            function createStation() {
+                if (stationsCount >= MAX_STATIONS) {
+                    fullMessageDiv.textContent = `⚠️ ЛИМИТ СТАНЦИЙ (${MAX_STATIONS})`;
+                    fullMessageDiv.classList.add('show');
+                    setTimeout(() => fullMessageDiv.classList.remove('show'), 1500);
+                    return;
+                }
+                
+                // Случайная позиция на орбите (радиус чуть больше текущей орбиты)
+                const orbitRadius = BASE_RADIUS * Math.pow(GROWTH_FACTOR, currentLevel-1) + 2.5;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1); // равномерно по сфере
+                const x = orbitRadius * Math.sin(phi) * Math.cos(theta);
+                const y = orbitRadius * Math.sin(phi) * Math.sin(theta);
+                const z = orbitRadius * Math.cos(phi);
+                
+                const pos = new THREE.Vector3(x, y, z);
+                
+                // Генерируем имя и данные
+                const stationId = stationsCount + 1;
+                const efficiency = Math.floor(Math.random() * 100);
+                const power = Math.floor(Math.random() * 500) + 100;
+                const data = {
+                    id: stationId,
+                    name: `ST-${stationId}`,
+                    efficiency: efficiency,
+                    power: power,
+                    crew: Math.floor(Math.random() * 10) + 1
+                };
+                
+                // Маленькая сфера (частица)
+                const sphereGeo = new THREE.SphereGeometry(0.15, 8, 8);
+                const sphereMat = new THREE.MeshStandardMaterial({ color: 0x88ddff, emissive: 0x224466 });
+                const mesh = new THREE.Mesh(sphereGeo, sphereMat);
+                mesh.position.copy(pos);
+                planetGroup.add(mesh);
+                
+                // CSS2D метка
+                const div = document.createElement('div');
+                div.className = 'station-label';
+                div.textContent = `${data.name} ⚡${data.efficiency}%`;
+                const label = new THREE.CSS2DObject(div);
+                label.position.copy(pos.clone().add(new THREE.Vector3(0.4, 0.4, 0.4)));
+                planetGroup.add(label);
+                
+                // Коллайдер для взаимодействия
+                const colliderGeo = new THREE.SphereGeometry(0.4, 6, 6);
+                const colliderMat = new THREE.MeshBasicMaterial({ visible: false });
+                const collider = new THREE.Mesh(colliderGeo, colliderMat);
+                collider.position.copy(pos);
+                collider.userData = { stationIndex: stations.length, type: 'station' };
+                planetGroup.add(collider);
+                
+                stations.push({ mesh, label, collider, data });
+                stationsCount++;
+                
+                updateStats();
+            }
+            
+            // ==================== ЗАПУСК ВЫРАБОТКИ (Ctrl+двойной клик) ====================
+            function startExtraction(tagIndex) {
+                const tag = resourceTags[tagIndex];
+                if (!tag) return;
+                if (tag.userData.extractionActive) {
+                    fullMessageDiv.textContent = '⚠️ ДОБЫЧА УЖЕ ИДЁТ';
+                    fullMessageDiv.classList.add('show');
+                    setTimeout(() => fullMessageDiv.classList.remove('show'), 1500);
+                    return;
+                }
+                
+                const progressBar = tag.userData.progressElement;
+                const duration = 600000; // 10 минут в миллисекундах
+                const startTime = Date.now();
+                
+                tag.userData.extractionActive = true;
+                tag.userData.extractionStart = startTime;
+                
+                const interval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const percent = Math.min(100, (elapsed / duration) * 100);
+                    progressBar.style.width = percent + '%';
+                    
+                    if (elapsed >= duration) {
+                        clearInterval(interval);
+                        // Завершение добычи: увеличиваем total ресурса
+                        if (currentResources[currentLevel-1].total < 5) {
+                            currentResources[currentLevel-1].total++;
+                        }
+                        // Убираем визуализацию
+                        progressBar.style.width = '0%';
+                        tag.userData.extractionActive = false;
+                        tag.userData.extractionInterval = null;
+                        updateStats();
+                        
+                        fullMessageDiv.textContent = `✅ ВЫРАБОТКА ЗАВЕРШЕНА (${tag.userData.resource})`;
+                        fullMessageDiv.classList.add('show');
+                        setTimeout(() => fullMessageDiv.classList.remove('show'), 2000);
+                    }
+                }, 1000);
+                
+                tag.userData.extractionInterval = interval;
+                updateStats();
+            }
+            
+            // ==================== ОБРАБОТЧИК ДВИЖЕНИЯ МЫШИ (тултипы) ====================
+            function onMouseMove(event) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                // Проверяем пересечения с коллайдерами ресурсов и станций
+                raycaster.setFromCamera(mouse, camera);
+                
+                // Сначала ресурсы
+                const resIntersects = raycaster.intersectObjects(tagColliders);
+                if (resIntersects.length > 0) {
+                    const collider = resIntersects[0].object;
+                    const tagIndex = collider.userData.tagIndex;
+                    const tag = resourceTags[tagIndex];
+                    if (tag) {
+                        const data = tag.userData;
+                        hoverTooltip.style.display = 'block';
+                        hoverTooltip.style.left = (event.clientX + 20) + 'px';
+                        hoverTooltip.style.top = (event.clientY - 40) + 'px';
+                        hoverTooltip.innerHTML = `
+                            <div style="border-bottom: 2px solid ${data.color}; margin-bottom: 5px; color: ${data.color};">${data.resource} (${data.amount} ед.)</div>
+                            <table>
+                                <tr><td style="color: #ffaa00;">💰 Цена:</td><td style="color: #ffff88;">${data.price} кр./ед.</td></tr>
+                                <tr><td style="color: #44aaff;">📦 Объём:</td><td style="color: #88ccff;">${data.volume} тыс. м³</td></tr>
+                                <tr><td style="color: #33cc33;">⚡ Скорость:</td><td style="color: #66ff66;">${data.rate} ед./сек</td></tr>
+                                <tr><td style="color: #ff8866;">⬇ Глубина:</td><td style="color: #ffaa66;">${data.depth} м</td></tr>
+                                ${data.extractionActive ? '<tr><td style="color: #00ff00;" colspan="2">⚙️ ДОБЫЧА...</td></tr>' : ''}
+                            </table>
+                        `;
+                        return;
+                    }
+                }
+                
+                // Затем станции
+                const stationIntersects = raycaster.intersectObjects(stations.map(s => s.collider));
+                if (stationIntersects.length > 0) {
+                    const collider = stationIntersects[0].object;
+                    const stationIndex = collider.userData.stationIndex;
+                    const station = stations[stationIndex];
+                    if (station) {
+                        const d = station.data;
+                        hoverTooltip.style.display = 'block';
+                        hoverTooltip.style.left = (event.clientX + 20) + 'px';
+                        hoverTooltip.style.top = (event.clientY - 40) + 'px';
+                        hoverTooltip.innerHTML = `
+                            <div style="border-bottom: 2px solid #88ddff; color:#88ddff;">${d.name}</div>
+                            <table>
+                                <tr><td style="color: #ffaa00;">⚡ КПД:</td><td style="color: #ffff88;">${d.efficiency}%</td></tr>
+                                <tr><td style="color: #44aaff;">🔋 Мощность:</td><td style="color: #88ccff;">${d.power} МВт</td></tr>
+                                <tr><td style="color: #33cc33;">👥 Экипаж:</td><td style="color: #66ff66;">${d.crew}</td></tr>
+                            </table>
+                        `;
+                        return;
+                    }
+                }
+                
+                hoverTooltip.style.display = 'none';
+            }
+            
+            // ==================== ОБРАБОТЧИК ДВОЙНОГО КЛИКА ====================
+            function onDoubleClick(event) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                
+                // Проверяем ресурсы
+                const resIntersects = raycaster.intersectObjects(tagColliders);
+                if (resIntersects.length > 0) {
+                    const collider = resIntersects[0].object;
+                    const tagIndex = collider.userData.tagIndex;
+                    
+                    if (event.ctrlKey) {
+                        // Ctrl + двойной клик: запуск длительной выработки
+                        startExtraction(tagIndex);
+                    } else {
+                        // Обычный двойной клик: отправка спутника (как было)
+                        const tag = resourceTags[tagIndex];
+                        if (!tag) return;
+                        
+                        if (satellites.some(s => s.tagIndex === tagIndex)) {
+                            alert('Спутник уже отправлен к этому ресурсу.');
+                            return;
+                        }
+                        
+                        const satGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                        const satMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0x442200 });
+                        const satMesh = new THREE.Mesh(satGeo, satMat);
+                        satMesh.position.copy(tag.position.clone().add(new THREE.Vector3(0.5, 0.5, 0.5)));
+                        planetGroup.add(satMesh);
+                        
+                        const timeoutId = setTimeout(() => {
+                            const success = Math.random() > 0.5;
+                            const amount = tag.userData.amount;
+                            const resourceName = tag.userData.resource;
+                            
+                            if (success) {
+                                if (currentResources[currentLevel-1].proven < 5) {
+                                    currentResources[currentLevel-1].proven++;
+                                }
+                                updateStats();
+                                alert(`Разведка подтверждена! Объём ${resourceName}: ${amount} ед.`);
+                            } else {
+                                alert(`Разведка не подтверждена. Ресурс ${resourceName} не обнаружен.`);
+                            }
+                            
+                            planetGroup.remove(satMesh);
+                            satellites = satellites.filter(s => s.timeout !== timeoutId);
+                        }, 10000);
+                        
+                        satellites.push({ mesh: satMesh, tagIndex, timeout: timeoutId });
+                    }
+                    return;
+                }
+                
+                // Проверяем станции (можно что-то делать при двойном клике, например, удалять)
+                const stationIntersects = raycaster.intersectObjects(stations.map(s => s.collider));
+                if (stationIntersects.length > 0) {
+                    const collider = stationIntersects[0].object;
+                    const stationIndex = collider.userData.stationIndex;
+                    const station = stations[stationIndex];
+                    if (station && event.ctrlKey) {
+                        // Удаляем станцию при Ctrl+двойной клик (для освобождения места)
+                        planetGroup.remove(station.mesh);
+                        planetGroup.remove(station.label);
+                        planetGroup.remove(station.collider);
+                        stations.splice(stationIndex, 1);
+                        stationsCount--;
+                        updateStats();
+                    } else {
+                        // Просто показываем данные в тултипе (уже есть при наведении)
+                    }
+                }
+            }
+            
+            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+            function init() {
+                scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0500);
+                
+                const aspect = canvasDiv.clientWidth / canvasDiv.clientHeight;
+                camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+                camera.position.set(20, 10, 25);
+                
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setSize(canvasDiv.clientWidth, canvasDiv.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                canvasDiv.appendChild(renderer.domElement);
+                
+                labelRenderer = new THREE.CSS2DRenderer();
+                labelRenderer.setSize(canvasDiv.clientWidth, canvasDiv.clientHeight);
+                labelRenderer.domElement.style.position = 'absolute';
+                labelRenderer.domElement.style.top = '0';
+                labelRenderer.domElement.style.left = '0';
+                labelRenderer.domElement.style.pointerEvents = 'none';
+                canvasDiv.appendChild(labelRenderer.domElement);
+                
+                const ambientLight = new THREE.AmbientLight(0x404060); scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1); dirLight.position.set(1, 2, 1); scene.add(dirLight);
+                
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = false; controls.enableZoom = true; controls.maxPolarAngle = Math.PI / 2;
+                
+                scene.add(planetGroup);
+                
+                generateNewPlanet();
+                
+                document.getElementById('planetarium-add-btn').addEventListener('click', increaseLevel);
+                document.getElementById('planetarium-reset-btn').addEventListener('click', decreaseLevel);
+                document.getElementById('station-add-btn').addEventListener('click', createStation);
+                
+                titleSpan.addEventListener('contextmenu', (e) => { e.preventDefault(); tooltipDiv.classList.add('active'); setTimeout(() => tooltipDiv.classList.remove('active'), 2500); });
+                
+                renderer.domElement.addEventListener('mousemove', onMouseMove);
+                renderer.domElement.addEventListener('mouseleave', () => { hoverTooltip.style.display = 'none'; });
+                renderer.domElement.addEventListener('dblclick', onDoubleClick);
+                
+                let clock = new THREE.Clock();
+                function animate() {
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    updateLabelsVisibility();
+                    renderer.render(scene, camera);
+                    labelRenderer.render(scene, camera);
+                }
+                animate();
+                
+                window.addEventListener('resize', onWindowResize, false);
+            }
+            
+            function onWindowResize() {
+                camera.aspect = canvasDiv.clientWidth / canvasDiv.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasDiv.clientWidth, canvasDiv.clientHeight);
+                labelRenderer.setSize(canvasDiv.clientWidth, canvasDiv.clientHeight);
+            }
+            
+            window.addEventListener('load', init);
+        })();
+    </script>
+<script>
+window._gs = null;
+window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+</script>
+</body>
+</html>

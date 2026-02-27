@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6x6 · FIXED VISIBILITY · CARGO SYMBOLS</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* Все стили без изменений (оставлены как в оригинале) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #03010a;
+            font-family: 'VT323', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #ffaa00;
+        }
+        #main-container {
+            position: relative;
+            width: 1024px;
+            height: 768px;
+            pointer-events: all;
+            z-index: 2000;
+        }
+        .constructor-frame {
+            background: rgba(0, 0, 0, 0.95);
+            border: 4px solid #ffaa00;
+            box-shadow: 0 0 20px #cc8800, inset 0 0 15px #442200;
+            padding: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .constructor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .constructor-title {
+            color: #ffff88;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px #ffaa00;
+            cursor: help;
+            border-bottom: 1px dashed #ffaa00;
+        }
+        .button-group {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-small {
+            background: rgba(40, 30, 10, 0.95);
+            border: 2px solid #ffaa00;
+            color: #ffff88;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            padding: 2px 16px;
+            cursor: pointer;
+            box-shadow: 0 0 6px #cc8800;
+            transition: 0.1s;
+            letter-spacing: 1px;
+        }
+        .btn-small:hover {
+            background: rgba(80, 50, 20, 0.95);
+            border-color: #ffff88;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+        .btn-small.spawn {
+            background: rgba(20, 40, 20, 0.95);
+        }
+        .btn-small.remove {
+            background: rgba(60, 20, 20, 0.95);
+        }
+        .btn-small.lift {
+            background: rgba(40, 20, 60, 0.95);
+            border-color: #aa88ff;
+        }
+        .btn-small.lift.auto-active {
+            background: #aa44ff;
+            box-shadow: 0 0 15px #ff88ff;
+        }
+        .btn-small.reset {
+            background: rgba(80, 20, 20, 0.95);
+        }
+        .btn-small.skull {
+            background: rgba(30, 30, 30, 0.95);
+            padding: 2px 8px;
+            font-size: 20px;
+            line-height: 1;
+        }
+        .constructor-canvas {
+            flex: 1;
+            position: relative;
+            background: rgba(5, 2, 0, 0.9);
+            border: 2px solid #ffaa00;
+            overflow: hidden;
+        }
+        #three-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding: 8px 4px;
+            border-top: 1px dashed #ffaa00;
+            font-size: 16px;
+            gap: 12px;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: help;
+            font-size: 14px;
+        }
+        .stat-label { color: #cc8800; }
+        .stat-value { color: #ffff88; font-weight: bold; letter-spacing: 2px; }
+        .tooltip {
+            position: absolute;
+            background: rgba(10, 5, 0, 0.98);
+            border: 2px solid #ffaa00;
+            padding: 8px 12px;
+            font-size: 16px;
+            color: #ffff88;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 0 15px #cc8800;
+            z-index: 3000;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.15s;
+            border-radius: 0;
+            font-family: 'VT323', monospace;
+        }
+        .tooltip.active { opacity: 1; }
+        
+        .console-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffaa00;
+            padding: 4px 8px;
+            margin-top: 4px;
+            font-size: 18px;
+            color: #ffff88;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .robot-icon {
+            width: 24px;
+            height: 24px;
+            background: #ffaa00;
+            border-radius: 50% 50% 0 0;
+            position: relative;
+            margin-right: 5px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .robot-icon:hover {
+            transform: scale(1.2);
+            background: #ffff88;
+        }
+        .robot-icon::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #000;
+            border-radius: 50%;
+            top: 6px;
+            left: 4px;
+            box-shadow: 8px 0 0 #000;
+        }
+        .seed-display {
+            background: rgba(255,170,0,0.2);
+            padding: 2px 8px;
+            border: 1px solid #ffaa00;
+            cursor: pointer;
+        }
+        .saved-worlds {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+            flex-wrap: wrap;
+            max-width: 300px;
+            align-items: center;
+        }
+        .world-icon {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #ffaa00;
+            background: rgba(255,170,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 16px;
+            overflow: hidden;
+            position: relative;
+            border-radius: 50%;
+        }
+        .world-icon canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+        }
+        .world-icon.active {
+            border-color: #88ff88;
+            box-shadow: 0 0 10px #88ff88;
+        }
+        .world-icon:hover {
+            transform: scale(1.1);
+        }
+        .rover-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1px;
+            max-width: 200px;
+            align-items: center;
+        }
+        .rover-tab {
+            width: 4px;
+            height: 4px;
+            background: #ffaa00;
+            flex-shrink: 1;
+            min-width: 1px;
+            min-height: 1px;
+            transition: 0.1s;
+            box-sizing: border-box;
+        }
+        #context-menu {
+            position: absolute;
+            background: black;
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            padding: 4px;
+            font-size: 14px;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        #timecode {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #ffaa00;
+            padding: 2px 8px;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        .stars-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-left: 10px;
+        }
+        .stars-row {
+            display: flex;
+            gap: 2px;
+        }
+        .star {
+            width: 12px;
+            height: 12px;
+            border: 1px solid rgba(255,170,0,0.5);
+            background: transparent;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            transition: background 0.2s;
+        }
+        .star.filled {
+            background: #88ff88;
+            border-color: #88ff88;
+        }
+        #multiplier {
+            font-size: 18px;
+            color: #ffff88;
+            margin-left: 5px;
+            padding: 2px 8px;
+            border: 1px solid #ffaa00;
+            background: rgba(0,0,0,0.5);
+        }
+        #order-btn {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            display: none;
+            z-index: 10004;
+            pointer-events: auto;
+        }
+        #order-btn:hover {
+            background: #ffaa00;
+            color: black;
+        }
+        .marker-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #88ff88;
+            color: #88ff88;
+            padding: 4px 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            pointer-events: none;
+            display: none;
+            z-index: 10005;
+        }
+        #file-import {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div class="constructor-frame">
+            <div class="constructor-header">
+                <span class="constructor-title" id="terrain-title">⚙️ 6x6 · VISIBLE DEPTH · CARGO SYMBOLS</span>
+                <div class="button-group">
+                    <button class="btn-small" id="randomize-btn">🎲</button>
+                    <button class="btn-small spawn" id="spawn-btn">➕</button>
+                    <button class="btn-small remove" id="remove-btn">➖</button>
+                    <button class="btn-small lift" id="auto-lift-btn" title="Double-click to toggle auto-launch">🚀</button>
+                    <button class="btn-small reset" id="reset-btn">⌂</button>
+                </div>
+            </div>
+            <div class="constructor-canvas" id="canvas-container">
+                <canvas id="three-canvas"></canvas>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-item"><span class="stat-label">SEED:</span><span class="stat-value" id="seed-val">----</span></div>
+                <div class="stat-item"><span class="stat-label">SPEED:</span><span class="stat-value" id="speed-val">0.00 km/h</span></div>
+                <div class="stat-item"><span class="stat-label">BOOST:</span><span class="stat-value" id="shift-val">1.0x</span></div>
+                <div class="stat-item"><span class="stat-label">ROVERS:</span><span class="stat-value" id="rover-count">1</span></div>
+                <div class="stat-item"><span class="stat-label" id="selected-name">PLAYER</span></div>
+                <div class="rover-tabs" id="rover-tabs"></div>
+                <div id="timecode">00:00:00</div>
+                <div class="stars-container" id="stars-container">
+                    <div class="stars-row" id="stars-row-0"></div>
+                    <div class="stars-row" id="stars-row-1"></div>
+                </div>
+                <div id="multiplier">x10</div>
+            </div>
+            <div class="console-bar" id="console-bar">
+                <div class="robot-icon" id="export-trigger" title="Alt+клик экспорт, Shift+клик импорт"></div>
+                <button class="btn-small skull" id="clear-skull" title="Delete all saved worlds">💀</button>
+                <span>SEED:</span>
+                <span class="seed-display" id="seed-display" title="click to copy">123.456,789.012</span>
+                <button class="btn-small" id="copy-seed" style="padding:0 8px;">📋</button>
+                <button class="btn-small" id="save-world" style="padding:0 8px;">💾</button>
+                <div class="saved-worlds" id="saved-worlds"></div>
+            </div>
+        </div>
+    </div>
+    <div class="tooltip" id="tooltip">🎲 NEW WORLD • WASD • SHIFT • +/- • DOUBLE-CLICK TO FOCUS • RIGHT-CLICK NODE TO LAUNCH • Ctrl+S to overwrite • Ctrl+click on world to delete</div>
+    <div id="context-menu"></div>
+    <button id="order-btn">🔬 Заказать моделирование</button>
+    <div class="marker-tooltip" id="marker-tooltip">Обнаружены залежи</div>
+    <input type="file" id="file-import" accept="application/json">
+
+    <!-- Three.js and OrbitControls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Периодическая таблица ---
+        const elements = [
+            { name: "Водород", symbol: "H" }, { name: "Гелий-3", symbol: "He" }, { name: "Дейтерий", symbol: "D" }, { name: "Тритий", symbol: "T" },
+            { name: "Литий", symbol: "Li" }, { name: "Бериллий", symbol: "Be" }, { name: "Бор", symbol: "B" }, { name: "Углерод", symbol: "C" },
+            { name: "Азот", symbol: "N" }, { name: "Кислород", symbol: "O" }, { name: "Фтор", symbol: "F" }, { name: "Неон", symbol: "Ne" },
+            { name: "Натрий", symbol: "Na" }, { name: "Магний", symbol: "Mg" }, { name: "Алюминий", symbol: "Al" }, { name: "Кремний", symbol: "Si" },
+            { name: "Фосфор", symbol: "P" }, { name: "Сера", symbol: "S" }, { name: "Хлор", symbol: "Cl" }, { name: "Аргон", symbol: "Ar" },
+            { name: "Калий", symbol: "K" }, { name: "Кальций", symbol: "Ca" }, { name: "Скандий", symbol: "Sc" }, { name: "Титан", symbol: "Ti" },
+            { name: "Ванадий", symbol: "V" }, { name: "Хром", symbol: "Cr" }, { name: "Марганец", symbol: "Mn" }, { name: "Железо", symbol: "Fe" },
+            { name: "Кобальт", symbol: "Co" }, { name: "Никель", symbol: "Ni" }, { name: "Медь", symbol: "Cu" }, { name: "Цинк", symbol: "Zn" },
+            { name: "Галлий", symbol: "Ga" }, { name: "Германий", symbol: "Ge" }, { name: "Мышьяк", symbol: "As" }, { name: "Селен", symbol: "Se" },
+            { name: "Бром", symbol: "Br" }, { name: "Криптон", symbol: "Kr" }, { name: "Рубидий", symbol: "Rb" }, { name: "Стронций", symbol: "Sr" },
+            { name: "Иттрий", symbol: "Y" }, { name: "Цирконий", symbol: "Zr" }, { name: "Ниобий", symbol: "Nb" }, { name: "Молибден", symbol: "Mo" },
+            { name: "Рутений", symbol: "Ru" }, { name: "Родий", symbol: "Rh" }, { name: "Палладий", symbol: "Pd" }, { name: "Серебро", symbol: "Ag" },
+            { name: "Кадмий", symbol: "Cd" }, { name: "Индий", symbol: "In" }, { name: "Олово", symbol: "Sn" }, { name: "Сурьма", symbol: "Sb" },
+            { name: "Теллур", symbol: "Te" }, { name: "Йод", symbol: "I" }, { name: "Ксенон", symbol: "Xe" }, { name: "Цезий", symbol: "Cs" },
+            { name: "Барий", symbol: "Ba" }, { name: "Лантан", symbol: "La" }, { name: "Церий", symbol: "Ce" }, { name: "Празеодим", symbol: "Pr" },
+            { name: "Неодим", symbol: "Nd" }, { name: "Самарий", symbol: "Sm" }, { name: "Европий", symbol: "Eu" }, { name: "Гадолиний", symbol: "Gd" },
+            { name: "Тербий", symbol: "Tb" }, { name: "Диспрозий", symbol: "Dy" }, { name: "Гольмий", symbol: "Ho" }, { name: "Эрбий", symbol: "Er" },
+            { name: "Тулий", symbol: "Tm" }, { name: "Иттербий", symbol: "Yb" }, { name: "Лютеций", symbol: "Lu" }, { name: "Гафний", symbol: "Hf" },
+            { name: "Тантал", symbol: "Ta" }, { name: "Вольфрам", symbol: "W" }, { name: "Рений", symbol: "Re" }, { name: "Осмий", symbol: "Os" },
+            { name: "Иридий", symbol: "Ir" }, { name: "Платина", symbol: "Pt" }, { name: "Золото", symbol: "Au" }, { name: "Ртуть", symbol: "Hg" },
+            { name: "Таллий", symbol: "Tl" }, { name: "Свинец", symbol: "Pb" }, { name: "Висмут", symbol: "Bi" }, { name: "Торий", symbol: "Th" },
+            { name: "Уран", symbol: "U" }, { name: "Плутоний", symbol: "Pu" }
+        ];
+
+        function getElementColor(symbol) {
+            let hash = 0;
+            for (let i = 0; i < symbol.length; i++) {
+                hash = ((hash << 5) - hash) + symbol.charCodeAt(i);
+                hash |= 0;
+            }
+            const hue = Math.abs(hash % 360) / 360;
+            return new THREE.Color().setHSL(hue, 0.9, 0.6);
+        }
+
+        // --- setup scene ---
+        const canvas = document.getElementById('three-canvas');
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x010005);
+        scene.fog = new THREE.Fog(0x010005, 500, 15000);
+
+        const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 20000);
+        
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = true;
+        controls.maxPolarAngle = Math.PI / 2;
+        controls.enableZoom = true;
+        controls.zoomSpeed = 1.2;
+
+        // --- noise functions ---
+        function permute(x) { return ((x * 34.0 + 1.0) * x) % 289.0; }
+        function snoise(v) {
+            const C = [0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439];
+            let i = Math.floor(v.x + (v.x + v.y) * C[1]);
+            let j = Math.floor(v.y + (v.x + v.y) * C[1]);
+            let x0 = v.x - i + (i + j) * C[0];
+            let y0 = v.y - j + (i + j) * C[0];
+            
+            let i1 = x0 > y0 ? 1.0 : 0.0;
+            let j1 = x0 > y0 ? 0.0 : 1.0;
+            
+            let x12 = [x0, x0 + C[0] - i1, x0 + C[2], x0 + C[0] - 1.0 + 2.0 * C[2]];
+            let y12 = [y0, y0 + C[0] - j1, y0 + C[2], y0 + C[0] - 1.0 + 2.0 * C[2]];
+            
+            i = i % 289;
+            j = j % 289;
+            
+            let p = [
+                permute(j + 0.0),
+                permute(j + j1),
+                permute(j + 1.0)
+            ];
+            p = p.map(val => permute(val + i + 0.0));
+            
+            let m = [0.0, 0.0, 0.0];
+            for (let k = 0; k < 3; k++) {
+                let t = 0.5 - [x0*x0 + y0*y0, x12[k+1]*x12[k+1] + y12[k+1]*y12[k+1], x12[3]*x12[3] + y12[3]*y12[3]][k];
+                if (t < 0.0) t = 0.0;
+                t *= t;
+                m[k] = t * t;
+            }
+            
+            let h = [
+                (p[0] % 12) / 12.0,
+                (p[1] % 12) / 12.0,
+                (p[2] % 12) / 12.0
+            ];
+            
+            let gx = [0.0, 0.0, 0.0];
+            let gy = [0.0, 0.0, 0.0];
+            for (let k = 0; k < 3; k++) {
+                let angle = h[k] * 2.0 * Math.PI;
+                gx[k] = Math.cos(angle);
+                gy[k] = Math.sin(angle);
+            }
+            
+            let result = 0.0;
+            result += m[0] * (gx[0] * x0 + gy[0] * y0);
+            result += m[1] * (gx[1] * (x12[1] - i1) + gy[1] * (y12[1] - j1));
+            result += m[2] * (gx[2] * (x12[3] - 1.0 + 2.0 * C[2]) + gy[2] * (y12[3] - 1.0 + 2.0 * C[2]));
+            
+            return 70.0 * result;
+        }
+
+        function tileableNoise(p, tileSize) {
+            let tilePos = { x: p.x - tileSize * Math.floor(p.x / tileSize), y: p.y - tileSize * Math.floor(p.y / tileSize) };
+            let uv = { x: tilePos.x / tileSize, y: tilePos.y / tileSize };
+            let su = { x: uv.x * uv.x * (3.0 - 2.0 * uv.x), y: uv.y * uv.y * (3.0 - 2.0 * uv.y) };
+            
+            let n00 = snoise(p);
+            let n10 = snoise({x: p.x + tileSize, y: p.y});
+            let n01 = snoise({x: p.x, y: p.y + tileSize});
+            let n11 = snoise({x: p.x + tileSize, y: p.y + tileSize});
+            
+            let nx0 = (1 - su.x) * n00 + su.x * n10;
+            let nx1 = (1 - su.x) * n01 + su.x * n11;
+            return (1 - su.y) * nx0 + su.y * nx1;
+        }
+
+        function tileableRidged(p, octaves, tileSize) {
+            let value = 0.0;
+            let weight = 1.0;
+            let frequency = 1.0;
+            let amplitude = 0.5;
+            
+            for (let i = 0; i < octaves; i++) {
+                let currentTile = tileSize * (i + 1);
+                let n = tileableNoise({x: p.x * frequency, y: p.y * frequency}, currentTile);
+                n = 1.0 - Math.abs(n);
+                n *= n;
+                n *= weight;
+                value += n * amplitude;
+                weight = Math.min(n * 2.0, 1.0);
+                frequency *= 2.0;
+                amplitude *= 0.5;
+            }
+            return value;
+        }
+
+        // --- height function ---
+        let seedX = 123.456, seedY = 789.012;
+        let heightGrid = [];
+        let gridStep, gridHalf, gridSegments;
+        
+        function buildHeightGrid() {
+            const radius = 5000;
+            const scale = 0.00015;
+            const tileSize = 512.0;
+            const octaves = 6;
+            
+            const half = worldSize / 2;
+            const step = worldSize / segments;
+            gridStep = step;
+            gridHalf = half;
+            gridSegments = segments;
+            
+            heightGrid = [];
+            for (let i = 0; i <= segments; i++) {
+                const row = [];
+                for (let j = 0; j <= segments; j++) {
+                    const x = -half + i * step;
+                    const z = -half + j * step;
+                    
+                    const dist = Math.sqrt(x*x + z*z);
+                    if (dist > radius) {
+                        row.push(-100);
+                        continue;
+                    }
+                    
+                    let nx = x * scale + seedX;
+                    let nz = z * scale + seedY;
+                    
+                    let h = tileableRidged({x: nx, y: nz}, octaves, tileSize);
+                    h += tileableNoise({x: nx * 0.5, y: nz * 0.5}, tileSize * 2.0) * 0.1;
+                    h = Math.min(1.0, Math.max(0.0, h * 1.2));
+                    
+                    let height = 0.5 + h * 60.0;
+                    
+                    const wallStart = radius * 0.7;
+                    const wallHeight = 300.0;
+                    
+                    if (dist > wallStart) {
+                        let t = (dist - wallStart) / (radius - wallStart);
+                        height += Math.pow(t, 2) * wallHeight;
+                    }
+                    if (dist > radius) height = -100;
+                    
+                    row.push(height);
+                }
+                heightGrid.push(row);
+            }
+        }
+
+        function getHeight(x, z) {
+            const half = gridHalf;
+            const step = gridStep;
+            const i = (x + half) / step;
+            const j = (z + half) / step;
+            const i0 = Math.floor(i);
+            const i1 = Math.min(i0 + 1, gridSegments);
+            const j0 = Math.floor(j);
+            const j1 = Math.min(j0 + 1, gridSegments);
+            const wi = i - i0;
+            const wj = j - j0;
+            const h00 = heightGrid[i0][j0];
+            const h10 = heightGrid[i1][j0];
+            const h01 = heightGrid[i0][j1];
+            const h11 = heightGrid[i1][j1];
+            const h0 = h00 * (1 - wi) + h10 * wi;
+            const h1 = h01 * (1 - wi) + h11 * wi;
+            return h0 * (1 - wj) + h1 * wj;
+        }
+
+        // --- ПОЛНЫЙ набор цветовых палитр ---
+        const colorPalettes = [
+            [[0.02, 0.05, 0.15], [0.95, 0.55, 0.15], [0.85, 0.75, 0.25], [0.45, 0.70, 0.35],
+             [0.25, 0.55, 0.25], [0.25, 0.50, 0.80], [0.60, 0.85, 0.90], [0.95, 0.95, 0.98]],
+            [[0.15, 0.05, 0.02], [0.80, 0.35, 0.15], [0.90, 0.55, 0.20], [0.70, 0.45, 0.25],
+             [0.55, 0.35, 0.20], [0.40, 0.25, 0.15], [0.60, 0.40, 0.25], [0.85, 0.70, 0.55]],
+            [[0.05, 0.10, 0.20], [0.40, 0.55, 0.70], [0.60, 0.75, 0.85], [0.75, 0.85, 0.90],
+             [0.85, 0.90, 0.95], [0.70, 0.80, 0.75], [0.55, 0.70, 0.60], [0.95, 0.98, 0.98]],
+            [[0.05, 0.02, 0.02], [0.60, 0.15, 0.10], [0.80, 0.30, 0.15], [0.90, 0.50, 0.20],
+             [0.70, 0.40, 0.25], [0.50, 0.30, 0.20], [0.40, 0.35, 0.30], [0.75, 0.65, 0.60]],
+            [[0.05, 0.15, 0.10], [0.30, 0.20, 0.40], [0.50, 0.35, 0.55], [0.40, 0.60, 0.35],
+             [0.55, 0.75, 0.45], [0.70, 0.80, 0.50], [0.60, 0.85, 0.70], [0.85, 0.95, 0.80]],
+            [[0.05, 0.05, 0.08], [0.15, 0.15, 0.18], [0.25, 0.25, 0.28], [0.35, 0.35, 0.38],
+             [0.50, 0.50, 0.52], [0.65, 0.65, 0.67], [0.80, 0.80, 0.82], [0.95, 0.95, 0.98]],
+            [[0.10, 0.05, 0.15], [0.60, 0.20, 0.35], [0.80, 0.35, 0.30], [0.90, 0.55, 0.25],
+             [0.95, 0.70, 0.30], [0.90, 0.75, 0.45], [0.80, 0.75, 0.60], [0.95, 0.90, 0.75]],
+            [[0.02, 0.02, 0.10], [0.05, 0.08, 0.25], [0.10, 0.15, 0.40], [0.15, 0.25, 0.55],
+             [0.20, 0.35, 0.65], [0.30, 0.50, 0.75], [0.45, 0.65, 0.85], [0.70, 0.85, 0.95]]
+        ];
+
+        let currentPalette = colorPalettes[0];
+        let currentPaletteIndex = 0;
+
+        function getPaletteColor(h) {
+            h = Math.max(0, Math.min(1, h));
+            let idx = Math.floor(h * 8);
+            if (idx > 7) idx = 7;
+            return currentPalette[idx];
+        }
+
+        // --- terrain generation ---
+        let terrainMesh = null;
+        let coloredWireframe = null;
+        const worldSize = 10000;
+        const segments = 250;
+
+        function generateTerrain(newSeedX, newSeedY, paletteIndex = null) {
+            seedX = newSeedX;
+            seedY = newSeedY;
+            
+            if (paletteIndex === null) paletteIndex = Math.floor(Math.random() * colorPalettes.length);
+            currentPalette = colorPalettes[paletteIndex % colorPalettes.length];
+            currentPaletteIndex = paletteIndex;
+            
+            document.getElementById('seed-val').textContent = seedX.toFixed(2) + ',' + seedY.toFixed(2);
+            document.getElementById('seed-display').textContent = seedX.toFixed(2) + ',' + seedY.toFixed(2);
+
+            buildHeightGrid();
+
+            if (terrainMesh) scene.remove(terrainMesh);
+            if (coloredWireframe) scene.remove(coloredWireframe);
+
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const indices = [];
+
+            const half = worldSize / 2;
+            const step = worldSize / segments;
+
+            for (let i = 0; i <= segments; i++) {
+                for (let j = 0; j <= segments; j++) {
+                    const x = -half + i * step;
+                    const z = -half + j * step;
+                    const y = heightGrid[i][j];
+                    vertices.push(x, y, z);
+                }
+            }
+
+            for (let i = 0; i < segments; i++) {
+                for (let j = 0; j < segments; j++) {
+                    const a = i * (segments + 1) + j;
+                    const b = i * (segments + 1) + j + 1;
+                    const c = (i + 1) * (segments + 1) + j;
+                    const d = (i + 1) * (segments + 1) + j + 1;
+                    indices.push(a, b, c);
+                    indices.push(b, d, c);
+                }
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+
+            const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+            terrainMesh = new THREE.Mesh(geometry, blackMaterial);
+            scene.add(terrainMesh);
+
+            const edges = new THREE.EdgesGeometry(geometry);
+            const edgePositions = edges.attributes.position.array;
+            const linePositions = [];
+            const lineColors = [];
+
+            for (let i = 0; i < edgePositions.length; i += 3) {
+                const x = edgePositions[i];
+                const y = edgePositions[i+1];
+                const z = edgePositions[i+2];
+                linePositions.push(x, y, z);
+                const hNorm = (y + 10) / 450;
+                const col = getPaletteColor(Math.max(0, Math.min(1, hNorm)));
+                lineColors.push(col[0], col[1], col[2]);
+            }
+
+            const lineGeo = new THREE.BufferGeometry();
+            lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+            lineGeo.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+            
+            const lineMat = new THREE.LineBasicMaterial({ vertexColors: true });
+            coloredWireframe = new THREE.LineSegments(lineGeo, lineMat);
+            scene.add(coloredWireframe);
+        }
+        // Начальная генерация
+        generateTerrain(seedX, seedY, 0);
+
+        // --- lighting ---
+        const ambient = new THREE.AmbientLight(0x404060);
+        scene.add(ambient);
+        const light1 = new THREE.DirectionalLight(0xffeedd, 0.8);
+        light1.position.set(100, 200, 100);
+        scene.add(light1);
+        const light2 = new THREE.DirectionalLight(0x7799bb, 0.4);
+        light2.position.set(-200, 100, -200);
+        scene.add(light2);
+
+        // --- pastel colors for rovers ---
+        const pastelColors = [
+            0xffb3ba, 0xffdfb3, 0xffffb3, 0xb3ffb3, 0xb3ffff, 0xb3b3ff, 0xffb3ff, 0xe0b3ff
+        ];
+
+        // --- name generator ---
+        const names = ['Кирилл', 'Антон', 'Дмитрий', 'Сергей', 'Алексей', 'Максим', 'Иван', 'Егор', 'Павел', 'Роман'];
+        let nextId = 1;
+
+        function generateName() {
+            const base = names[Math.floor(Math.random() * names.length)];
+            const num = Math.floor(Math.random() * 9000) + 1000;
+            return `${base}_${num}`;
+        }
+
+        // --- Orbit Gate (ромб) ---
+        function createOrbitGate() {
+            const group = new THREE.Group();
+            const size = 120;
+            const vertices = [
+                new THREE.Vector3(0, size, 0),
+                new THREE.Vector3(0, -size, 0),
+                new THREE.Vector3(size, 0, 0),
+                new THREE.Vector3(-size, 0, 0),
+                new THREE.Vector3(0, 0, size),
+                new THREE.Vector3(0, 0, -size)
+            ];
+            const edges = [
+                [0,2], [0,3], [0,4], [0,5],
+                [1,2], [1,3], [1,4], [1,5],
+                [2,4], [4,3], [3,5], [5,2]
+            ];
+            const points = [];
+            edges.forEach(edge => {
+                points.push(vertices[edge[0]].x, vertices[edge[0]].y, vertices[edge[0]].z);
+                points.push(vertices[edge[1]].x, vertices[edge[1]].y, vertices[edge[1]].z);
+            });
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+            const material = new THREE.LineBasicMaterial({ color: 0xffaa00 });
+            const lines = new THREE.LineSegments(geometry, material);
+            group.add(lines);
+            
+            const extraPoints = [
+                vertices[2].x, vertices[2].y, vertices[2].z, vertices[5].x, vertices[5].y, vertices[5].z,
+                vertices[3].x, vertices[3].y, vertices[3].z, vertices[4].x, vertices[4].y, vertices[4].z
+            ];
+            const extraGeo = new THREE.BufferGeometry();
+            extraGeo.setAttribute('position', new THREE.Float32BufferAttribute(extraPoints, 3));
+            const extraLines = new THREE.LineSegments(extraGeo, new THREE.LineBasicMaterial({ color: 0x884422 }));
+            group.add(extraLines);
+            
+            return group;
+        }
+        
+        const orbitGate = createOrbitGate();
+        orbitGate.position.set(0, 6000, 0);
+        scene.add(orbitGate);
+
+        // --- Station (башня) ---
+        function createStation() {
+            const group = new THREE.Group();
+            const height = 1000;
+            const baseY = getHeight(20, 0);
+            
+            const lineGeo = new THREE.BufferGeometry();
+            lineGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+                20, baseY, 0,
+                20, baseY + height, 0
+            ], 3));
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffaa00 });
+            const verticalLine = new THREE.Line(lineGeo, lineMat);
+            group.add(verticalLine);
+            
+            const ringPositions = [0.2, 0.4, 0.6, 0.8, 1.0];
+            ringPositions.forEach(t => {
+                const y = baseY + height * t;
+                const radius = 50 * (1 - t * 0.5);
+                const points = [];
+                for (let i = 0; i <= 16; i++) {
+                    const angle = (i / 16) * Math.PI * 2;
+                    points.push(20 + Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+                }
+                const ringGeo = new THREE.BufferGeometry();
+                ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+                const ringLine = new THREE.LineLoop(ringGeo, new THREE.LineBasicMaterial({ color: 0x884422 }));
+                group.add(ringLine);
+            });
+            
+            const topGroup = new THREE.Group();
+            const size = 30;
+            const verts = [
+                new THREE.Vector3(0, size, 0),
+                new THREE.Vector3(0, -size, 0),
+                new THREE.Vector3(size, 0, 0),
+                new THREE.Vector3(-size, 0, 0),
+                new THREE.Vector3(0, 0, size),
+                new THREE.Vector3(0, 0, -size)
+            ];
+            const edges = [
+                [0,2], [0,3], [0,4], [0,5],
+                [1,2], [1,3], [1,4], [1,5],
+                [2,4], [4,3], [3,5], [5,2]
+            ];
+            const pts = [];
+            edges.forEach(e => {
+                pts.push(verts[e[0]].x, verts[e[0]].y, verts[e[0]].z);
+                pts.push(verts[e[1]].x, verts[e[1]].y, verts[e[1]].z);
+            });
+            const topGeo = new THREE.BufferGeometry();
+            topGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+            const topLines = new THREE.LineSegments(topGeo, new THREE.LineBasicMaterial({ color: 0xffaa00 }));
+            topGroup.add(topLines);
+            
+            topGroup.userData.isBillboard = true;
+            topGroup.position.set(20, baseY + height, 0);
+            group.add(topGroup);
+            
+            const stationName = `Станция "${seedX.toFixed(2)},${seedY.toFixed(2)}"`;
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(1, 1, canvas.width-2, canvas.height-2);
+            ctx.font = 'bold 48px VT323';
+            ctx.fillStyle = '#ffaa00';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(stationName, canvas.width/2, canvas.height/2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(10, 2.5, 1);
+            sprite.position.set(20 + 30, baseY + 30, 0);
+            group.add(sprite);
+            
+            return group;
+        }
+
+        let station = createStation();
+        scene.add(station);
+
+        // --- rover class (уменьшен в 2 раза) ---
+        class Rover {
+            constructor(color, isPlayer = false, restoredData = null) {
+                this.color = color;
+                this.isPlayer = isPlayer;
+                if (restoredData) {
+                    this.name = restoredData.name;
+                    this.id = restoredData.id;
+                    this.angle = restoredData.angle;
+                    this.autoSpeed = restoredData.autoSpeed;
+                    this.spiralRadius = restoredData.spiralRadius;
+                    this.direction = restoredData.direction;
+                    this.spawnUTC = restoredData.spawnUTC;
+                    this.distanceTraveled = restoredData.distanceTraveled || 0;
+                    this.distanceSinceLastResource = restoredData.distanceSinceLastResource || 0;
+                } else {
+                    this.name = generateName();
+                    this.id = nextId++;
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.autoSpeed = 0.2 + Math.random() * 0.3;
+                    this.spiralRadius = 30 + Math.random() * 40;
+                    this.direction = Math.random() > 0.5 ? 1 : -1;
+                    this.spawnUTC = Date.now();
+                    this.distanceTraveled = 0;
+                    this.distanceSinceLastResource = 0;
+                }
+
+                // Уменьшено в 2 раза
+                this.wheelRadius = 0.45;      // было 0.9
+                this.wheelWidth = 0.24;       // было 0.48
+                this.attachY = 0.35;          // было 0.7
+                this.wheelPositions = [
+                    new THREE.Vector3( 0.6, this.attachY,  1.2), // перед правое
+                    new THREE.Vector3( 1.0, this.attachY,  0.0), // среднее правое
+                    new THREE.Vector3( 0.6, this.attachY, -1.25), // заднее правое
+                    new THREE.Vector3(-0.6, this.attachY,  1.2), // перед левое
+                    new THREE.Vector3(-1.0, this.attachY,  0.0), // среднее левое
+                    new THREE.Vector3(-0.6, this.attachY, -1.25)  // зад левое
+                ];
+
+                this.group = new THREE.Group();
+                scene.add(this.group);
+
+                this.createBody();
+                this.nameSprite = this.createNameSprite();
+                this.group.add(this.nameSprite);
+
+                this.wheels = [];
+                this.createWheels();
+
+                this.speed = 0;
+                this.autoMode = true;
+                this.wheelRotation = 0;
+                this.steeringAngle = 0;
+                this.targetSteering = 0;
+                this.verticalSpeed = 0;
+                this.onGround = true;
+
+                // Флаги для движения к цели
+                this.isMovingToTarget = false;
+                this.targetPosition = null;
+
+                this.trackPoints = restoredData ? restoredData.trackPoints.map(p => new THREE.Vector3(p.x, p.y, p.z)) : [];
+                this.maxTrackPoints = 500;
+                this.trackLine = null;
+                this.trackDots = null;
+                if (this.trackPoints.length > 0) {
+                    this.updateTrackGeometry();
+                }
+                this.lastTrackPos = this.trackPoints.length > 0 ? this.trackPoints[this.trackPoints.length-1].clone() : new THREE.Vector3(0,0,0);
+
+                if (restoredData) {
+                    this.group.position.copy(restoredData.position);
+                    this.group.rotation.y = restoredData.rotation;
+                } else {
+                    if (!isPlayer) {
+                        this.group.position.x = (Math.random() - 0.5) * 2000;
+                        this.group.position.z = (Math.random() - 0.5) * 2000;
+                    } else {
+                        this.group.position.set(0, 0, 0);
+                    }
+                    this.group.position.y = getHeight(this.group.position.x, this.group.position.z) + 0.8;
+                }
+            }
+
+            createBody() {
+                // Основной корпус (Box) уменьшен вдвое
+                const bodyGeo = new THREE.BoxGeometry(1, 1, 1);
+                const bodyMat = new THREE.MeshPhongMaterial({ color: 0xcc8844, emissive: 0x221100, transparent: true, opacity: 0.3 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.scale.set(0.28, 0.5, 1.42);   // было 0.56,1.0,2.84
+                body.position.set(0, 0.7, 0);       // было 1.4
+                this.group.add(body);
+                const bodyWire = new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo), new THREE.LineBasicMaterial({ color: this.color }));
+                bodyWire.scale.copy(body.scale);
+                bodyWire.position.copy(body.position);
+                this.group.add(bodyWire);
+
+                // Декоративный додекаэдр
+                const dodecGeo = new THREE.DodecahedronGeometry(1);
+                const dodecMat = new THREE.MeshPhongMaterial({ color: 0xcc8844, emissive: 0x221100, transparent: true, opacity: 0.3 });
+                const dodec = new THREE.Mesh(dodecGeo, dodecMat);
+                dodec.scale.set(0.22, 0.39, 0.52);  // было 0.44,0.78,1.04
+                dodec.position.set(0, 0.795, 0.46); // было 1.59,0.92
+                this.group.add(dodec);
+                const dodecWire = new THREE.LineSegments(new THREE.EdgesGeometry(dodecGeo), new THREE.LineBasicMaterial({ color: this.color }));
+                dodecWire.scale.copy(dodec.scale);
+                dodecWire.position.copy(dodec.position);
+                this.group.add(dodecWire);
+            }
+
+            createNameSprite() {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 128;
+                context.fillStyle = 'rgba(0,0,0,0.8)';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.strokeStyle = '#ffaa00';
+                context.lineWidth = 2;
+                context.strokeRect(1, 1, canvas.width-2, canvas.height-2);
+                context.font = 'bold 32px VT323';
+                context.fillStyle = '#ffffff';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText(this.name, canvas.width/2, canvas.height/2);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+                const sprite = new THREE.Sprite(material);
+                sprite.scale.set(1, 0.5, 1);       // уменьшено вдвое
+                sprite.position.set(0, 1.25, 0);    // было 2.5
+                return sprite;
+            }
+
+            createWheels() {
+                this.wheelPositions.forEach((pos, index) => {
+                    const wheelGroup = new THREE.Group();
+
+                    // Левая сторона колеса
+                    const pointsLeft = [];
+                    for (let i = 0; i <= 24; i++) {
+                        const angle = (i / 24) * Math.PI * 2;
+                        const y = Math.sin(angle) * this.wheelRadius;
+                        const z = Math.cos(angle) * this.wheelRadius;
+                        pointsLeft.push(new THREE.Vector3(-this.wheelWidth/2, y, z));
+                    }
+                    const circleLeft = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pointsLeft), new THREE.LineBasicMaterial({ color: this.color }));
+                    wheelGroup.add(circleLeft);
+
+                    // Правая сторона
+                    const pointsRight = [];
+                    for (let i = 0; i <= 24; i++) {
+                        const angle = (i / 24) * Math.PI * 2;
+                        const y = Math.sin(angle) * this.wheelRadius;
+                        const z = Math.cos(angle) * this.wheelRadius;
+                        pointsRight.push(new THREE.Vector3(this.wheelWidth/2, y, z));
+                    }
+                    const circleRight = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pointsRight), new THREE.LineBasicMaterial({ color: this.color }));
+                    wheelGroup.add(circleRight);
+
+                    // Соединительные линии
+                    const connectPoints = [];
+                    for (let i = 0; i <= 24; i+=4) {
+                        const angle = (i / 24) * Math.PI * 2;
+                        const y = Math.sin(angle) * this.wheelRadius;
+                        const z = Math.cos(angle) * this.wheelRadius;
+                        connectPoints.push(-this.wheelWidth/2, y, z, this.wheelWidth/2, y, z);
+                    }
+                    const connectGeo = new THREE.BufferGeometry();
+                    connectGeo.setAttribute('position', new THREE.Float32BufferAttribute(connectPoints, 3));
+                    const connectLines = new THREE.LineSegments(connectGeo, new THREE.LineBasicMaterial({ color: this.color }));
+                    wheelGroup.add(connectLines);
+
+                    this.group.add(wheelGroup);
+
+                    // Рессора (линия от точки крепления до центра колеса)
+                    const springGeo = new THREE.BufferGeometry();
+                    springGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(6), 3));
+                    const springLine = new THREE.Line(springGeo, new THREE.LineBasicMaterial({ color: 0xffaa00 }));
+                    this.group.add(springLine);
+
+                    this.wheels.push({
+                        wheelGroup,
+                        springLine,
+                        attachPoint: pos.clone(),
+                        radius: this.wheelRadius,
+                        currentY: pos.y,
+                        targetY: pos.y,
+                        isFront: index < 2
+                    });
+                });
+            }
+
+            updateWheels(delta) {
+                const roverPos = this.group.position;
+                const roverRot = this.group.rotation.y;
+
+                // Вычисляем мировые позиции колёс
+                const wheelWorldPositions = this.wheels.map(w => {
+                    const attachWorld = w.attachPoint.clone();
+                    attachWorld.applyEuler(new THREE.Euler(0, roverRot, 0));
+                    attachWorld.add(roverPos);
+                    const groundY = getHeight(attachWorld.x, attachWorld.z);
+                    return new THREE.Vector3(attachWorld.x, groundY + w.radius, attachWorld.z);
+                });
+
+                // Вращение колёс (rolling) – скорость влияет
+                this.wheelRotation -= this.speed * delta * 0.05; // отрицательное вращение = верх назад при движении вперёд
+
+                this.wheels.forEach((w, i) => {
+                    const attachWorld = w.attachPoint.clone();
+                    attachWorld.applyEuler(new THREE.Euler(0, roverRot, 0));
+                    attachWorld.add(roverPos);
+                    const wheelWorld = wheelWorldPositions[i];
+
+                    // Рессора: локальные координаты
+                    const localAttach = w.attachPoint.clone();
+                    const localWheel = wheelWorld.clone().sub(roverPos);
+                    localWheel.applyEuler(new THREE.Euler(0, -roverRot, 0));
+                    
+                    const springPos = w.springLine.geometry.attributes.position.array;
+                    springPos[0] = localAttach.x;
+                    springPos[1] = localAttach.y;
+                    springPos[2] = localAttach.z;
+                    springPos[3] = localWheel.x;
+                    springPos[4] = localWheel.y;
+                    springPos[5] = localWheel.z;
+                    w.springLine.geometry.attributes.position.needsUpdate = true;
+
+                    // Позиция колеса (локальная)
+                    w.wheelGroup.position.copy(localWheel);
+
+                    // Вращение колеса
+                    w.wheelGroup.rotation.x = this.wheelRotation;
+                    if (w.isFront) {
+                        w.wheelGroup.rotation.y = this.steeringAngle;
+                    } else {
+                        w.wheelGroup.rotation.y = 0;
+                    }
+
+                    w.targetY = localWheel.y;
+                    if (w.targetY < w.currentY) {
+                        w.currentY -= 10.0 * delta;
+                        if (w.currentY < w.targetY) w.currentY = w.targetY;
+                    } else {
+                        w.currentY = w.targetY;
+                    }
+                });
+            }
+
+            autoMove(delta) {
+                if (!this.autoMode) return;
+                this.spiralRadius += 0.05 * delta * this.autoSpeed * 10;
+                const r = this.spiralRadius;
+                const x = Math.cos(this.angle) * r;
+                const z = Math.sin(this.angle) * r * this.direction;
+                this.group.position.x = x;
+                this.group.position.z = z;
+                this.angle += 0.02 * delta * this.autoSpeed;
+
+                const dir = new THREE.Vector3(-Math.sin(this.angle) * this.direction, 0, Math.cos(this.angle)).normalize();
+                this.group.rotation.y = Math.atan2(dir.x, dir.z);
+
+                const groundY = getHeight(this.group.position.x, this.group.position.z);
+                this.group.position.y = groundY + 0.8;
+            }
+
+            // Движение к цели с постоянной скоростью
+            moveToTarget(delta) {
+                if (!this.targetPosition) return;
+                const dir = new THREE.Vector3().subVectors(this.targetPosition, this.group.position);
+                dir.y = 0;
+                const dist = dir.length();
+                if (dist < 0.5) {
+                    // Достигли цели
+                    const arrivedPos = this.targetPosition.clone();
+                    this.isMovingToTarget = false;
+                    this.speed = 0;
+                    this.targetPosition = null;
+                    // Запускаем мат моделинг
+                    startMathAnimationAtPoint(arrivedPos);
+                    return;
+                }
+                dir.normalize();
+                // Поворачиваемся к цели
+                const targetRot = Math.atan2(dir.x, dir.z);
+                let rotDiff = targetRot - this.group.rotation.y;
+                while (rotDiff > Math.PI) rotDiff -= 2*Math.PI;
+                while (rotDiff < -Math.PI) rotDiff += 2*Math.PI;
+                const turnAmount = 2.0 * delta;
+                if (Math.abs(rotDiff) > turnAmount) {
+                    this.group.rotation.y += Math.sign(rotDiff) * turnAmount;
+                } else {
+                    this.group.rotation.y = targetRot;
+                }
+                this.speed = maxSpeed;
+                const forward = new THREE.Vector3(0,0,1).applyQuaternion(this.group.quaternion);
+                this.group.position.addScaledVector(forward, this.speed * delta);
+                const groundY = getHeight(this.group.position.x, this.group.position.z);
+                this.group.position.y = groundY + 0.8;
+            }
+
+            updateTrack(delta) {
+                const pos = this.group.position.clone();
+                if (this.lastTrackPos.distanceTo(pos) > 5 || this.trackPoints.length === 0) {
+                    this.trackPoints.push(pos.clone());
+                    if (this.trackPoints.length > this.maxTrackPoints) {
+                        this.trackPoints.shift();
+                    }
+                    this.lastTrackPos.copy(pos);
+                    this.updateTrackGeometry();
+                }
+            }
+
+            updateTrackGeometry() {
+                if (this.trackLine) scene.remove(this.trackLine);
+                if (this.trackDots) scene.remove(this.trackDots);
+
+                if (this.trackPoints.length < 2) return;
+
+                const linePositions = [];
+                this.trackPoints.forEach(p => {
+                    linePositions.push(p.x, p.y + 0.2, p.z);
+                });
+                const lineGeo = new THREE.BufferGeometry();
+                lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                const darkerColor = new THREE.Color(this.color).multiplyScalar(0.7);
+                this.trackLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: darkerColor }));
+                scene.add(this.trackLine);
+
+                const dotPositions = [];
+                this.trackPoints.forEach(p => {
+                    dotPositions.push(p.x, p.y + 0.3, p.z);
+                });
+                const dotGeo = new THREE.BufferGeometry();
+                dotGeo.setAttribute('position', new THREE.Float32BufferAttribute(dotPositions, 3));
+                const dotMat = new THREE.PointsMaterial({ color: darkerColor, size: 0.5 }); // было 1
+                this.trackDots = new THREE.Points(dotGeo, dotMat);
+                scene.add(this.trackDots);
+            }
+
+            dispose() {
+                if (this.trackLine) scene.remove(this.trackLine);
+                if (this.trackDots) scene.remove(this.trackDots);
+                scene.remove(this.group);
+            }
+        }
+
+        // --- resource management ---
+        const resourceNodes = [];
+        function spawnResourceForRover(rover, autoLift = false) {
+            if (resourceNodes.length > 20) return;
+            const node = new ResourceNode(rover.group.position, rover.name, autoLift);
+            resourceNodes.push(node);
+            return node;
+        }
+
+        let worldStartUTC = Date.now();
+        let autoLiftMode = false;
+        const autoBtn = document.getElementById('auto-lift-btn');
+        autoBtn.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            autoLiftMode = !autoLiftMode;
+            if (autoLiftMode) autoBtn.classList.add('auto-active');
+            else autoBtn.classList.remove('auto-active');
+        });
+        autoBtn.addEventListener('click', (e) => {
+            resourceNodes.forEach((node, index) => node.liftOff(index * 0.5));
+        });
+
+        let starsCount = 0;
+        let totalCargoLaunched = 0;
+        const maxStars = 20;
+        const starsRows = [document.getElementById('stars-row-0'), document.getElementById('stars-row-1')];
+        const multiplierEl = document.getElementById('multiplier');
+        function updateStars() {
+            for (let i = 0; i < maxStars; i++) {
+                const row = Math.floor(i / 10);
+                const col = i % 10;
+                let starDiv = starsRows[row].children[col];
+                if (!starDiv) {
+                    starDiv = document.createElement('div');
+                    starDiv.className = 'star';
+                    starsRows[row].appendChild(starDiv);
+                }
+                if (i < starsCount) starDiv.classList.add('filled');
+                else starDiv.classList.remove('filled');
+            }
+            multiplierEl.textContent = `x${10 * Math.pow(2, starsCount)}`;
+        }
+        updateStars();
+
+        let rovers = [];
+        let selectedRover = null;
+        function createNewPlayerRover() {
+            const newRover = new Rover(pastelColors[0], true);
+            newRover.autoMode = true;
+            return newRover;
+        }
+        rovers.push(createNewPlayerRover());
+        selectedRover = rovers[0];
+        updateSelectedName();
+
+        const startTarget = selectedRover.group.position.clone().add(new THREE.Vector3(0, 2, 0));
+        controls.target.copy(startTarget);
+        camera.position.copy(selectedRover.group.position.clone().add(new THREE.Vector3(0, 4, 12)));
+        controls.update();
+
+        function updateTimecode() {
+            const elapsed = Date.now() - worldStartUTC;
+            const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+            const seconds = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('timecode').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateTimecode, 1000);
+
+        // --- Resource Node с исправленной траекторией и символами ---
+        class ResourceNode {
+            constructor(position, roverName, autoLift = false, restoredData = null) {
+                this.position = position.clone();
+                this.roverName = roverName;
+                this.amount = Math.floor(Math.random() * 100) + 20;
+                this.createdAt = Date.now();
+                
+                if (restoredData && restoredData.elementIndex !== undefined) {
+                    this.element = elements[restoredData.elementIndex];
+                } else {
+                    this.element = elements[Math.floor(Math.random() * elements.length)];
+                }
+                this.elementColor = getElementColor(this.element.symbol);
+                
+                if (restoredData) {
+                    this.amount = restoredData.amount;
+                    this.createdAt = restoredData.createdAt;
+                    this.isLifting = restoredData.isLifting;
+                    this.liftStartUTC = restoredData.liftStartUTC;
+                    this.liftDuration = restoredData.liftDuration;
+                    this.startPos = new THREE.Vector3(restoredData.startPos.x, restoredData.startPos.y, restoredData.startPos.z);
+                    this.targetPos = new THREE.Vector3(0, 6000, 0);
+                    this.stationPos = new THREE.Vector3(20, getHeight(20,0) + 50, 0);
+                } else {
+                    this.isLifting = false;
+                    this.liftStartUTC = 0;
+                    this.liftDuration = 15;
+                    this.startPos = position.clone();
+                    this.targetPos = new THREE.Vector3(0, 6000, 0);
+                    this.stationPos = new THREE.Vector3(20, getHeight(20,0) + 50, 0);
+                }
+                
+                const pointGeo = new THREE.BufferGeometry();
+                pointGeo.setAttribute('position', new THREE.Float32BufferAttribute([position.x, position.y+2, position.z], 3));
+                const pointMat = new THREE.PointsMaterial({ color: this.elementColor, size: 20, sizeAttenuation: false });
+                this.point = new THREE.Points(pointGeo, pointMat);
+                scene.add(this.point);
+                
+                // Спрайт с символом элемента и количеством
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, 64, 32);
+                ctx.strokeStyle = '#' + this.elementColor.getHexString();
+                ctx.lineWidth = 2;
+                ctx.strokeRect(1, 1, 62, 30);
+                ctx.font = 'bold 20px VT323';
+                ctx.fillStyle = '#' + this.elementColor.getHexString();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.element.symbol, 32, 14);
+                ctx.font = '12px VT323';
+                ctx.fillStyle = '#ffff88';
+                ctx.fillText(this.amount, 50, 24);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+                this.sprite = new THREE.Sprite(spriteMat);
+                this.sprite.scale.set(4, 2, 1);
+                this.sprite.position.copy(position);
+                this.sprite.position.y += 5;
+                scene.add(this.sprite);
+                
+                if (autoLift) {
+                    this.liftOff(0);
+                }
+            }
+            
+            liftOff(delay = 0) {
+                if (this.isLifting) return;
+                this.isLifting = true;
+                this.liftStartUTC = Date.now() / 1000 + delay;
+                this.startPos = this.point.position.clone();
+            }
+            
+            updateLift() {
+                if (!this.isLifting) return false;
+                const now = Date.now() / 1000;
+                const elapsed = now - this.liftStartUTC;
+                if (elapsed >= this.liftDuration) {
+                    return true;
+                }
+                
+                let currentPos;
+                const timeToStation = 2.0;
+                
+                if (elapsed < timeToStation) {
+                    let u = elapsed / timeToStation;
+                    currentPos = new THREE.Vector3().lerpVectors(this.startPos, this.stationPos, u);
+                } else {
+                    let u = (elapsed - timeToStation) / (this.liftDuration - timeToStation);
+                    currentPos = new THREE.Vector3().lerpVectors(this.stationPos, this.targetPos, u);
+                }
+                
+                this.point.position.copy(currentPos);
+                this.sprite.position.copy(currentPos.clone().add(new THREE.Vector3(0, 3, 0)));
+                let scale = 1 - (elapsed / this.liftDuration) * 0.8;
+                this.sprite.scale.set(4 * scale, 2 * scale, 1);
+                return false;
+            }
+            
+            getCode() {
+                return `${seedX.toFixed(2)}_${seedY.toFixed(2)}_${this.position.x.toFixed(2)}_${this.position.y.toFixed(2)}_${this.position.z.toFixed(2)}_${this.element.symbol}`;
+            }
+        }
+
+        // --- Постоянные маркеры (инстансированные кресты) и маркеры моделирования ---
+        let permanentMarkers = []; // каждый элемент: { position, color, elements, crosshairIndex }
+        let permanentMathMarkers = []; // круги с линией, оставшиеся после моделирования
+        let crosshairMesh; // инстанс-меш для крестов
+        let crosshairCount = 0;
+        const MAX_CROSSHAIRS = 300;
+
+        function initCrosshairInstances() {
+            // Геометрия креста: три перпендикулярные линии длиной 8 (длина каждой 4 от центра)
+            const vertices = [
+                -4,0,0, 4,0,0,
+                0,-4,0, 0,4,0,
+                0,0,-4, 0,0,4
+            ];
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            // Каждая линия — это два индекса, всего 6 линий? Нет, у нас 6 вершин, но они образуют 3 линии.
+            // Для LineSegments нужно попарно вершины: (0,1), (2,3), (4,5)
+            const indices = [0,1, 2,3, 4,5];
+            geometry.setIndex(indices);
+            
+            const material = new THREE.LineBasicMaterial({ vertexColors: true });
+            crosshairMesh = new THREE.InstancedMesh(geometry, material, MAX_CROSSHAIRS);
+            crosshairMesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROSSHAIRS * 16), 16);
+            crosshairMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROSSHAIRS * 3), 3);
+            crosshairMesh.frustumCulled = false;
+            scene.add(crosshairMesh);
+        }
+        initCrosshairInstances();
+
+        function addCrosshairInstance(position, color, elements) {
+            if (crosshairCount >= MAX_CROSSHAIRS) return;
+            const matrix = new THREE.Matrix4().setPosition(position);
+            crosshairMesh.setMatrixAt(crosshairCount, matrix);
+            crosshairMesh.setColorAt(crosshairCount, color);
+            crosshairCount++;
+            crosshairMesh.instanceMatrix.needsUpdate = true;
+            crosshairMesh.instanceColor.needsUpdate = true;
+
+            permanentMarkers.push({ position, color, elements, crosshairIndex: crosshairCount-1 });
+        }
+
+        function removeAllCrosshairs() {
+            permanentMarkers = [];
+            crosshairCount = 0;
+            // Обнуляем матрицы инстанс-меша (необязательно, но для чистоты)
+            for (let i = 0; i < MAX_CROSSHAIRS; i++) {
+                crosshairMesh.setMatrixAt(i, new THREE.Matrix4().identity());
+                crosshairMesh.setColorAt(i, new THREE.Color(0,0,0));
+            }
+            crosshairMesh.instanceMatrix.needsUpdate = true;
+            crosshairMesh.instanceColor.needsUpdate = true;
+        }
+
+        // --- Переменные для математического моделирования ---
+        let mathMarker = null; // текущий анимируемый маркер (временный)
+        let mathParticles = null; // текущее облако частиц (для анимации)
+        let mathParticlesList = []; // все созданные облака частиц (навсегда)
+        let mathParticleCount = 1000;
+        let mathAnimationInterval = null;
+        let mathAnimationStartTime = 0;
+        const mathRadius = 500;
+        let mathDepthMultiplier = 6;
+        const orderBtn = document.getElementById('order-btn');
+        const markerTooltip = document.getElementById('marker-tooltip');
+
+        function clearMathObjects() {
+            // Удаляем временный маркер, если есть
+            if (mathMarker) scene.remove(mathMarker);
+            mathMarker = null;
+            if (mathAnimationInterval) clearInterval(mathAnimationInterval);
+            mathAnimationInterval = null;
+            orderBtn.style.display = 'none';
+            // Частицы и постоянные маркеры не удаляем — они остаются в сцене
+        }
+
+        function createMathMarker(position) {
+            const points = [];
+            const radius = 2.5;
+            const segments = 32;
+            for (let i = 0; i <= segments; i++) {
+                const angle = (i / segments) * Math.PI * 2;
+                points.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: 0xffaa00 });
+            const circle = new THREE.LineLoop(geometry, material);
+            circle.position.copy(position);
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 5, 0)]);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffaa00 });
+            const line = new THREE.Line(lineGeo, lineMat);
+            circle.add(line);
+            scene.add(circle);
+            return circle;
+        }
+
+        function generateRandomPalette() {
+            const count = Math.floor(Math.random() * (54 - 15 + 1)) + 15;
+            const palette = [];
+            for (let i = 0; i < count; i++) {
+                const hue = Math.random();
+                const r = Math.sin(hue * 2 * Math.PI) * 0.5 + 0.5;
+                const g = Math.sin((hue + 1/3) * 2 * Math.PI) * 0.5 + 0.5;
+                const b = Math.sin((hue + 2/3) * 2 * Math.PI) * 0.5 + 0.5;
+                palette.push([r, g, b]);
+            }
+            return palette;
+        }
+
+        function createParticleMaterial() {
+            return new THREE.ShaderMaterial({
+                uniforms: {},
+                vertexShader: `
+                    attribute float alpha;
+                    attribute vec3 color;
+                    varying vec3 vColor;
+                    varying float vAlpha;
+                    void main() {
+                        vColor = color;
+                        vAlpha = alpha;
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        gl_PointSize = 2.0;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    varying float vAlpha;
+                    void main() {
+                        if (length(gl_PointCoord - 0.5) > 0.5) discard;
+                        gl_FragColor = vec4(vColor, vAlpha);
+                    }
+                `,
+                transparent: true,
+                depthWrite: false,
+                depthTest: false
+            });
+        }
+
+        function generateMathParticles(center) {
+            const numElements = Math.floor(Math.random() * 5) + 1;
+            const foundElements = [];
+            for (let i = 0; i < numElements; i++) {
+                foundElements.push(elements[Math.floor(Math.random() * elements.length)]);
+            }
+            const dominantIndex = Math.random() < 0.2 ? Math.floor(Math.random() * foundElements.length) : -1;
+            
+            const positions = [];
+            const colors = [];
+            const alphas = [];
+            
+            const surfaceY = getHeight(center.x, center.z);
+            const vertRadius = mathRadius * mathDepthMultiplier;
+            
+            const layerPalette = generateRandomPalette();
+            const paletteSize = layerPalette.length;
+            
+            for (let i = 0; i < mathParticleCount; i++) {
+                let x, y, z;
+                do {
+                    x = center.x + (Math.random() - 0.5) * mathRadius * 2;
+                    z = center.z + (Math.random() - 0.5) * mathRadius * 2;
+                    let r = Math.random();
+                    let depthFactor = 1 - r * r;
+                    y = surfaceY - vertRadius * depthFactor;
+                } while (
+                    Math.pow((x - center.x) / mathRadius, 2) + 
+                    Math.pow((y - surfaceY) / vertRadius, 2) + 
+                    Math.pow((z - center.z) / mathRadius, 2) > 1 || 
+                    y > getHeight(x, z)
+                );
+                positions.push(x, y, z);
+                
+                let depth = (surfaceY - y) / vertRadius;
+                depth = Math.max(0, Math.min(1, depth));
+                const colorIdx = Math.floor(depth * (paletteSize - 1));
+                const col = layerPalette[colorIdx];
+                colors.push(col[0], col[1], col[2]);
+                
+                alphas.push(0);
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
+            
+            const material = createParticleMaterial();
+            const points = new THREE.Points(geometry, material);
+            points.renderOrder = 999;
+            scene.add(points);
+            
+            points.userData.foundElements = foundElements;
+            points.userData.dominantIndex = dominantIndex;
+            points.userData.palette = layerPalette;
+            points.userData.center = center.clone();
+            return points;
+        }
+
+        function updateParticleAlpha(particles, center) {
+            const positions = particles.geometry.attributes.position.array;
+            const alphas = particles.geometry.attributes.alpha.array;
+            const surfaceY = getHeight(center.x, center.z);
+            const vertRadius = mathRadius * mathDepthMultiplier;
+            
+            for (let i = 0; i < positions.length / 3; i++) {
+                const px = positions[i*3];
+                const py = positions[i*3+1];
+                const pz = positions[i*3+2];
+                const dx = (px - center.x) / mathRadius;
+                const dz = (pz - center.z) / mathRadius;
+                const dy = (py - surfaceY) / vertRadius;
+                const dist = Math.sqrt(dx*dx + dz*dz + dy*dy);
+                let alpha = Math.max(0, 1 - dist);
+                alphas[i] = alpha;
+            }
+            particles.geometry.attributes.alpha.needsUpdate = true;
+        }
+
+        // Запуск анимации сканирования в указанной точке
+        function startMathAnimationAtPoint(center) {
+            clearMathObjects(); // убирает временный маркер и останавливает интервал, но частицы остаются
+            const newMarker = createMathMarker(center);
+            permanentMathMarkers.push(newMarker); // сохраняем навсегда
+            mathMarker = newMarker; // для анимации
+            const newParticles = generateMathParticles(center);
+            mathParticlesList.push(newParticles);
+            mathParticles = newParticles;
+            if (terrainMesh) {
+                terrainMesh.material.transparent = true;
+                terrainMesh.material.opacity = 0.35;
+            }
+            startMathAnimation();
+        }
+
+        function startMathAnimation() {
+            if (!mathParticles) return;
+            mathAnimationStartTime = performance.now() / 1000;
+            
+            const positions = mathParticles.geometry.attributes.position.array;
+            const alphas = mathParticles.geometry.attributes.alpha.array;
+            const count = positions.length / 3;
+            
+            let maxY = -Infinity;
+            let startIdx = 0;
+            for (let i = 0; i < count; i++) {
+                const y = positions[i*3+1];
+                if (y > maxY) { maxY = y; startIdx = i; }
+            }
+            alphas[startIdx] = 1;
+            mathParticles.geometry.attributes.alpha.needsUpdate = true;
+
+            let elapsed = 0;
+            mathAnimationInterval = setInterval(() => {
+                elapsed += 0.1;
+                if (elapsed >= 90) { // 1.5 минуты
+                    clearInterval(mathAnimationInterval);
+                    mathAnimationInterval = null;
+                    
+                    const center = mathMarker.position.clone();
+                    const foundElements = mathParticles.userData.foundElements;
+                    const dominantIdx = mathParticles.userData.dominantIndex;
+                    
+                    // Выбираем случайные индексы частиц для крестов (от 45 до 275)
+                    const numMarkers = Math.floor(Math.random() * (275 - 45 + 1)) + 45;
+                    const particleIndices = [];
+                    const totalParticles = mathParticles.geometry.attributes.position.count;
+                    while (particleIndices.length < numMarkers && particleIndices.length < totalParticles) {
+                        const idx = Math.floor(Math.random() * totalParticles);
+                        if (!particleIndices.includes(idx)) particleIndices.push(idx);
+                    }
+                    
+                    particleIndices.forEach(idx => {
+                        const px = positions[idx*3];
+                        const py = positions[idx*3+1];
+                        const pz = positions[idx*3+2];
+                        const pos = new THREE.Vector3(px, py, pz);
+                        
+                        let color;
+                        if (dominantIdx !== -1) {
+                            color = getElementColor(foundElements[dominantIdx].symbol);
+                        } else {
+                            const col = mathParticles.userData.palette[Math.floor(Math.random() * mathParticles.userData.palette.length)];
+                            color = new THREE.Color(col[0], col[1], col[2]);
+                        }
+                        
+                        addCrosshairInstance(pos, color, foundElements);
+                    });
+                    
+                    // ВАЖНО: НЕ удаляем mathMarker, он остается в сцене навсегда
+                    // mathMarker уже добавлен в permanentMathMarkers
+                    mathMarker = null;
+                    mathParticles = null;
+                    
+                    if (terrainMesh) {
+                        terrainMesh.material.transparent = false;
+                        terrainMesh.material.opacity = 1;
+                    }
+                    
+                    orderBtn.style.display = 'none';
+                    return;
+                }
+                
+                const positions = mathParticles.geometry.attributes.position.array;
+                const alphas = mathParticles.geometry.attributes.alpha.array;
+                const count = positions.length / 3;
+                const centerX = mathMarker.position.x;
+                const centerY = mathMarker.position.y;
+                const centerZ = mathMarker.position.z;
+                for (let i = 0; i < count; i++) {
+                    if (alphas[i] > 0) continue;
+                    const px = positions[i*3];
+                    const py = positions[i*3+1];
+                    const pz = positions[i*3+2];
+                    const dist = Math.sqrt((px - centerX)**2 + (py - centerY)**2 + (pz - centerZ)**2);
+                    if (dist < elapsed * (mathRadius / 15)) {
+                        alphas[i] = 1;
+                    }
+                }
+                mathParticles.geometry.attributes.alpha.needsUpdate = true;
+            }, 100);
+        }
+
+        // --- double-click selection с подтверждением ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onDoubleClick(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Проверка на постоянные маркеры (можно добавить позже)
+            
+            if (mathMarker) {
+                const markerIntersects = raycaster.intersectObject(mathMarker, true);
+                if (markerIntersects.length > 0) {
+                    controls.target.copy(mathMarker.position);
+                    camera.position.copy(mathMarker.position.clone().add(new THREE.Vector3(10, 5, 10)));
+                    controls.update();
+                    return;
+                }
+            }
+
+            const roverGroups = rovers.map(r => r.group);
+            const roverIntersects = raycaster.intersectObjects(roverGroups, true);
+            if (roverIntersects.length > 0) {
+                const hit = roverIntersects[0].object;
+                for (let r of rovers) {
+                    if (r.group === hit || r.group.children.includes(hit)) {
+                        if (selectedRover) selectedRover.isPlayer = false;
+                        selectedRover = r;
+                        selectedRover.isPlayer = true;
+                        selectedRover.autoMode = false;
+                        updateSelectedName();
+                        controls.target.copy(r.group.position);
+                        camera.position.copy(r.group.position.clone().add(new THREE.Vector3(0, 2, 10)));
+                        controls.update();
+                        break;
+                    }
+                }
+                return;
+            }
+            
+            const stationIntersects = raycaster.intersectObject(station, true);
+            if (stationIntersects.length > 0) {
+                const bbox = new THREE.Box3().setFromObject(station);
+                const center = bbox.getCenter(new THREE.Vector3());
+                controls.target.copy(center);
+                camera.position.copy(center.clone().add(new THREE.Vector3(20, 10, 20)));
+                controls.update();
+                return;
+            }
+            
+            for (let r of rovers) {
+                if (r.trackLine) {
+                    const trackIntersects = raycaster.intersectObject(r.trackLine);
+                    if (trackIntersects.length > 0) {
+                        if (r.trackPoints.length > 0) {
+                            const bbox = new THREE.Box3();
+                            r.trackPoints.forEach(p => bbox.expandByPoint(p));
+                            const center = bbox.getCenter(new THREE.Vector3());
+                            controls.target.copy(center);
+                            camera.position.copy(center.clone().add(new THREE.Vector3(20, 10, 20)));
+                            controls.update();
+                        }
+                        return;
+                    }
+                }
+            }
+            
+            const nodeSprites = resourceNodes.map(n => n.sprite);
+            const nodeIntersects = raycaster.intersectObjects(nodeSprites);
+            if (nodeIntersects.length > 0) {
+                const hitSprite = nodeIntersects[0].object;
+                const node = resourceNodes.find(n => n.sprite === hitSprite);
+                if (node) {
+                    contextMenu.style.display = 'block';
+                    contextMenu.style.left = event.clientX + 'px';
+                    contextMenu.style.top = event.clientY + 'px';
+                    contextMenu.innerHTML = `Node: ${node.roverName}<br>Element: ${node.element.symbol}<br>Amount: ${node.amount}<br>Code: ${node.getCode()}<br>Right-click to launch`;
+                    setTimeout(() => { contextMenu.style.display = 'none'; }, 5000);
+                }
+                return;
+            }
+            
+            const terrainIntersects = raycaster.intersectObject(terrainMesh);
+            if (terrainIntersects.length > 0) {
+                const point = terrainIntersects[0].point;
+                // Проверяем, нет ли уже маркеров рядом (по крестам)
+                let nearby = false;
+                for (let m of permanentMarkers) {
+                    if (m.position.distanceTo(point) < mathRadius) {
+                        nearby = true;
+                        break;
+                    }
+                }
+                if (nearby) {
+                    alert('Рядом уже есть маркер, новые данные будут добавлены к нему (автоматически).');
+                    return;
+                }
+                
+                // Запрашиваем подтверждение
+                if (confirm('Отправить разведку в эту точку?')) {
+                    if (selectedRover) {
+                        selectedRover.isMovingToTarget = true;
+                        selectedRover.targetPosition = point.clone();
+                        selectedRover.autoMode = false;
+                    }
+                }
+                return;
+            }
+        }
+
+        orderBtn.addEventListener('click', () => {});
+
+        renderer.domElement.addEventListener('dblclick', onDoubleClick);
+
+        function onRightClick(event) {
+            event.preventDefault();
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            
+            const nodeSprites = resourceNodes.map(n => n.sprite);
+            const intersects = raycaster.intersectObjects(nodeSprites);
+            if (intersects.length > 0) {
+                const hitSprite = intersects[0].object;
+                const node = resourceNodes.find(n => n.sprite === hitSprite);
+                if (node) {
+                    const delay = resourceNodes.indexOf(node) * 0.5;
+                    node.liftOff(delay);
+                }
+            }
+        }
+        renderer.domElement.addEventListener('contextmenu', onRightClick);
+
+        // --- остальные обработчики ---
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '+' || e.key === '=') {
+                if (resourceNodes.length > 0) {
+                    const node = resourceNodes.pop();
+                    scene.remove(node.point);
+                    scene.remove(node.sprite);
+                }
+            } else if (e.key === '-' || e.key === '_') {
+                if (resourceNodes.length > 0) {
+                    const node = resourceNodes.pop();
+                    scene.remove(node.point);
+                    scene.remove(node.sprite);
+                }
+            }
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            for (let i = rovers.length - 1; i > 0; i--) {
+                const r = rovers[i];
+                r.dispose();
+                rovers.splice(i, 1);
+            }
+            const first = rovers[0];
+            first.group.position.set(0, 0, 0);
+            first.group.position.y = getHeight(0,0) + 0.8;
+            first.group.rotation.y = 0;
+            first.speed = 0;
+            first.autoMode = true;
+            first.distanceTraveled = 0;
+            first.distanceSinceLastResource = 0;
+            if (first.trackLine) scene.remove(first.trackLine);
+            if (first.trackDots) scene.remove(first.trackDots);
+            first.trackPoints = [];
+            first.trackLine = null;
+            first.trackDots = null;
+            
+            resourceNodes.forEach(n => {
+                scene.remove(n.point);
+                scene.remove(n.sprite);
+            });
+            resourceNodes.length = 0;
+            
+            totalCargoLaunched = 0;
+            starsCount = 0;
+            updateStars();
+            
+            if (terrainMesh) {
+                terrainMesh.material.transparent = false;
+                terrainMesh.material.opacity = 1;
+            }
+            clearMathObjects();
+            
+            // Удаляем все кресты, частицы и постоянные маркеры
+            removeAllCrosshairs();
+            mathParticlesList.forEach(p => scene.remove(p));
+            mathParticlesList = [];
+            permanentMathMarkers.forEach(m => scene.remove(m));
+            permanentMathMarkers = [];
+            
+            selectedRover = first;
+            updateSelectedName();
+            document.getElementById('rover-count').textContent = rovers.length;
+            updateRoverTabs();
+        });
+
+        function updateSelectedName() {
+            document.getElementById('selected-name').textContent = selectedRover ? selectedRover.name : 'NONE';
+        }
+
+        function updateRoverTabs() {
+            const container = document.getElementById('rover-tabs');
+            container.innerHTML = '';
+            rovers.forEach((r) => {
+                const tab = document.createElement('div');
+                tab.className = 'rover-tab';
+                tab.style.backgroundColor = '#' + r.color.toString(16).padStart(6, '0');
+                tab.style.opacity = r.isPlayer ? '1' : '0.4';
+                tab.title = r.name;
+                container.appendChild(tab);
+            });
+        }
+
+        document.getElementById('spawn-btn').addEventListener('click', () => {
+            const color = pastelColors[rovers.length % pastelColors.length];
+            const newRover = new Rover(color, false);
+            rovers.push(newRover);
+            document.getElementById('rover-count').textContent = rovers.length;
+            updateRoverTabs();
+        });
+
+        document.getElementById('remove-btn').addEventListener('click', () => {
+            if (rovers.length <= 1) return;
+            const removed = rovers.pop();
+            if (selectedRover === removed) {
+                selectedRover = rovers[0];
+                selectedRover.isPlayer = true;
+                selectedRover.autoMode = false;
+                updateSelectedName();
+            }
+            removed.dispose();
+            document.getElementById('rover-count').textContent = rovers.length;
+            updateRoverTabs();
+        });
+
+        document.getElementById('randomize-btn').addEventListener('click', () => {
+            const newSeedX = Math.random() * 1000;
+            const newSeedY = Math.random() * 1000;
+            const palIdx = Math.floor(Math.random() * colorPalettes.length);
+            generateTerrain(newSeedX, newSeedY, palIdx);
+            
+            rovers.forEach(r => r.dispose());
+            rovers.length = 0;
+            
+            worldStartUTC = Date.now();
+            const newPlayer = new Rover(pastelColors[0], true);
+            newPlayer.autoMode = true;
+            rovers.push(newPlayer);
+            selectedRover = newPlayer;
+            
+            resourceNodes.forEach(n => {
+                scene.remove(n.point);
+                scene.remove(n.sprite);
+            });
+            resourceNodes.length = 0;
+            
+            totalCargoLaunched = 0;
+            starsCount = 0;
+            updateStars();
+            
+            if (terrainMesh) {
+                terrainMesh.material.transparent = false;
+                terrainMesh.material.opacity = 1;
+            }
+            clearMathObjects();
+            
+            // Удаляем все кресты, частицы и постоянные маркеры
+            removeAllCrosshairs();
+            mathParticlesList.forEach(p => scene.remove(p));
+            mathParticlesList = [];
+            permanentMathMarkers.forEach(m => scene.remove(m));
+            permanentMathMarkers = [];
+            
+            scene.remove(station);
+            const newStation = createStation();
+            scene.add(newStation);
+            station = newStation;
+            
+            updateSelectedName();
+            document.getElementById('rover-count').textContent = rovers.length;
+            updateRoverTabs();
+        });
+
+        const keyState = { w: false, a: false, s: false, d: false, shift: false, space: false };
+        window.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'KeyW': keyState.w = true; e.preventDefault(); if (selectedRover) selectedRover.autoMode = false; break;
+                case 'KeyA': keyState.a = true; e.preventDefault(); if (selectedRover) selectedRover.autoMode = false; break;
+                case 'KeyS': keyState.s = true; e.preventDefault(); if (selectedRover) selectedRover.autoMode = false; break;
+                case 'KeyD': keyState.d = true; e.preventDefault(); if (selectedRover) selectedRover.autoMode = false; break;
+                case 'ShiftLeft': case 'ShiftRight': keyState.shift = true; e.preventDefault(); break;
+                case 'Space': keyState.space = true; e.preventDefault(); break;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW': keyState.w = false; e.preventDefault(); break;
+                case 'KeyA': keyState.a = false; e.preventDefault(); break;
+                case 'KeyS': keyState.s = false; e.preventDefault(); break;
+                case 'KeyD': keyState.d = false; e.preventDefault(); break;
+                case 'ShiftLeft': case 'ShiftRight': keyState.shift = false; e.preventDefault(); break;
+                case 'Space': keyState.space = false; e.preventDefault(); break;
+            }
+        });
+
+        const maxSpeed = 10 * 1000 / 3600; // ~2.78
+        const acceleration = maxSpeed / 3;
+        const turnSpeed = 1.0;
+        const maxClimb = 1.5;
+        const RESOURCE_DISTANCE = 2000;
+        const maxSteeringAngle = 0.6;
+        const steeringSpeed = 3;
+        const jumpSpeed = 4;
+
+        function canMoveForward(rover, distance) {
+            const forward = new THREE.Vector3(0,0,1).applyEuler(rover.group.rotation);
+            const testPos = rover.group.position.clone().addScaledVector(forward, distance);
+            const hCurrent = getHeight(rover.group.position.x, rover.group.position.z);
+            const hTest = getHeight(testPos.x, testPos.z);
+            return Math.abs(hTest - hCurrent) <= maxClimb;
+        }
+
+        function updateLOD() {
+            rovers.forEach(rover => {
+                const dist = camera.position.distanceTo(rover.group.position);
+                rover.nameSprite.visible = dist < 10;
+            });
+            resourceNodes.forEach(node => {
+                const dist = camera.position.distanceTo(node.sprite.position);
+                node.sprite.visible = dist < 10;
+            });
+        }
+
+        document.getElementById('copy-seed').addEventListener('click', () => {
+            navigator.clipboard.writeText(`${seedX.toFixed(2)},${seedY.toFixed(2)}`);
+        });
+
+        // --- Сохранение миров (расширенное) ---
+        let savedWorlds = JSON.parse(localStorage.getItem('savedWorlds')) || [];
+        let activeWorldSeed = null;
+        
+        function createWorldIcon(palette) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 30;
+            canvas.height = 30;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(15, 15, 0, 15, 15, 15);
+            palette.forEach((color, i) => {
+                const stop = i / (palette.length - 1);
+                gradient.addColorStop(stop, `rgb(${color[0]*255},${color[1]*255},${color[2]*255})`);
+            });
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(15, 15, 15, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(15, 15, 14, 0, 2 * Math.PI);
+            ctx.stroke();
+            return canvas;
+        }
+
+        function renderSavedWorlds() {
+            const container = document.getElementById('saved-worlds');
+            container.innerHTML = '';
+            savedWorlds.forEach((s, idx) => {
+                const icon = document.createElement('div');
+                icon.className = 'world-icon';
+                if (s.seed === activeWorldSeed) {
+                    icon.classList.add('active');
+                }
+                let palette = s.state ? colorPalettes[s.state.paletteIndex] : currentPalette;
+                const canvas = createWorldIcon(palette);
+                icon.appendChild(canvas);
+                icon.title = s.name || s.seed;
+                
+                icon.addEventListener('click', (e) => {
+                    if (e.ctrlKey) {
+                        if (confirm(`Delete world "${s.name}"?`)) {
+                            savedWorlds.splice(idx, 1);
+                            localStorage.setItem('savedWorlds', JSON.stringify(savedWorlds));
+                            renderSavedWorlds();
+                        }
+                        return;
+                    }
+                    if (activeWorldSeed) {
+                        saveCurrentWorld();
+                    }
+                    const state = s.state;
+                    seedX = state.seedX;
+                    seedY = state.seedY;
+                    currentPaletteIndex = state.paletteIndex;
+                    generateTerrain(seedX, seedY, currentPaletteIndex);
+                    
+                    worldStartUTC = state.worldStartUTC;
+                    autoLiftMode = state.autoLiftMode || false;
+                    if (autoLiftMode) autoBtn.classList.add('auto-active'); else autoBtn.classList.remove('auto-active');
+                    starsCount = state.starsCount || 0;
+                    totalCargoLaunched = state.totalCargoLaunched || 0;
+                    updateStars();
+                    
+                    rovers.forEach(r => r.dispose());
+                    rovers.length = 0;
+                    resourceNodes.forEach(n => { scene.remove(n.point); scene.remove(n.sprite); });
+                    resourceNodes.length = 0;
+                    
+                    state.rovers.forEach(rData => {
+                        const rover = new Rover(rData.color, rData.isPlayer, rData);
+                        rovers.push(rover);
+                    });
+                    
+                    state.resourceNodes.forEach(nData => {
+                        if (nData.elementIndex === undefined) nData.elementIndex = 0;
+                        const node = new ResourceNode(new THREE.Vector3(nData.x, nData.y, nData.z), nData.roverName, false, nData);
+                        node.amount = nData.amount;
+                        node.createdAt = nData.createdAt;
+                        resourceNodes.push(node);
+                    });
+                    
+                    selectedRover = rovers[0];
+                    updateSelectedName();
+                    document.getElementById('rover-count').textContent = rovers.length;
+                    updateRoverTabs();
+                    
+                    if (state.cameraPosition) {
+                        camera.position.copy(new THREE.Vector3(state.cameraPosition.x, state.cameraPosition.y, state.cameraPosition.z));
+                        controls.target.copy(new THREE.Vector3(state.cameraTarget.x, state.cameraTarget.y, state.cameraTarget.z));
+                        controls.update();
+                    }
+                    
+                    scene.remove(station);
+                    const newStation = createStation();
+                    scene.add(newStation);
+                    station = newStation;
+                    
+                    if (terrainMesh) {
+                        terrainMesh.material.transparent = false;
+                        terrainMesh.material.opacity = 1;
+                    }
+                    
+                    // Восстановление крестов и частиц
+                    // Сначала очищаем текущие
+                    removeAllCrosshairs();
+                    mathParticlesList.forEach(p => scene.remove(p));
+                    mathParticlesList = [];
+                    permanentMathMarkers.forEach(m => scene.remove(m));
+                    permanentMathMarkers = [];
+                    
+                    // Восстанавливаем кресты
+                    if (state.crosshairsData) {
+                        state.crosshairsData.forEach(c => {
+                            const pos = new THREE.Vector3(c.x, c.y, c.z);
+                            const color = new THREE.Color(c.color);
+                            const elements = c.elements; // массив объектов {symbol}
+                            addCrosshairInstance(pos, color, elements);
+                        });
+                    }
+                    
+                    // Восстанавливаем частицы
+                    if (state.mathParticlesData) {
+                        state.mathParticlesData.forEach(pData => {
+                            const geometry = new THREE.BufferGeometry();
+                            geometry.setAttribute('position', new THREE.Float32BufferAttribute(pData.positions, 3));
+                            geometry.setAttribute('color', new THREE.Float32BufferAttribute(pData.colors, 3));
+                            geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(pData.alphas, 1));
+                            const material = createParticleMaterial();
+                            const points = new THREE.Points(geometry, material);
+                            points.userData.foundElements = pData.foundElements;
+                            points.userData.dominantIndex = pData.dominantIndex;
+                            points.userData.palette = pData.palette;
+                            points.userData.center = new THREE.Vector3(pData.center.x, pData.center.y, pData.center.z);
+                            scene.add(points);
+                            mathParticlesList.push(points);
+                        });
+                    }
+                    
+                    // Восстанавливаем постоянные маркеры (круги)
+                    if (state.permanentMathMarkers) {
+                        state.permanentMathMarkers.forEach(mPos => {
+                            const marker = createMathMarker(new THREE.Vector3(mPos.x, mPos.y, mPos.z));
+                            permanentMathMarkers.push(marker);
+                        });
+                    }
+                    
+                    activeWorldSeed = s.seed;
+                    renderSavedWorlds();
+                });
+                
+                container.appendChild(icon);
+            });
+        }
+        renderSavedWorlds();
+
+        function saveCurrentWorld() {
+            const seedStr = `${seedX.toFixed(2)},${seedY.toFixed(2)}`;
+            const existingIndex = savedWorlds.findIndex(s => s.seed === seedStr);
+            let name;
+            
+            // Сериализация крестов
+            const crosshairsData = permanentMarkers.map(m => ({
+                x: m.position.x, y: m.position.y, z: m.position.z,
+                color: m.color.getHex(),
+                elements: m.elements
+            }));
+            
+            // Сериализация частиц
+            const mathParticlesData = mathParticlesList.map(p => ({
+                positions: Array.from(p.geometry.attributes.position.array),
+                colors: Array.from(p.geometry.attributes.color.array),
+                alphas: Array.from(p.geometry.attributes.alpha.array),
+                foundElements: p.userData.foundElements,
+                dominantIndex: p.userData.dominantIndex,
+                palette: p.userData.palette,
+                center: { x: p.userData.center.x, y: p.userData.center.y, z: p.userData.center.z }
+            }));
+            
+            // Сериализация постоянных маркеров (кругов)
+            const permanentMathMarkersData = permanentMathMarkers.map(m => ({
+                x: m.position.x, y: m.position.y, z: m.position.z
+            }));
+            
+            const state = {
+                worldStartUTC,
+                autoLiftMode,
+                starsCount,
+                totalCargoLaunched,
+                seedX, seedY,
+                paletteIndex: currentPaletteIndex,
+                cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+                cameraTarget: { x: controls.target.x, y: controls.target.y, z: controls.target.z },
+                rovers: rovers.map(r => ({
+                    name: r.name,
+                    id: r.id,
+                    color: r.color,
+                    isPlayer: r.isPlayer,
+                    position: r.group.position.clone(),
+                    rotation: r.group.rotation.y,
+                    angle: r.angle,
+                    autoSpeed: r.autoSpeed,
+                    spiralRadius: r.spiralRadius,
+                    direction: r.direction,
+                    spawnUTC: r.spawnUTC,
+                    distanceTraveled: r.distanceTraveled,
+                    distanceSinceLastResource: r.distanceSinceLastResource,
+                    trackPoints: r.trackPoints.map(p => ({x: p.x, y: p.y, z: p.z}))
+                })),
+                resourceNodes: resourceNodes.map(n => ({
+                    x: n.position.x, y: n.position.y, z: n.position.z,
+                    roverName: n.roverName,
+                    amount: n.amount,
+                    createdAt: n.createdAt,
+                    elementIndex: elements.findIndex(e => e.symbol === n.element.symbol),
+                    isLifting: n.isLifting,
+                    liftStartUTC: n.liftStartUTC,
+                    liftDuration: n.liftDuration,
+                    startPos: n.startPos ? {x: n.startPos.x, y: n.startPos.y, z: n.startPos.z} : null,
+                    targetPos: n.targetPos ? {x: n.targetPos.x, y: n.targetPos.y, z: n.targetPos.z} : null,
+                    stationPos: n.stationPos ? {x: n.stationPos.x, y: n.stationPos.y, z: n.stationPos.z} : null
+                })),
+                crosshairsData,
+                mathParticlesData,
+                permanentMathMarkers: permanentMathMarkersData
+            };
+            
+            if (existingIndex >= 0) {
+                name = savedWorlds[existingIndex].name;
+                savedWorlds[existingIndex].state = state;
+                localStorage.setItem('savedWorlds', JSON.stringify(savedWorlds));
+                renderSavedWorlds();
+                return;
+            } else {
+                name = prompt('Enter world name:', `World_${savedWorlds.length+1}`);
+                if (name) {
+                    savedWorlds.push({ seed: seedStr, name, state });
+                    localStorage.setItem('savedWorlds', JSON.stringify(savedWorlds));
+                    renderSavedWorlds();
+                }
+            }
+        }
+
+        document.getElementById('save-world').addEventListener('click', saveCurrentWorld);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCurrentWorld();
+            }
+        });
+
+        setInterval(() => {
+            const seedStr = `${seedX.toFixed(2)},${seedY.toFixed(2)}`;
+            const existingIndex = savedWorlds.findIndex(s => s.seed === seedStr);
+            // Для автосохранения можно использовать ту же структуру, но для простоты пропустим детали
+            // В реальном коде нужно добавить автосохранение с обновлением state
+        }, 300000);
+
+        const clock = new THREE.Clock();
+        function animate() {
+            const delta = Math.min(clock.getDelta(), 0.1);
+            
+            rovers.forEach((rover) => {
+                const oldPos = rover.group.position.clone();
+                
+                if (keyState.space && rover.onGround) {
+                    rover.verticalSpeed = jumpSpeed;
+                    rover.onGround = false;
+                }
+                
+                if (rover.isMovingToTarget) {
+                    rover.moveToTarget(delta);
+                } else if (rover.isPlayer && !rover.autoMode) {
+                    let moveDistance = 0;
+                    if (keyState.w || keyState.s) {
+                        if (keyState.shift) rover.speed *= Math.pow(2, delta);
+                        else {
+                            if (keyState.w) rover.speed += acceleration * delta;
+                            else if (keyState.s) rover.speed -= acceleration * delta;
+                            else rover.speed *= 0.98;
+                            const currentMax = maxSpeed * (keyState.shift ? 3 : 1);
+                            if (Math.abs(rover.speed) > currentMax) rover.speed = Math.sign(rover.speed) * currentMax;
+                        }
+                        moveDistance = rover.speed * delta;
+                        if (moveDistance > 0 && !canMoveForward(rover, moveDistance)) {
+                            moveDistance = 0;
+                            rover.speed = 0;
+                        }
+                        const forward = new THREE.Vector3(0,0,1).applyEuler(rover.group.rotation);
+                        rover.group.position.addScaledVector(forward, moveDistance);
+                    }
+                    if (keyState.a) rover.group.rotation.y += turnSpeed * delta;
+                    if (keyState.d) rover.group.rotation.y -= turnSpeed * delta;
+                    
+                    if (keyState.a) rover.targetSteering = maxSteeringAngle;
+                    else if (keyState.d) rover.targetSteering = -maxSteeringAngle;
+                    else rover.targetSteering = 0;
+                    rover.steeringAngle += (rover.targetSteering - rover.steeringAngle) * steeringSpeed * delta;
+                    
+                    document.getElementById('speed-val').textContent = (Math.abs(rover.speed)*3.6).toFixed(1) + ' km/h';
+                    document.getElementById('shift-val').textContent = keyState.shift ? '∞' : '1.0x';
+                    
+                    const newPos = rover.group.position.clone();
+                    const distMoved = oldPos.distanceTo(newPos);
+                    rover.distanceTraveled += distMoved;
+                    rover.distanceSinceLastResource += distMoved;
+                } else {
+                    rover.autoMove(delta);
+                    const newPos = rover.group.position.clone();
+                    const distMoved = oldPos.distanceTo(newPos);
+                    rover.distanceTraveled += distMoved;
+                    rover.distanceSinceLastResource += distMoved;
+                    rover.steeringAngle = 0;
+                }
+                
+                if (rover.distanceSinceLastResource >= RESOURCE_DISTANCE * (0.5 + Math.random())) {
+                    spawnResourceForRover(rover, autoLiftMode);
+                    rover.distanceSinceLastResource = 0;
+                }
+                
+                rover.updateWheels(delta);
+                rover.updateTrack(delta);
+            });
+            
+            for (let i = resourceNodes.length - 1; i >= 0; i--) {
+                const node = resourceNodes[i];
+                const remove = node.updateLift();
+                if (remove) {
+                    scene.remove(node.point);
+                    scene.remove(node.sprite);
+                    resourceNodes.splice(i, 1);
+                    totalCargoLaunched++;
+                    const newStars = Math.floor(totalCargoLaunched / 1000);
+                    if (newStars > starsCount) {
+                        starsCount = newStars;
+                        if (starsCount > maxStars) starsCount = maxStars;
+                        updateStars();
+                    }
+                }
+            }
+            
+            if (selectedRover && selectedRover.trackDots) {
+                const dots = selectedRover.trackDots;
+                const distance = camera.position.distanceTo(selectedRover.group.position);
+                dots.material.size = Math.max(1, Math.min(4, 20 / distance));
+            }
+            
+            const stationTop = station.children.find(child => child.userData && child.userData.isBillboard);
+            if (stationTop) {
+                stationTop.quaternion.copy(camera.quaternion);
+            }
+            
+            updateLOD();
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            renderer.setSize(w, h);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        });
+
+        const title = document.getElementById('terrain-title');
+        const tooltip = document.getElementById('tooltip');
+        title.addEventListener('mouseenter', () => tooltip.classList.add('active'));
+        title.addEventListener('mouseleave', () => tooltip.classList.remove('active'));
+
+        document.getElementById('rover-count').textContent = rovers.length;
+        updateSelectedName();
+        updateRoverTabs();
+    </script>
+<script>
+window._gs = null;
+window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+</script>
+</body>
+</html>

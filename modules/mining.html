@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELITE SHIPYARD 314 • СИМУЛЯТОР</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0310;
+            font-family: 'VT323', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #ffaa00;
+        }
+        #ship-constructor {
+            position: relative;
+            width: 560px;
+            height: 380px;
+            pointer-events: all;
+            z-index: 2000;
+        }
+        .constructor-frame {
+            background: rgba(0, 0, 0, 0.95);
+            border: 4px solid #ffaa00;
+            box-shadow: 0 0 20px #cc8800, inset 0 0 15px #442200;
+            padding: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .constructor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .constructor-title {
+            color: #ffff88;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px #ffaa00;
+            cursor: help;
+            border-bottom: 1px dashed #ffaa00;
+        }
+        .button-group {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-small {
+            background: rgba(40, 30, 10, 0.95);
+            border: 2px solid #ffaa00;
+            color: #ffff88;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            padding: 2px 16px;
+            cursor: pointer;
+            box-shadow: 0 0 6px #cc8800;
+            transition: 0.1s;
+            letter-spacing: 1px;
+        }
+        .btn-small:hover {
+            background: rgba(80, 50, 20, 0.95);
+            border-color: #ffff88;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+        .btn-small.reset {
+            background: rgba(60, 20, 20, 0.95);
+        }
+        .btn-small.mine {
+            background: rgba(20, 60, 20, 0.95);
+            font-size: 20px;
+            padding: 2px 14px;
+        }
+        .btn-small.mine.active {
+            background: #ffaa00;
+            color: black;
+            border-color: #ffff88;
+            box-shadow: 0 0 15px #ffaa00;
+        }
+        .constructor-canvas {
+            flex: 1;
+            position: relative;
+            background: rgba(10, 5, 0, 0.9);
+            border: 2px solid #ffaa00;
+            overflow: hidden;
+            cursor: move;
+        }
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding: 8px 4px;
+            border-top: 1px dashed #ffaa00;
+            font-size: 16px;
+            gap: 16px;
+            background: rgba(0,0,0,0.6);
+            justify-content: space-around;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: help;
+        }
+        .stat-label {
+            color: #cc8800;
+        }
+        .stat-value {
+            color: #ffff88;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .stat-value span {
+            display: inline-block;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(10, 5, 0, 0.98);
+            border: 2px solid #ffaa00;
+            padding: 8px 12px;
+            font-size: 16px;
+            color: #ffff88;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 0 15px #cc8800;
+            z-index: 3000;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.15s;
+            border-radius: 0;
+            font-family: 'VT323', monospace;
+        }
+        .tooltip.active {
+            opacity: 1;
+        }
+        .tooltip table {
+            border-collapse: collapse;
+        }
+        .tooltip td {
+            padding: 2px 8px;
+        }
+        .tooltip .stat-name {
+            color: #cc8800;
+        }
+        .tooltip .stat-star {
+            color: #ffaa00;
+        }
+        .full-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffaa00;
+            padding: 8px 16px;
+            color: #ffff88;
+            font-size: 20px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px #cc8800;
+            z-index: 3500;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .full-message.show {
+            opacity: 1;
+        }
+        #ai-stats-data {
+            display: none;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffaa00;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5000;
+            display: none;
+        }
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 2px;
+            background: #ffaa00;
+            transform: translate(-50%, -50%);
+        }
+        #crosshair::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 10px;
+            background: #ffaa00;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="ship-constructor">
+        <div class="constructor-frame">
+            <div class="constructor-header">
+                <span class="constructor-title" id="ship-title">КОБРА</span>
+                <div class="button-group">
+                    <button class="btn-small mine" id="mine-btn" title="⛏ РЕЖИМ ДОБЫЧИ">⛏</button>
+                    <button class="btn-small" id="add-module-btn" title="➕">➕</button>
+                    <button class="btn-small reset" id="reset-btn">✖</button>
+                </div>
+            </div>
+            <div class="constructor-canvas" id="ship-canvas"></div>
+            <div class="stats-panel" id="stats-panel">
+                <!-- динамически -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="module-tooltip"></div>
+    <div class="full-message" id="full-message">ПОЛНАЯ СБОРКА</div>
+    <div id="ai-stats-data"></div>
+    <div id="crosshair"></div>
+
+    <script>
+        (function() {
+            // ======================= НАЗВАНИЯ КОРАБЛЕЙ =======================
+            const SHIP_NAMES = [
+                "КОБРА", "ШНЫРЬ", "ДЕРЗКИЙ", "БУНТ", "КИНЖАЛ",
+                "ПЕГАС", "ОРИОН", "КОРВЕТ", "УНИВЕРСАЛ", "БАРХАН",
+                "ИКАРУС", "АТЛАНТ", "ДАМИР", "БУРАН"
+            ];
+
+            // ======================= ДАННЫЕ МОДУЛЕЙ (14 шт) =======================
+            const MODULE_DATA = [
+                { // 0: Базовый корпус (только центральный ромб, без боковых)
+                    name: 'БАЗОВЫЙ КОРПУС',
+                    color: 0xffaa00,
+                    stats: { speed: 1, mining: 1, fuel: 1, health: 1, shield: 1 },
+                    center: { vertices: [[0,0,0], [-2,-1,-4], [2,-1,-4], [0,2,-4]], edges: [[0,1],[0,2],[0,3],[1,2],[2,3],[3,1]] }
+                    // left и right отсутствуют — только центр
+                },
+                { // 1: Кабина
+                    name: 'КАБИНА',
+                    color: 0x44aaff,
+                    stats: { speed: 1, mining: 1, fuel: 0, health: 0, shield: 0 },
+                    center: { vertices: [[-2,-1,-4],[2,-1,-4],[0,2,-4],[-3,-1.5,-8],[3,-1.5,-8],[0,2.5,-8],[-1,2.2,-6],[1,2.2,-6],[-1,2.5,-5.5],[1,2.5,-5.5]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-4,0.5,-5],[-5.5,0.5,-5],[-5.5,1.5,-5],[-4,1.5,-5],[-4.2,0.3,-7],[-5.7,0.3,-7],[-5.7,1.7,-7],[-4.2,1.7,-7],[-5,0.8,-3.5],[-5,1.2,-3.5],[-6,1,-3.5]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] },
+                    right: { vertices: [[4,0.5,-5],[5.5,0.5,-5],[5.5,1.5,-5],[4,1.5,-5],[4.2,0.3,-7],[5.7,0.3,-7],[5.7,1.7,-7],[4.2,1.7,-7],[5,0.8,-3.5],[5,1.2,-3.5],[6,1,-3.5]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] }
+                },
+                { // 2: Топливный бак
+                    name: 'ТОПЛИВНЫЙ БАК',
+                    color: 0x44ddff,
+                    stats: { speed: 1, mining: 0, fuel: 1, health: 0, shield: 0 },
+                    center: { vertices: [[-3,-1.5,-8],[3,-1.5,-8],[0,2.5,-8],[-5,-2.5,-13],[5,-2.5,-13],[0,3.5,-13],[-4,-1,-10.5],[4,-1,-10.5]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7]] },
+                    left: { vertices: [[-6,-1,-9],[-7.5,-1,-9],[-7.5,2,-9],[-6,2,-9],[-6.2,-1.5,-12],[-7.7,-1.5,-12],[-7.7,2.5,-12],[-6.2,2.5,-12],[-8,0.5,-10],[-8,1.5,-10]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] },
+                    right: { vertices: [[6,-1,-9],[7.5,-1,-9],[7.5,2,-9],[6,2,-9],[6.2,-1.5,-12],[7.7,-1.5,-12],[7.7,2.5,-12],[6.2,2.5,-12],[8,0.5,-10],[8,1.5,-10]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] }
+                },
+                { // 3: Маршевый двигатель
+                    name: 'МАРШЕВЫЙ ДВИГАТЕЛЬ',
+                    color: 0xff5555,
+                    stats: { speed: 1, mining: 0, fuel: 0, health: 1, shield: 0 },
+                    center: { vertices: [[-5,-2.5,-13],[5,-2.5,-13],[0,3.5,-13],[-6.5,-3.5,-19],[6.5,-3.5,-19],[0,4.5,-19],[-2,-1,-16],[2,-1,-16],[-2,1,-16],[2,1,-16]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-7.5,-2,-14],[-9.5,-2,-14],[-9.5,3,-14],[-7.5,3,-14],[-8,-4,-18],[-10,-4,-18],[-10,5,-18],[-8,5,-18],[-10,-1,-16],[-10,1,-16],[-11,0,-16]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] },
+                    right: { vertices: [[7.5,-2,-14],[9.5,-2,-14],[9.5,3,-14],[7.5,3,-14],[8,-4,-18],[10,-4,-18],[10,5,-18],[8,5,-18],[10,-1,-16],[10,1,-16],[11,0,-16]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] }
+                },
+                { // 4: Грузовой трюм
+                    name: 'ГРУЗОВОЙ ТРЮМ',
+                    color: 0x88dd88,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 0, shield: 1 },
+                    center: { vertices: [[-6.5,-3.5,-19],[6.5,-3.5,-19],[0,4.5,-19],[-7.5,-4,-25],[7.5,-4,-25],[0,5,-25],[-5,-2,-22],[5,-2,-22],[-5,2,-22],[5,2,-22]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-9,-3,-20],[-11.5,-3,-20],[-11.5,4,-20],[-9,4,-20],[-9.5,-5,-24],[-12,-5,-24],[-12,6,-24],[-9.5,6,-24],[-10.5,-1,-22],[-10.5,2,-22]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] },
+                    right: { vertices: [[9,-3,-20],[11.5,-3,-20],[11.5,4,-20],[9,4,-20],[9.5,-5,-24],[12,-5,-24],[12,6,-24],[9.5,6,-24],[10.5,-1,-22],[10.5,2,-22]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] }
+                },
+                { // 5: Энергоблок (Пегас)
+                    name: 'ЭНЕРГОБЛОК',
+                    color: 0xaa88ff,
+                    stats: { speed: 0, mining: 1, fuel: 1, health: 0, shield: 0 },
+                    center: { vertices: [[-7.5,-4,-25],[7.5,-4,-25],[0,5,-25],[-8,-4.5,-31],[8,-4.5,-31],[0,5.5,-31],[-6,-1.5,-28],[6,-1.5,-28],[-6,2.5,-28],[6,2.5,-28]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-10.5,-3.5,-26],[-13.5,-3.5,-26],[-13.5,4.5,-26],[-10.5,4.5,-26],[-11,-5.5,-30],[-14,-5.5,-30],[-14,6.5,-30],[-11,6.5,-30],[-12,-2,-28],[-12,3,-28],[-13.5,0.5,-27]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] },
+                    right: { vertices: [[10.5,-3.5,-26],[13.5,-3.5,-26],[13.5,4.5,-26],[10.5,4.5,-26],[11,-5.5,-30],[14,-5.5,-30],[14,6.5,-30],[11,6.5,-30],[12,-2,-28],[12,3,-28],[13.5,0.5,-27]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] }
+                },
+                { // 6: Бронеплиты (Орион)
+                    name: 'БРОНЕПЛИТЫ',
+                    color: 0xffaa66,
+                    stats: { speed: 0, mining: 1, fuel: 0, health: 1, shield: 0 },
+                    center: { vertices: [[-8,-4.5,-31],[8,-4.5,-31],[0,5.5,-31],[-8.5,-5,-37],[8.5,-5,-37],[0,6,-37],[-7,-2,-34],[7,-2,-34],[-7,3,-34],[7,3,-34]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-12,-4,-32],[-15.5,-4,-32],[-15.5,5,-32],[-12,5,-32],[-12.5,-6,-36],[-16,-6,-36],[-16,7,-36],[-12.5,7,-36],[-13,-5,-33],[-15,-5,-33],[-15,6,-33],[-13.5,-5.5,-35],[-15.5,-5.5,-35],[-15.5,6.5,-35],[-13.5,6.5,-35],[-14,0.5,-30],[-14,2.5,-30]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[12,-4,-32],[15.5,-4,-32],[15.5,5,-32],[12,5,-32],[12.5,-6,-36],[16,-6,-36],[16,7,-36],[12.5,7,-36],[13,-5,-33],[15,-5,-33],[15,6,-33],[13.5,-5.5,-35],[15.5,-5.5,-35],[15.5,6.5,-35],[13.5,6.5,-35],[14,0.5,-30],[14,2.5,-30]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 7: Маневровые (Корвет)
+                    name: 'МАНЕВРОВЫЕ',
+                    color: 0xff3333,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 0, shield: 1 },
+                    center: { vertices: [[-8.5,-5,-37],[8.5,-5,-37],[0,6,-37],[-9,-5.5,-43],[9,-5.5,-43],[0,6.5,-43],[-5,-2.5,-40],[5,-2.5,-40],[-5,3,-40],[5,3,-40]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-13.5,-4.5,-38],[-17.5,-4.5,-38],[-17.5,5.5,-38],[-13.5,5.5,-38],[-14,-7,-42],[-18,-7,-42],[-18,8,-42],[-14,8,-42],[-16,-3,-35],[-19,-3,-35],[-19,4,-35],[-16.5,-6,-34],[-19.5,-6,-34],[-19.5,7,-34],[-16.5,7,-34],[-15.5,0.5,-44],[-15.5,2.5,-44],[-17,1.5,-45]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] },
+                    right: { vertices: [[13.5,-4.5,-38],[17.5,-4.5,-38],[17.5,5.5,-38],[13.5,5.5,-38],[14,-7,-42],[18,-7,-42],[18,8,-42],[14,8,-42],[16,-3,-35],[19,-3,-35],[19,4,-35],[16.5,-6,-34],[19.5,-6,-34],[19.5,7,-34],[16.5,7,-34],[15.5,0.5,-44],[15.5,2.5,-44],[17,1.5,-45]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] }
+                },
+                { // 8: Хвост (Универсал)
+                    name: 'ХВОСТ',
+                    color: 0xffaa00,
+                    stats: { speed: 0, mining: 0, fuel: 1, health: 1, shield: 0 },
+                    center: { vertices: [[-9,-5.5,-43],[9,-5.5,-43],[0,6.5,-43],[-9.5,-6,-49],[9.5,-6,-49],[0,7,-49],[-5,-2,-46],[5,-2,-46],[-5,3,-46],[5,3,-46]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-15,-5,-44],[-20,-5,-44],[-20,6,-44],[-15,6,-44],[-15.5,-7.5,-48],[-20.5,-7.5,-48],[-20.5,8.5,-48],[-15.5,8.5,-48],[-17,7,-46],[-22,9,-46],[-22,11,-46],[-17.5,6.5,-47],[-22.5,8.5,-47],[-22.5,10.5,-47],[-17.5,8.5,-47],[-19,-2,-50],[-19,3,-50]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[15,-5,-44],[20,-5,-44],[20,6,-44],[15,6,-44],[15.5,-7.5,-48],[20.5,-7.5,-48],[20.5,8.5,-48],[15.5,8.5,-48],[17,7,-46],[22,9,-46],[22,11,-46],[17.5,6.5,-47],[22.5,8.5,-47],[22.5,10.5,-47],[17.5,8.5,-47],[19,-2,-50],[19,3,-50]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 9: Тяжёлый корпус (Бархан)
+                    name: 'ТЯЖЁЛЫЙ КОРПУС',
+                    color: 0xddbb33,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 0, shield: 1 },
+                    center: { vertices: [[-9.5,-6,-49],[9.5,-6,-49],[0,7,-49],[-10,-6.5,-55],[10,-6.5,-55],[0,7.5,-55],[-6,-2,-52],[6,-2,-52],[-6,3,-52],[6,3,-52]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-16.5,-5.5,-50],[-22.5,-5.5,-50],[-22.5,6.5,-50],[-16.5,6.5,-50],[-17,-8,-54],[-23,-8,-54],[-23,9,-54],[-17,9,-54],[-19,8,-52],[-21,12,-52],[-21,14,-52],[-19.5,7.5,-53],[-21.5,11.5,-53],[-21.5,13.5,-53],[-19.5,9.5,-53],[-20,-3,-57],[-20,4,-57]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[16.5,-5.5,-50],[22.5,-5.5,-50],[22.5,6.5,-50],[16.5,6.5,-50],[17,-8,-54],[23,-8,-54],[23,9,-54],[17,9,-54],[19,8,-52],[21,12,-52],[21,14,-52],[19.5,7.5,-53],[21.5,11.5,-53],[21.5,13.5,-53],[19.5,9.5,-53],[20,-3,-57],[20,4,-57]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 10: Гипердрайв (Икарус)
+                    name: 'ГИПЕРДРАЙВ',
+                    color: 0xff66aa,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 1, shield: 1 },
+                    center: { vertices: [[-10,-6.5,-55],[10,-6.5,-55],[0,7.5,-55],[-10.5,-7,-61],[10.5,-7,-61],[0,8,-61],[-7,-2.5,-58],[7,-2.5,-58],[-7,3.5,-58],[7,3.5,-58]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-18,-6,-56],[-25,-6,-56],[-25,7,-56],[-18,7,-56],[-18.5,-8.5,-60],[-25.5,-8.5,-60],[-25.5,9.5,-60],[-18.5,9.5,-60],[-20,-7,-57],[-24,-7,-57],[-24,8,-57],[-20.5,-7.5,-59],[-24.5,-7.5,-59],[-24.5,8.5,-59],[-20.5,8.5,-59],[-22,0.5,-62],[-22,2.5,-62],[-23,1.5,-63]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] },
+                    right: { vertices: [[18,-6,-56],[25,-6,-56],[25,7,-56],[18,7,-56],[18.5,-8.5,-60],[25.5,-8.5,-60],[25.5,9.5,-60],[18.5,9.5,-60],[20,-7,-57],[24,-7,-57],[24,8,-57],[20.5,-7.5,-59],[24.5,-7.5,-59],[24.5,8.5,-59],[20.5,8.5,-59],[22,0.5,-62],[22,2.5,-62],[23,1.5,-63]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] }
+                },
+                { // 11: Экраны (Атлант)
+                    name: 'ЭКРАНЫ',
+                    color: 0xaa99ff,
+                    stats: { speed: 1, mining: 0, fuel: 0, health: 0, shield: 0 },
+                    center: { vertices: [[-10.5,-7,-61],[10.5,-7,-61],[0,8,-61],[-11,-10,-70],[11,-10,-70],[0,11,-70],[-8,-4,-65],[8,-4,-65],[-8,5,-65],[8,5,-65]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-20,-6.5,-62],[-28,-6.5,-62],[-28,7.5,-62],[-20,7.5,-62],[-20.5,-12,-68],[-28.5,-12,-68],[-28.5,13,-68],[-20.5,13,-68],[-24,-9,-64],[-32,-15,-75],[-32,16,-75],[-24,10,-64],[-26,-2,-70],[-26,3,-70]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[8,4],[11,7],[12,13]] },
+                    right: { vertices: [[20,-6.5,-62],[28,-6.5,-62],[28,7.5,-62],[20,7.5,-62],[20.5,-12,-68],[28.5,-12,-68],[28.5,13,-68],[20.5,13,-68],[24,-9,-64],[32,-15,-75],[32,16,-75],[24,10,-64],[26,-2,-70],[26,3,-70]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[8,4],[11,7],[12,13]] }
+                },
+                { // 12: Майнинг-комплекс (Дамир)
+                    name: 'МАЙНИНГ-КОМПЛЕКС',
+                    color: 0x88ff88,
+                    stats: { speed: 0, mining: 1, fuel: 0, health: 0, shield: 0 },
+                    center: { vertices: [[-11,-10,-70],[11,-10,-70],[0,13,-70],[-12,-12,-80],[12,-12,-80],[0,15,-80],[-8,-6,-75],[8,-6,-75],[-8,7,-75],[8,7,-75]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-28,-9,-72],[-34,-9,-72],[-34,10,-72],[-28,10,-72],[-29,-14,-78],[-35,-14,-78],[-35,15,-78],[-29,15,-78],[-30,-11,-74],[-33,-11,-74],[-33,12,-74],[-31,-13,-76],[-34,-13,-76],[-34,14,-76],[-31,14,-76],[-32,-2,-80],[-32,3,-80]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[28,-9,-72],[34,-9,-72],[34,10,-72],[28,10,-72],[29,-14,-78],[35,-14,-78],[35,15,-78],[29,15,-78],[30,-11,-74],[33,-11,-74],[33,12,-74],[31,-13,-76],[34,-13,-76],[34,14,-76],[31,14,-76],[32,-2,-80],[32,3,-80]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 13: Флагман (Буран)
+                    name: 'ФЛАГМАН',
+                    color: 0xffdd44,
+                    stats: { speed: 0, mining: 0, fuel: 1, health: 0, shield: 0 },
+                    center: { vertices: [[-12,-12,-80],[12,-12,-80],[0,15,-80],[-13,-14,-90],[13,-14,-90],[0,17,-90],[-9,-7,-85],[9,-7,-85],[-9,8,-85],[9,8,-85]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-34,-11,-82],[-40,-11,-82],[-40,12,-82],[-34,12,-82],[-35,-16,-88],[-41,-16,-88],[-41,17,-88],[-35,17,-88],[-36,-13,-84],[-39,-13,-84],[-39,14,-84],[-37,-15,-86],[-40,-15,-86],[-40,16,-86],[-37,16,-86],[-38,0,-92],[-38,2,-92],[-39,1,-93]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] },
+                    right: { vertices: [[34,-11,-82],[40,-11,-82],[40,12,-82],[34,12,-82],[35,-16,-88],[41,-16,-88],[41,17,-88],[35,17,-88],[36,-13,-84],[39,-13,-84],[39,14,-84],[37,-15,-86],[40,-15,-86],[40,16,-86],[37,16,-86],[38,0,-92],[38,2,-92],[39,1,-93]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] }
+                }
+            ];
+
+            // ======================= ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =======================
+            const MAX_MODULES = 14;
+            let scene, camera, renderer;
+            let shipGroup = new THREE.Group();
+            let currentModuleIndex = 0;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            const cameraTarget = new THREE.Vector3(0, 0, -40);
+
+            const tooltipDiv = document.getElementById('module-tooltip');
+            const titleSpan = document.getElementById('ship-title');
+            const fullMessageDiv = document.getElementById('full-message');
+            const aiDataDiv = document.getElementById('ai-stats-data');
+            const crosshair = document.getElementById('crosshair');
+
+            // ======================= НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ РЕЖИМА ДОБЫЧИ =======================
+            let isMiningMode = false;
+            let mineBtn = document.getElementById('mine-btn');
+            let miningGroup = new THREE.Group(); // группа для астероидов и плюсов
+            let asteroids = []; // массив объектов { mesh, edges, group } для каждого астероида
+            let destroyedCount = 0; // счётчик уничтоженных астероидов
+            let cargo = 0;
+            let maxCargo = 0;
+            let keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
+            let cameraHome = { pos: new THREE.Vector3(), target: new THREE.Vector3() }; // для возврата
+            let isCameraAnimating = false;
+            let cameraAnimProgress = 0;
+            let cameraAnimFrom = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
+            let cameraAnimTo = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
+            const MINE_SPEED = 0.2; // базовая скорость
+            const ASTEROID_COUNT = 80;
+            const ASTEROID_SIZE = 3;
+            const ASTEROID_RANGE = 80;
+
+            // Переменные для управления поворотом корабля
+            let yaw = 0, pitch = 0;
+            const PITCH_LIMIT = Math.PI * 0.4; // ограничение, чтобы не переворачиваться
+            let mouseSensitivity = 0.005;
+            let lastMouseX = 0, lastMouseY = 0;
+            let isMouseDownForLook = false; // для удобства используем зажатие ЛКМ или просто движение мыши всегда? Обычно в шутерах поворот без зажатия. Сделаем без зажатия: при входе в режим мышь управляет всегда.
+
+            // Визуализация выстрела
+            let laserLine = null;
+            let hitEffect = null;
+
+            // ======================= ФУНКЦИИ ПОСТРОЕНИЯ ГЕОМЕТРИИ =======================
+            function buildFacesFromBlock(vertices, edges) {
+                const vCount = vertices.length;
+                if (vCount % 4 !== 0) return [];
+                const groups = [];
+                for (let i = 0; i < vCount; i += 4) groups.push([i, i+1, i+2, i+3]);
+                const faces = [];
+                for (let g = 0; g < groups.length; g += 2) {
+                    if (g+1 >= groups.length) break;
+                    const front = groups[g];
+                    const back = groups[g+1];
+                    faces.push([front[0], front[1], front[2], front[3]]);
+                    faces.push([back[0], back[1], back[2], back[3]]);
+                    for (let i = 0; i < 4; i++) {
+                        const next = (i+1)%4;
+                        faces.push([front[i], front[next], back[next], back[i]]);
+                    }
+                }
+                return faces;
+            }
+
+            function createMeshFromBlock(blockData, color) {
+                if (!blockData || !blockData.vertices) return null;
+                const vertices = blockData.vertices;
+                const faces = buildFacesFromBlock(vertices, blockData.edges);
+                if (faces.length === 0) return null;
+                const triangles = [];
+                faces.forEach(quad => {
+                    triangles.push([quad[0], quad[1], quad[2]]);
+                    triangles.push([quad[0], quad[2], quad[3]]);
+                });
+                const positions = [];
+                triangles.forEach(tri => {
+                    tri.forEach(idx => {
+                        if (vertices[idx]) positions.push(vertices[idx][0], vertices[idx][1], vertices[idx][2]);
+                    });
+                });
+                if (positions.length === 0) return null;
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geometry.computeVertexNormals();
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x000000,
+                    transparent: true,
+                    opacity: 0.15,
+                    side: THREE.DoubleSide,
+                    depthWrite: true,
+                    depthTest: true
+                });
+                return new THREE.Mesh(geometry, material);
+            }
+
+            function createLinesFromBlock(blockData, lineColor) {
+                if (!blockData || !blockData.edges || !blockData.vertices) return null;
+                const geometry = new THREE.BufferGeometry();
+                const positions = [];
+                blockData.edges.forEach(([v1, v2]) => {
+                    const p1 = blockData.vertices[v1];
+                    const p2 = blockData.vertices[v2];
+                    if (p1 && p2) {
+                        positions.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+                    }
+                });
+                if (positions.length === 0) return null;
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                const material = new THREE.LineBasicMaterial({ color: lineColor });
+                return new THREE.LineSegments(geometry, material);
+            }
+
+            // ======================= ДОБАВЛЕНИЕ МОДУЛЯ =======================
+            function addModule(moduleData, index) {
+                try {
+                    // Центральная часть
+                    if (moduleData.center) {
+                        const mesh = createMeshFromBlock(moduleData.center, moduleData.color);
+                        if (mesh) shipGroup.add(mesh);
+                        const lines = createLinesFromBlock(moduleData.center, moduleData.color);
+                        if (lines) shipGroup.add(lines);
+                    }
+                    // Левая часть (если есть)
+                    if (moduleData.left) {
+                        const mesh = createMeshFromBlock(moduleData.left, moduleData.color);
+                        if (mesh) shipGroup.add(mesh);
+                        const lines = createLinesFromBlock(moduleData.left, moduleData.color);
+                        if (lines) shipGroup.add(lines);
+                    }
+                    // Правая часть (если есть)
+                    if (moduleData.right) {
+                        const mesh = createMeshFromBlock(moduleData.right, moduleData.color);
+                        if (mesh) shipGroup.add(mesh);
+                        const lines = createLinesFromBlock(moduleData.right, moduleData.color);
+                        if (lines) shipGroup.add(lines);
+                    }
+                } catch (e) {
+                    console.warn(`Ошибка при добавлении модуля ${index}:`, e);
+                }
+
+                currentModuleIndex++;
+                updateStats();
+                adjustCameraToFit();
+                updateShipName();
+            }
+
+            function addNextModule() {
+                if (currentModuleIndex < MAX_MODULES) {
+                    addModule(MODULE_DATA[currentModuleIndex], currentModuleIndex);
+                } else {
+                    fullMessageDiv.classList.add('show');
+                    setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
+                }
+            }
+
+            function resetShip() {
+                // Выходим из режима добычи при сбросе
+                if (isMiningMode) toggleMiningMode();
+                while (shipGroup.children.length) shipGroup.remove(shipGroup.children[0]);
+                currentModuleIndex = 0;
+                addModule(MODULE_DATA[0], 0);
+                adjustCameraToFit();
+            }
+
+            // ======================= НАЗВАНИЕ КОРАБЛЯ =======================
+            function updateShipName() {
+                if (currentModuleIndex > 0 && currentModuleIndex <= SHIP_NAMES.length) {
+                    titleSpan.textContent = SHIP_NAMES[currentModuleIndex - 1];
+                } else {
+                    titleSpan.textContent = "КОБРА";
+                }
+            }
+
+            // ======================= СТАТИСТИКА =======================
+            function starString(val) {
+                let s = '';
+                for (let i = 0; i < Math.min(val, 5); i++) {
+                    s += '<span style="color:#ffff88">★</span>';
+                }
+                for (let i = val; i < 5; i++) {
+                    s += '<span style="color:#666666">☆</span>';
+                }
+                return s;
+            }
+
+            function getTotalStats() {
+                const totalStats = { speed: 0, mining: 0, fuel: 0, health: 0, shield: 0 };
+                for (let i = 0; i < currentModuleIndex; i++) {
+                    const s = MODULE_DATA[i].stats;
+                    totalStats.speed += s.speed;
+                    totalStats.mining += s.mining;
+                    totalStats.fuel += s.fuel;
+                    totalStats.health += s.health;
+                    totalStats.shield += s.shield;
+                }
+                return totalStats;
+            }
+
+            function updateStats() {
+                const totalStats = getTotalStats();
+                // Обновим максимальный трюм при изменении корабля
+                maxCargo = currentModuleIndex * 5 + totalStats.health * 3 + totalStats.shield * 2;
+
+                const statTitles = {
+                    speed: '⚡ Скорость',
+                    mining: '⛏ Добыча',
+                    fuel: '⛽ Топливоёмкость',
+                    health: '❤ Здоровье',
+                    shield: '🛡 Защита',
+                    modules: '📦 Установлено модулей',
+                    cargo: '📦 Груз'
+                };
+
+                document.getElementById('stats-panel').innerHTML = `
+                    <div class="stat-item" title="${statTitles.speed}"><span class="stat-label">⚡СК:</span><span class="stat-value">${starString(totalStats.speed)}</span></div>
+                    <div class="stat-item" title="${statTitles.mining}"><span class="stat-label">⛏ДОБ:</span><span class="stat-value">${starString(totalStats.mining)}</span></div>
+                    <div class="stat-item" title="${statTitles.fuel}"><span class="stat-label">⛽ТОП:</span><span class="stat-value">${starString(totalStats.fuel)}</span></div>
+                    <div class="stat-item" title="${statTitles.health}"><span class="stat-label">❤ЗД:</span><span class="stat-value">${starString(totalStats.health)}</span></div>
+                    <div class="stat-item" title="${statTitles.shield}"><span class="stat-label">🛡ЗЩ:</span><span class="stat-value">${starString(totalStats.shield)}</span></div>
+                    <div class="stat-item" title="${statTitles.modules}"><span class="stat-label">МОД:</span><span class="stat-value">${currentModuleIndex}/${MAX_MODULES}</span></div>
+                    <div class="stat-item" title="${statTitles.cargo}"><span class="stat-label">📦ГРУЗ:</span><span class="stat-value">${cargo}/${maxCargo}</span></div>
+                `;
+                aiDataDiv.textContent = JSON.stringify({
+                    modules: currentModuleIndex,
+                    stats: totalStats,
+                    shipName: SHIP_NAMES[currentModuleIndex-1] || "КОБРА"
+                });
+            }
+
+            // ======================= КАМЕРА (ближе сначала, отдаляется) =======================
+            function adjustCameraToFit() {
+                const bbox = new THREE.Box3().setFromObject(shipGroup);
+                const size = bbox.getSize(new THREE.Vector3());
+                const center = bbox.getCenter(new THREE.Vector3());
+                cameraTarget.copy(center);
+
+                const maxDim = Math.max(size.x, size.y, size.z, 15);
+                const fov = camera.fov * (Math.PI / 180);
+                let distance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+                distance = Math.max(distance, 30);
+
+                const direction = new THREE.Vector3(1, 0.5, 1).normalize();
+                camera.position.copy(center.clone().add(direction.multiplyScalar(distance)));
+                camera.lookAt(center);
+            }
+
+            // ======================= РЕЖИМ ДОБЫЧИ =======================
+            function createAsteroid() {
+                // Создаём искажённую сферу (октаэдр для low-poly вида)
+                const geom = new THREE.OctahedronGeometry(1, 1); // можно использовать Icosahedron
+                // Деформируем вершины случайно
+                const positionAttribute = geom.attributes.position;
+                for (let i = 0; i < positionAttribute.count; i++) {
+                    const x = positionAttribute.getX(i);
+                    const y = positionAttribute.getY(i);
+                    const z = positionAttribute.getZ(i);
+                    const noise = 0.3 * (Math.random() - 0.5);
+                    positionAttribute.setXYZ(i, x + noise, y + noise, z + noise);
+                }
+                geom.computeVertexNormals();
+
+                // Масштабируем неравномерно
+                const scaleX = 0.8 + Math.random() * 1.2;
+                const scaleY = 0.8 + Math.random() * 1.2;
+                const scaleZ = 0.8 + Math.random() * 1.2;
+
+                // Материал тела (чёрный матовый)
+                const materialBody = new THREE.MeshStandardMaterial({
+                    color: 0x111111,
+                    emissive: 0x000000,
+                    roughness: 0.9,
+                    metalness: 0.1
+                });
+
+                // Материал для wireframe (светло-серый) - используем тот же меш с wireframe
+                const materialWire = new THREE.MeshStandardMaterial({
+                    color: 0xaaaaaa,
+                    wireframe: true,
+                    emissive: 0x000000
+                });
+
+                const meshBody = new THREE.Mesh(geom, materialBody);
+                const meshWire = new THREE.Mesh(geom, materialWire);
+
+                // Применяем одинаковое масштабирование к обоим
+                meshBody.scale.set(scaleX, scaleY, scaleZ);
+                meshWire.scale.set(scaleX, scaleY, scaleZ);
+
+                // Объединяем в группу
+                const group = new THREE.Group();
+                group.add(meshBody);
+                group.add(meshWire);
+
+                return group;
+            }
+
+            function spawnAsteroids() {
+                for (let i = 0; i < ASTEROID_COUNT; i++) {
+                    const ast = createAsteroid();
+                    // Случайная позиция в кубе
+                    ast.position.x = (Math.random() - 0.5) * ASTEROID_RANGE;
+                    ast.position.y = (Math.random() - 0.5) * ASTEROID_RANGE * 0.5; // менее высоко
+                    ast.position.z = (Math.random() - 0.5) * ASTEROID_RANGE;
+                    // Случайный поворот
+                    ast.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+                    miningGroup.add(ast);
+                    asteroids.push(ast);
+                }
+            }
+
+            function createPlus(color) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'rgba(0,0,0,0)';
+                ctx.fillRect(0, 0, 64, 64);
+                ctx.font = 'bold 48px "VT323"';
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('+', 32, 32);
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+                const sprite = new THREE.Sprite(material);
+                sprite.scale.set(4, 4, 1);
+                return sprite;
+            }
+
+            // Функция для создания линии выстрела
+            function createLaserLine(from, to, color = 0xff0000) {
+                const points = [from, to];
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({ color });
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+                setTimeout(() => scene.remove(line), 100);
+            }
+
+            // Функция для эффекта попадания
+            function createHitEffect(position) {
+                const geometry = new THREE.SphereGeometry(0.5, 4, 4);
+                const material = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8 });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.copy(position);
+                scene.add(sphere);
+                setTimeout(() => scene.remove(sphere), 200);
+            }
+
+            function shoot() {
+                // Направление выстрела из камеры (центр экрана)
+                const raycaster = new THREE.Raycaster();
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                raycaster.set(camera.position, direction);
+
+                const intersects = raycaster.intersectObjects(asteroids, true);
+                let hitPoint = null;
+                if (intersects.length > 0) {
+                    const hit = intersects[0].object;
+                    const asteroidGroup = hit.parent;
+                    if (asteroidGroup && asteroids.includes(asteroidGroup)) {
+                        hitPoint = intersects[0].point.clone();
+
+                        // Визуализация попадания
+                        createHitEffect(hitPoint);
+
+                        // Удаляем астероид
+                        miningGroup.remove(asteroidGroup);
+                        const index = asteroids.indexOf(asteroidGroup);
+                        if (index !== -1) asteroids.splice(index, 1);
+
+                        destroyedCount++;
+                        // Каждый 14-й даёт плюс
+                        if (destroyedCount % 14 === 0) {
+                            const colors = ['#ffaa00', '#ff5555', '#44aaff', '#88ff88', '#ff66aa'];
+                            const color = colors[Math.floor(Math.random() * colors.length)];
+                            const plus = createPlus(color);
+                            plus.position.copy(asteroidGroup.position);
+                            miningGroup.add(plus);
+                            // Анимация полёта к кораблю
+                            const targetPos = shipGroup.position.clone();
+                            const speed = 0.5;
+                            const flyInterval = setInterval(() => {
+                                if (!plus.parent) { clearInterval(flyInterval); return; }
+                                const dir = targetPos.clone().sub(plus.position).normalize();
+                                plus.position.add(dir.multiplyScalar(speed));
+                                if (plus.position.distanceTo(targetPos) < 5) {
+                                    clearInterval(flyInterval);
+                                    miningGroup.remove(plus);
+                                    if (cargo < maxCargo) {
+                                        cargo++;
+                                        updateStats();
+                                    }
+                                }
+                            }, 30);
+                        }
+
+                        // Создаём несколько мелких обломков
+                        for (let i = 0; i < 5; i++) {
+                            const frag = createAsteroid();
+                            frag.scale.multiplyScalar(0.3);
+                            frag.position.copy(asteroidGroup.position);
+                            frag.position.x += (Math.random() - 0.5) * 3;
+                            frag.position.y += (Math.random() - 0.5) * 3;
+                            frag.position.z += (Math.random() - 0.5) * 3;
+                            miningGroup.add(frag);
+                            setTimeout(() => {
+                                if (frag.parent) miningGroup.remove(frag);
+                            }, 2000);
+                        }
+                    }
+                }
+
+                // Линия выстрела: от позиции корабля (нос) до точки попадания или далеко вперёд
+                const shipPos = shipGroup.position.clone();
+                // Направление корабля (ось -Z)
+                const shipDir = new THREE.Vector3(0, 0, -1).applyQuaternion(shipGroup.quaternion);
+                const startPoint = shipPos.clone().add(shipDir.clone().multiplyScalar(5)); // чуть впереди носа
+                const endPoint = hitPoint ? hitPoint : shipPos.clone().add(shipDir.clone().multiplyScalar(200));
+                createLaserLine(startPoint, endPoint, 0xff3333);
+            }
+
+            function startMiningMode() {
+                if (isMiningMode) return;
+                isMiningMode = true;
+                mineBtn.classList.add('active');
+                crosshair.style.display = 'block';
+
+                // Сохраняем исходное положение камеры
+                cameraHome.pos.copy(camera.position);
+                cameraHome.target.copy(cameraTarget);
+
+                // Отключаем стандартное управление мышью
+                const canvas = document.getElementById('ship-canvas');
+                canvas.style.cursor = 'none';
+                canvas.removeEventListener('mousedown', onCanvasMouseDown);
+                document.removeEventListener('mouseup', onDocumentMouseUp);
+                document.removeEventListener('mousemove', onDocumentMouseMove);
+
+                // Добавляем группу астероидов в сцену
+                scene.add(miningGroup);
+                spawnAsteroids();
+
+                // Вычисляем целевую позицию камеры (сзади сверху) для анимации перехода
+                const bbox = new THREE.Box3().setFromObject(shipGroup);
+                const size = bbox.getSize(new THREE.Vector3());
+                const center = bbox.getCenter(new THREE.Vector3());
+                const distance = Math.max(size.z * 1.5, 30);
+                const offset = new THREE.Vector3(0, size.y * 0.5, distance);
+                cameraAnimFrom.pos.copy(camera.position);
+                cameraAnimFrom.target.copy(cameraTarget);
+                cameraAnimTo.pos.copy(center.clone().add(offset));
+                cameraAnimTo.target.copy(center);
+                isCameraAnimating = true;
+                cameraAnimProgress = 0;
+
+                // Сброс счётчика уничтоженных астероидов и трюма
+                destroyedCount = 0;
+                cargo = 0;
+                updateStats();
+
+                // Подписываемся на клавиши и мышь
+                window.addEventListener('keydown', onKeyDown);
+                window.addEventListener('keyup', onKeyUp);
+                canvas.addEventListener('mousedown', onMiningMouseDown);
+                canvas.addEventListener('mousemove', onMiningMouseMove);
+                canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
+            function stopMiningMode() {
+                if (!isMiningMode) return;
+                isMiningMode = false;
+                mineBtn.classList.remove('active');
+                crosshair.style.display = 'none';
+
+                // Удаляем астероиды
+                while (miningGroup.children.length) miningGroup.remove(miningGroup.children[0]);
+                asteroids = [];
+
+                // Возвращаем камеру
+                cameraAnimFrom.pos.copy(camera.position);
+                cameraAnimFrom.target.copy(cameraTarget);
+                cameraAnimTo.pos.copy(cameraHome.pos);
+                cameraAnimTo.target.copy(cameraHome.target);
+                isCameraAnimating = true;
+                cameraAnimProgress = 0;
+
+                // Восстанавливаем управление мышью
+                const canvas = document.getElementById('ship-canvas');
+                canvas.style.cursor = 'move';
+                canvas.addEventListener('mousedown', onCanvasMouseDown);
+                document.addEventListener('mouseup', onDocumentMouseUp);
+                document.addEventListener('mousemove', onDocumentMouseMove);
+
+                // Отписываемся от клавиш и мыши
+                window.removeEventListener('keydown', onKeyDown);
+                window.removeEventListener('keyup', onKeyUp);
+                canvas.removeEventListener('mousedown', onMiningMouseDown);
+                canvas.removeEventListener('mousemove', onMiningMouseMove);
+
+                // Сброс углов поворота корабля
+                yaw = 0;
+                pitch = 0;
+                shipGroup.rotation.set(0, 0, 0);
+            }
+
+            function toggleMiningMode() {
+                if (isMiningMode) {
+                    stopMiningMode();
+                } else {
+                    startMiningMode();
+                }
+            }
+
+            // Обработчики для mining режима
+            function onKeyDown(e) {
+                if (!isMiningMode) return;
+                switch (e.code) {
+                    case 'KeyW': keys.w = true; e.preventDefault(); break;
+                    case 'KeyA': keys.a = true; e.preventDefault(); break;
+                    case 'KeyS': keys.s = true; e.preventDefault(); break;
+                    case 'KeyD': keys.d = true; e.preventDefault(); break;
+                    case 'Space': keys.space = true; e.preventDefault(); break;
+                    case 'ShiftLeft': case 'ShiftRight': keys.shift = true; e.preventDefault(); break;
+                }
+            }
+
+            function onKeyUp(e) {
+                if (!isMiningMode) return;
+                switch (e.code) {
+                    case 'KeyW': keys.w = false; e.preventDefault(); break;
+                    case 'KeyA': keys.a = false; e.preventDefault(); break;
+                    case 'KeyS': keys.s = false; e.preventDefault(); break;
+                    case 'KeyD': keys.d = false; e.preventDefault(); break;
+                    case 'Space': keys.space = false; e.preventDefault(); break;
+                    case 'ShiftLeft': case 'ShiftRight': keys.shift = false; e.preventDefault(); break;
+                }
+            }
+
+            function onMiningMouseMove(e) {
+                if (!isMiningMode) return;
+                // Поворот корабля мышью (без зажатия)
+                if (lastMouseX === 0 && lastMouseY === 0) {
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                    return;
+                }
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+
+                yaw -= deltaX * mouseSensitivity;
+                pitch -= deltaY * mouseSensitivity;
+                pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
+
+                shipGroup.rotation.y = yaw;
+                shipGroup.rotation.x = pitch;
+
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+
+            function onMiningMouseDown(e) {
+                if (!isMiningMode) return;
+                if (e.button === 0) { // ЛКМ
+                    shoot();
+                    e.preventDefault();
+                }
+            }
+
+            function updateMining() {
+                if (!isMiningMode) return;
+
+                // Движение корабля с учётом поворота
+                const stats = getTotalStats();
+                const speed = MINE_SPEED * (stats.speed / 5);
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(shipGroup.quaternion);
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipGroup.quaternion);
+                const up = new THREE.Vector3(0, 1, 0).applyQuaternion(shipGroup.quaternion);
+
+                const move = new THREE.Vector3();
+                if (keys.w) move.add(forward.clone().multiplyScalar(speed));
+                if (keys.s) move.add(forward.clone().multiplyScalar(-speed));
+                if (keys.a) move.add(right.clone().multiplyScalar(-speed));
+                if (keys.d) move.add(right.clone().multiplyScalar(speed));
+                if (keys.space) move.add(up.clone().multiplyScalar(speed));
+                if (keys.shift) move.add(up.clone().multiplyScalar(-speed));
+
+                shipGroup.position.add(move);
+
+                // Обновление камеры: следует за кораблём сзади
+                if (!isCameraAnimating) {
+                    const bbox = new THREE.Box3().setFromObject(shipGroup);
+                    const center = bbox.getCenter(new THREE.Vector3());
+                    const size = bbox.getSize(new THREE.Vector3());
+                    const distance = Math.max(size.z * 1.5, 30);
+                    // Смещение камеры в локальных координатах корабля (сзади и чуть выше)
+                    const localOffset = new THREE.Vector3(0, size.y * 0.5, distance);
+                    // Преобразуем в мировые координаты с учётом поворота корабля
+                    const worldOffset = localOffset.applyQuaternion(shipGroup.quaternion);
+                    camera.position.copy(center.clone().add(worldOffset));
+                    camera.lookAt(center);
+                    cameraTarget.copy(center);
+                }
+            }
+
+            // ======================= УПРАВЛЕНИЕ МЫШЬЮ (ОРИГИНАЛ) =======================
+            function onCanvasMouseDown(e) {
+                if (e.button === 0 && !isMiningMode) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                    document.getElementById('ship-canvas').style.cursor = 'grabbing';
+                    e.stopPropagation();
+                }
+            }
+
+            function onDocumentMouseUp() {
+                if (!isMiningMode) {
+                    isDragging = false;
+                    document.getElementById('ship-canvas').style.cursor = 'move';
+                }
+            }
+
+            function onDocumentMouseMove(e) {
+                if (isDragging && !isMiningMode) {
+                    const deltaMove = { x: e.clientX - previousMousePosition.x, y: e.clientY - previousMousePosition.y };
+                    const rotateSpeed = 0.005;
+                    const currentPos = camera.position.clone().sub(cameraTarget);
+                    currentPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), deltaMove.x * rotateSpeed);
+                    currentPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), deltaMove.y * rotateSpeed);
+                    const verticalAngle = Math.atan2(currentPos.y, Math.sqrt(currentPos.x*currentPos.x + currentPos.z*currentPos.z));
+                    if (Math.abs(verticalAngle) < Math.PI * 0.45) {
+                        camera.position.copy(currentPos.add(cameraTarget));
+                        camera.lookAt(cameraTarget);
+                    }
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            }
+
+            // ======================= ТУЛТИП ДЛЯ НАЗВАНИЯ (ПКМ) =======================
+            function showTooltip() {
+                if (currentModuleIndex >= MAX_MODULES) {
+                    tooltipDiv.innerHTML = '<span style="color:#ffaa00">⚡ ВСЕ МОДУЛИ УСТАНОВЛЕНЫ ⚡</span>';
+                } else {
+                    const next = MODULE_DATA[currentModuleIndex];
+                    const s = next.stats;
+                    tooltipDiv.innerHTML = `
+                        <table>
+                            <tr><td colspan="2" style="text-align:center; border-bottom:1px solid #ffaa00;">${next.name}</td></tr>
+                            <tr><td class="stat-name">⚡ Скорость:</td><td class="stat-star">${'★'.repeat(s.speed)}${'☆'.repeat(5-s.speed)}</td></tr>
+                            <tr><td class="stat-name">⛏ Добыча:</td><td class="stat-star">${'★'.repeat(s.mining)}${'☆'.repeat(5-s.mining)}</td></tr>
+                            <tr><td class="stat-name">⛽ Топливо:</td><td class="stat-star">${'★'.repeat(s.fuel)}${'☆'.repeat(5-s.fuel)}</td></tr>
+                            <tr><td class="stat-name">❤ Прочность:</td><td class="stat-star">${'★'.repeat(s.health)}${'☆'.repeat(5-s.health)}</td></tr>
+                            <tr><td class="stat-name">🛡 Защита:</td><td class="stat-star">${'★'.repeat(s.shield)}${'☆'.repeat(5-s.shield)}</td></tr>
+                        </table>
+                    `;
+                }
+                tooltipDiv.classList.add('active');
+            }
+            function hideTooltip() {
+                tooltipDiv.classList.remove('active');
+            }
+
+            titleSpan.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showTooltip();
+                setTimeout(hideTooltip, 2000);
+            });
+
+            // ======================= АНИМАЦИОННЫЙ ЦИКЛ =======================
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Плавный переход камеры
+                if (isCameraAnimating) {
+                    cameraAnimProgress += 0.02; // за 50 кадров (около 1 сек при 60fps)
+                    if (cameraAnimProgress >= 1) {
+                        cameraAnimProgress = 1;
+                        isCameraAnimating = false;
+                    }
+                    // Интерполяция
+                    camera.position.lerpVectors(cameraAnimFrom.pos, cameraAnimTo.pos, cameraAnimProgress);
+                    cameraTarget.lerpVectors(cameraAnimFrom.target, cameraAnimTo.target, cameraAnimProgress);
+                    camera.lookAt(cameraTarget);
+                }
+
+                // Обновление mining режима
+                if (isMiningMode) {
+                    updateMining();
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            // ======================= ИНИЦИАЛИЗАЦИЯ =======================
+            function init() {
+                const container = document.getElementById('ship-canvas');
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0a0500);
+
+                camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(renderer.domElement);
+
+                scene.add(shipGroup);
+                scene.add(miningGroup); // пустая группа
+
+                // Стартовый модуль (Кобра без боковых)
+                addModule(MODULE_DATA[0], 0);
+
+                // Добавляем освещение для mining режима
+                const ambientLight = new THREE.AmbientLight(0x404060);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(1, 2, 1);
+                scene.add(dirLight);
+
+                // Подключаем обработчики мыши (оригинальные)
+                container.addEventListener('mousedown', onCanvasMouseDown);
+                document.addEventListener('mouseup', onDocumentMouseUp);
+                document.addEventListener('mousemove', onDocumentMouseMove);
+                container.addEventListener('contextmenu', (e) => e.preventDefault());
+
+                // Кнопка добычи
+                document.getElementById('mine-btn').addEventListener('click', toggleMiningMode);
+                document.getElementById('add-module-btn').addEventListener('click', addNextModule);
+                document.getElementById('reset-btn').addEventListener('click', resetShip);
+
+                window.addEventListener('resize', () => {
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    if (!isMiningMode) adjustCameraToFit();
+                });
+
+                // Запуск анимации
+                animate();
+            }
+
+            window.addEventListener('load', init);
+        })();
+    </script>
+<script>
+window._gs = null;
+window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+</script>
+</body>
+</html>

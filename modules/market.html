@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЭЛИТА: ТЁМНЫЙ ФРОНТИР · Промышленность строит корабли</title>
+    <style>
+        /* Базовые стили (полностью сохранены из предыдущей версии) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+        body {
+            background: #e9dbc4;
+            padding: 24px;
+            color: #3f2e1e;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tab-button {
+            background: #dac09a;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 20px 20px 0 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #4f3a24;
+            cursor: pointer;
+            transition: 0.15s;
+            border: 1px solid #b5926b;
+            border-bottom: none;
+            box-shadow: 0 -2px 6px rgba(110,70,30,0.1);
+        }
+        .tab-button:hover {
+            background: #e1cdb0;
+        }
+        .tab-button[data-market="mining"].active { background: #ffb347; border-bottom-color: #ff8c00; }
+        .tab-button[data-market="energy"].active { background: #87cefa; border-bottom-color: #00bfff; }
+        .tab-button[data-market="bio"].active    { background: #98fb98; border-bottom-color: #32cd32; }
+        .tab-button[data-market="industry"].active { background: #87ceeb; border-bottom-color: #4682b4; }
+        .tab-button[data-market="data"].active   { background: #dda0dd; border-bottom-color: #ba55d3; }
+        .tab-button.active {
+            transform: translateY(-2px);
+            box-shadow: 0 -4px 8px rgba(180,100,40,0.2);
+        }
+
+        .card {
+            background: #faf0da;
+            border-radius: 28px;
+            padding: 28px;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 28px rgba(110, 70, 30, 0.25);
+            border: 1px solid #dbbd9a;
+        }
+        h1 {
+            font-weight: 400;
+            font-size: 2.6rem;
+            margin: 0 0 6px 0;
+            color: #6b4a2c;
+            border-left: 8px solid #b85e3a;
+            padding-left: 22px;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            color: #8b6f50;
+            margin-bottom: 32px;
+            font-size: 1.1rem;
+            padding-left: 30px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .card-header h2 {
+            margin: 0;
+            font-weight: 400;
+            color: #7b593a;
+            font-size: 1.9rem;
+        }
+        .update-panel {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            background: #e7d7bd;
+            padding: 8px 22px;
+            border-radius: 60px;
+            font-size: 1rem;
+            color: #4f3a24;
+            border: 1px solid #c7a87e;
+            flex-wrap: wrap;
+        }
+        .update-panel span {
+            color: #7b5b3a;
+        }
+        .badge {
+            background: #c97c4d;
+            color: #faefda;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        button {
+            background: #b85e3a;
+            border: none;
+            color: #fef3e0;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            border: 1px solid #e19b72;
+            box-shadow: 0 2px 6px rgba(150, 70, 20, 0.3);
+        }
+        button:hover {
+            background: #c5704a;
+            border-color: #f0b48b;
+        }
+        button:active {
+            background: #9f4f2e;
+        }
+        .export-import {
+            display: flex;
+            gap: 12px;
+        }
+        .export-import button {
+            background: #6b4f3a;
+            border-color: #9b7b5a;
+        }
+        .export-import button:hover {
+            background: #7b5f4a;
+        }
+        .autosave-status {
+            font-size: 0.8rem;
+            color: #6b8e23;
+            margin-left: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            background: #fcf5e8;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 6px 14px rgba(130, 80, 40, 0.15);
+        }
+        th {
+            text-align: left;
+            padding: 16px 10px;
+            background: #e1cdb0;
+            color: #4d3622;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid #b5926b;
+        }
+        td {
+            padding: 14px 10px;
+            border-bottom: 1px solid #e0cbb0;
+            background: #fcf5e8;
+            vertical-align: middle;
+        }
+        .color-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        .price-table td:first-child {
+            font-weight: 600;
+        }
+        .spark {
+            width: 120px;
+            height: 40px;
+            display: block;
+        }
+        .spark svg {
+            width: 100%;
+            height: 100%;
+            stroke: #9d6b4a;
+            stroke-width: 2;
+            fill: none;
+        }
+        .events-container {
+            background: #eadccb;
+            border-radius: 20px;
+            padding: 16px 20px;
+            border: 1px solid #ccb494;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .event-item {
+            padding: 10px;
+            border-bottom: 1px dashed #b5926b;
+            color: #4d3622;
+            font-size: 0.95rem;
+        }
+        .event-item:last-child {
+            border-bottom: none;
+        }
+        .event-high {
+            color: #b85e3a;
+            font-weight: 600;
+        }
+        .event-low {
+            color: #3f6b4f;
+            font-weight: 600;
+        }
+        .trade-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 24px;
+            border: 1px solid #dabd9a;
+            background: #faf0da;
+        }
+        .corp-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px 48px;
+            background: #eadccb;
+            padding: 24px;
+            border-radius: 28px;
+            border: 1px solid #ccb494;
+        }
+        .corp-group strong {
+            color: #7b4f2c;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        .corp-group ul {
+            list-style-type: "▸ ";
+            padding-left: 24px;
+            color: #634d34;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .footer-note {
+            color: #927b60;
+            margin-top: 18px;
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        .api-error {
+            background: #b85e3a;
+            color: #faefda;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+            border: 2px solid #ffaa00;
+        }
+        .editable-name {
+            cursor: pointer;
+            border-bottom: 1px dashed #9b7b5a;
+        }
+        .edit-input {
+            width: 150px;
+            padding: 4px 8px;
+            border: 1px solid #b85e3a;
+            border-radius: 20px;
+            background: #fff8e7;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚡ ЭЛИТА: ТЁМНЫЙ ФРОНТИР – ВЕРФИ ПРОМЫШЛЕННОСТИ</h1>
+    <div class="subtitle">биржевые площадки сектора "Охристая туманность"</div>
+
+    <div id="api-error" class="api-error">⚠️ СЕРВЕР НЕ ДОСТУПЕН ⚠️</div>
+
+    <!-- Вкладки -->
+    <div class="tabs" id="marketTabs">
+        <button class="tab-button active" data-market="mining">⛏️ Добыча</button>
+        <button class="tab-button" data-market="energy">⚡ Энергия</button>
+        <button class="tab-button" data-market="bio">🧬 Био</button>
+        <button class="tab-button" data-market="industry">🏭 Промышленность</button>
+        <button class="tab-button" data-market="data">📀 Данные</button>
+    </div>
+
+    <!-- Динамическое содержимое -->
+    <div id="market-content">
+        <!-- Карточка событий -->
+        <div class="card">
+            <div class="card-header">
+                <h2 id="events-title">📡 События добычи</h2>
+                <span class="badge" style="background:#8b6f50;">текущий час</span>
+            </div>
+            <div class="events-container" id="eventsList">
+                <div class="event-item">Загрузка событий...</div>
+            </div>
+        </div>
+
+        <!-- Карточка ресурсов -->
+        <div class="card">
+            <div class="card-header">
+                <h2 id="market-title">📈 Котировки материи</h2>
+                <div class="update-panel">
+                    <span>🕒 обновление: <span id="last-update-time">—</span></span>
+                    <span class="badge" id="next-update">10:00</span>
+                    <button id="manual-update">⟳ Обновить сейчас</button>
+                    <div class="export-import">
+                        <button id="export-json">📤 Экспорт JSON</button>
+                        <button id="import-json">📥 Импорт JSON</button>
+                    </div>
+                    <span id="autosave-status" class="autosave-status">✅ автосохранение</span>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="price-table" id="price-table">
+                    <thead>
+                    <tr>
+                        <th>Ресурс</th>
+                        <th>Базовая цена (₡)</th>
+                        <th>Игровая цена (₡)</th>
+                        <th>График · 30 обновлений</th>
+                    </tr>
+                    </thead>
+                    <tbody id="price-table-body">
+                    <tr><td colspan="4" style="text-align:center;">Загрузка данных...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Лента сделок -->
+        <div class="card">
+            <h2 id="trades-title">📜 Сделки с добычей за последний месяц</h2>
+            <div class="trade-table-container">
+                <table id="trade-table">
+                    <thead>
+                    <tr>
+                        <th>Время (UTC)</th>
+                        <th>Ресурс</th>
+                        <th>Продавец</th>
+                        <th>Покупатель</th>
+                        <th>Кол-во</th>
+                        <th>Цена/ед (₡)</th>
+                        <th>Сумма (₡)</th>
+                    </tr>
+                    </thead>
+                    <tbody id="trade-table-body">
+                    <tr><td colspan="7" style="text-align:center;">Генерация истории...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Корпорации -->
+        <div class="card">
+            <h2>🏭 Корпорации и подразделения</h2>
+            <div class="corp-list" id="corp-list"></div>
+            <div class="footer-note">* сделки происходят между дочерними структурами</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ================== ОБЩИЕ ДАННЫЕ ==================
+    const cryptoPool = [
+        "bitcoin", "ethereum", "solana", "dogecoin", "chainlink",
+        "matic-network", "litecoin", "ripple", "cardano", "binancecoin"
+    ];
+
+    const corporations = [
+        { name: "Wayland-Ares Systems", subs: ["WAS ENERGY", "WAS DATA", "WAS PROM", "WAS BIO", "WAS MINING"] },
+        { name: "Akasaka Group", subs: ["AKS ENERGY", "AKS DATA", "AKS PROM", "AKS BIO", "AKS MINING"] },
+        { name: "USSR", subs: ["USR ENERGY", "USR DATA", "USR PROM", "USR BIO", "USR MINING"] },
+        { name: "MARS INC", subs: ["MRS ENERGY", "MRS DATA", "MRS PROM", "MRS BIO", "MRS MINING"] },
+        { name: "ROBOTS SYSTEM", subs: ["RBS ENERGY", "RBS DATA", "RBS PROM", "RBS BIO", "RBS MINING"] }
+    ];
+
+    const allSubs = corporations.flatMap(corp => corp.subs.map(sub => `${corp.name} / ${sub}`));
+
+    // ================== ГЕНЕРАЦИЯ ЦВЕТОВ ==================
+    function getColorForIndex(index, market) {
+        if (market === 'mining') {
+            const colors = [
+                '#8B7E6A', '#A0522D', '#5D8C6B', '#796878', '#6B4F47', '#4A5D5E', '#7C6E65', '#5E5A4B',
+                '#9D8174', '#6A7C7A', '#8F6A4F', '#6F5E53', '#4E6159', '#756650', '#6A5D5D', '#7B6B61',
+                '#8C7A6B', '#5A6F68', '#7F6B5E', '#6B554B', '#4E6252', '#7B685C', '#6C5E4D', '#5D6B6C',
+                '#7A6459', '#6F5B4B', '#5E6A5C', '#7F6A5A', '#6D5C55', '#4F625B', '#806B60', '#6A5C50',
+                '#5F6B5F', '#7E6A5C', '#6F5D4E', '#5F655B', '#7C685B', '#695E51', '#5C685B', '#7B675A',
+                '#675F54', '#5C665A', '#776457', '#655B4E', '#5B6558', '#756256', '#615B51', '#5C6256'
+            ];
+            return colors[index % colors.length];
+        } else if (market === 'energy') {
+            return `hsl(${190 + (index * 7) % 40}, 70%, 70%)`;
+        } else if (market === 'bio') {
+            return `hsl(${90 + (index * 5) % 50}, 80%, 70%)`;
+        } else if (market === 'industry') {
+            return `hsl(${200 + (index * 6) % 40}, 80%, 70%)`;
+        } else if (market === 'data') {
+            return `hsl(${280 + (index * 8) % 60}, 80%, 75%)`;
+        }
+        return '#cccccc';
+    }
+
+    // ================== СПИСОК МИНЕРАЛОВ (для добычи) ==================
+    const mineralNames = [
+        "Водород", "Гелий-3", "Дейтерий", "Тритий", "Литий", "Бериллий", "Бор", "Углерод", "Азот", "Кислород",
+        "Фтор", "Неон", "Натрий", "Магний", "Алюминий", "Кремний", "Фосфор", "Сера", "Хлор", "Аргон",
+        "Калий", "Кальций", "Скандий", "Титан", "Ванадий", "Хром", "Марганец", "Железо", "Кобальт", "Никель",
+        "Медь", "Цинк", "Галлий", "Германий", "Мышьяк", "Селен", "Бром", "Криптон", "Рубидий", "Стронций",
+        "Иттрий", "Цирконий", "Ниобий", "Молибден", "Рутений", "Родий", "Палладий", "Серебро", "Кадмий", "Индий",
+        "Олово", "Сурьма", "Теллур", "Йод", "Ксенон", "Цезий", "Барий", "Лантан", "Церий", "Празеодим",
+        "Неодим", "Самарий", "Европий", "Гадолиний", "Тербий", "Диспрозий", "Гольмий", "Эрбий", "Тулий", "Иттербий",
+        "Лютеций", "Гафний", "Тантал", "Вольфрам", "Рений", "Осмий", "Иридий", "Платина", "Золото", "Ртуть",
+        "Таллий", "Свинец", "Висмут", "Торий", "Уран", "Плутоний"
+    ];
+
+    // ================== ПОСТРОЕНИЕ РЕСУРСОВ ==================
+    // Добыча (исправленные цены)
+    function buildMiningResources() {
+        const mineralPrices = [
+            5, 8, 12, 15, 20, 25, 18, 10, 6, 7,
+            22, 24, 28, 30, 35, 32, 26, 18, 12, 14,
+            40, 45, 50, 55, 48, 38, 42, 30, 60, 70,
+            80, 45, 90, 100, 25, 30, 20, 18, 220, 35,
+            150, 85, 95, 110, 180, 250, 300, 200, 55, 70,
+            65, 28, 40, 22, 16, 60, 75, 80, 120, 140,
+            160, 165, 170, 175, 180, 185, 190, 195, 200, 205,
+            210, 215, 220, 225, 230, 235, 240, 1600, 1800, 50,
+            40, 20, 18, 22, 25, 28, 32, 35, 38, 42,
+            350, 400, 500
+        ];
+        let res = mineralNames.map((name, index) => ({
+            name: name,
+            cryptoId: cryptoPool[index % cryptoPool.length],
+            basePrice: mineralPrices[index] || 30,
+            isExotic: false
+        }));
+        res.push(
+            { name: "Тёмная материя", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Кварковый конденсат", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Нуль-пространство", isExotic: true, basePrice: 9999, cryptoId: null }
+        );
+        return res;
+    }
+
+    // Энергия (новая теория)
+    function buildEnergyResources() {
+        const names = [
+            "Квант времени (∫θdt)",
+            "Вязкость времени (ε)",
+            "Золотое сечение (φ)",
+            "Экспонента взаимодействия (exp(φ/ε))",
+            "Электромагнитная связь (α⁻¹)",
+            "Протон-электронный резонанс (mp/me)",
+            "Энергия сжатия (mb)",
+            "Иерархия сил (электромагнетизм)",
+            "Иерархия сил (сильная)",
+            "Иерархия сил (слабая)",
+            "Гравитационный потенциал (G)",
+            "Спиральная геометрия Фибоначчи",
+            "Само-вложенная проекция",
+            "Квантовая пена времени",
+            "Тёмная энергия (фоновая)",
+            "Энергия вакуума (нулевая)",
+            "Информационная энтропия",
+            "Контрольная сумма реальности",
+            "Сжатие информации при проекции",
+            "Дрейф констант (переменная)",
+            "Остывающий инстанс",
+            "Идеальная геометрия (след)",
+            "Математическая связка φ-ε",
+            "Энергия квантового перехода",
+            "Фундаментальная спираль"
+        ];
+        let res = names.map((name, idx) => ({
+            name: name,
+            cryptoId: cryptoPool[idx % cryptoPool.length],
+            basePrice: 30 + idx * 19,
+            isExotic: false
+        }));
+        res.push(
+            { name: "Первичный φ-кристалл (чистое сечение)", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Сингулярность ε (точка само-вложения)", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Артефакт полной спирали Фибоначчи", isExotic: true, basePrice: 9999, cryptoId: null }
+        );
+        return res;
+    }
+
+    // Био
+    function buildBioResources() {
+        const names = [
+            "Споры грибницы", "Феромоны насекомых", "Генетический материал инсектоидов", "Клетки костного мозга",
+            "ДНК древних цивилизаций", "Лекарственные травы Фортуны 72", "Антибиотики широкого спектра", "Вирусы-мутагены",
+            "Сыворотка долголетия", "Стимуляторы регенерации", "Органы для трансплантации", "Яды и антидоты",
+            "Гормоны роста", "Нейромедиаторы", "Эликсиры квантового психоза", "Бактерии из тёмной материи",
+            "Симбиотические водоросли", "Споры объединяющей грибницы", "Мескалин из растений Деадемы", "Кровь разумных кошек",
+            "Ткани регенерирующих существ", "Панцири хитиновых существ", "Слизь лечебных моллюсков", "Энзимы термальных источников",
+            "Генетические модификаторы"
+        ];
+        let res = names.map((name, idx) => ({
+            name: name,
+            cryptoId: cryptoPool[idx % cryptoPool.length],
+            basePrice: 25 + idx * 18,
+            isExotic: false
+        }));
+        res.push(
+            { name: "Протомицелий всепланетной грибницы", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Эликсир истинного долголетия", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Ген абсолютной памяти", isExotic: true, basePrice: 9999, cryptoId: null }
+        );
+        return res;
+    }
+
+    // ================== НОВАЯ ПРОМЫШЛЕННОСТЬ (корабли и станции) ==================
+    function buildIndustryResources() {
+        // ---- Данные из трёх конструкторов ----
+        // Имена кораблей (из первого конструктора)
+        const shipNames = [
+            "КОБРА", "ШНЫРЬ", "ДЕРЗКИЙ", "БУНТ", "КИНЖАЛ", "ПЕГАС", "ОРИОН",
+            "КОРВЕТ", "УНИВЕРСАЛ", "БАРХАН", "ИКАРУС", "АТЛАНТ", "ДАМИР", "БУРАН"
+        ];
+        // Модули корабля (только stats, нам нужно для возможного расширения, но пока не используем)
+        const shipModulesStats = [
+            { speed:1, mining:1, fuel:1, health:1, shield:1 },   // 0
+            { speed:1, mining:1, fuel:0, health:0, shield:0 },   // 1
+            { speed:1, mining:0, fuel:1, health:0, shield:0 },   // 2
+            { speed:1, mining:0, fuel:0, health:1, shield:0 },   // 3
+            { speed:0, mining:0, fuel:0, health:0, shield:1 },   // 4
+            { speed:0, mining:1, fuel:1, health:0, shield:0 },   // 5
+            { speed:0, mining:1, fuel:0, health:1, shield:0 },   // 6
+            { speed:0, mining:0, fuel:0, health:0, shield:1 },   // 7
+            { speed:0, mining:0, fuel:1, health:1, shield:0 },   // 8
+            { speed:0, mining:0, fuel:0, health:0, shield:1 },   // 9
+            { speed:0, mining:0, fuel:0, health:1, shield:1 },   // 10
+            { speed:1, mining:0, fuel:0, health:0, shield:0 },   // 11
+            { speed:0, mining:1, fuel:0, health:0, shield:0 },   // 12
+            { speed:0, mining:0, fuel:1, health:0, shield:0 }    // 13
+        ];
+
+        // Транспортер (имена и статы из VERSION_DATA)
+        const transporterData = [
+            { name: "КУРЬЕР",    stats: { storage:1, defense:1, wormholeSpeed:1, quantumCalc:1, insurance:1 } },
+            { name: "ГРУЗОВИК",  stats: { storage:2, defense:1, wormholeSpeed:2, quantumCalc:1, insurance:2 } },
+            { name: "ТЯГАЧ",     stats: { storage:3, defense:2, wormholeSpeed:2, quantumCalc:2, insurance:2 } },
+            { name: "ЛИХТЕР",    stats: { storage:4, defense:2, wormholeSpeed:3, quantumCalc:2, insurance:3 } },
+            { name: "БАЛКЕР",    stats: { storage:5, defense:3, wormholeSpeed:3, quantumCalc:3, insurance:3 } },
+            { name: "КАРАВАН",   stats: { storage:6, defense:3, wormholeSpeed:4, quantumCalc:3, insurance:4 } },
+            { name: "ЛЕВИАФАН",  stats: { storage:7, defense:4, wormholeSpeed:4, quantumCalc:4, insurance:4 } }
+        ];
+
+        // Станция (имена и модули со stats)
+        const stationNames = [
+            "ОСНОВА", "УЗЕЛ", "КОЛЬЦО", "СПИРАЛЬ", "КЛАСТЕР", "ФОРПОСТ", "КОМПЛЕКС",
+            "АРКА", "СФЕРА", "ЦИТАДЕЛЬ", "МЕГАПОЛИС", "ИМПЕРИЯ", "КОЛОНИЯ", "ОЛИМП"
+        ];
+        const stationModulesStats = [
+            { storage:1, energy:1, population:0, defense:1, research:0 }, // 0
+            { storage:1, energy:0, population:1, defense:0, research:0 }, // 1
+            { storage:0, energy:1, population:0, defense:0, research:1 }, // 2
+            { storage:1, energy:1, population:0, defense:0, research:0 }, // 3
+            { storage:0, energy:1, population:0, defense:1, research:0 }, // 4
+            { storage:1, energy:0, population:1, defense:0, research:1 }, // 5
+            { storage:1, energy:1, population:0, defense:1, research:0 }, // 6
+            { storage:0, energy:0, population:1, defense:0, research:1 }, // 7
+            { storage:1, energy:1, population:1, defense:0, research:0 }, // 8
+            { storage:0, energy:0, population:1, defense:1, research:0 }, // 9
+            { storage:1, energy:1, population:0, defense:0, research:1 }, // 10
+            { storage:0, energy:1, population:0, defense:1, research:1 }, // 11
+            { storage:1, energy:0, population:1, defense:1, research:0 }, // 12
+            { storage:1, energy:1, population:1, defense:1, research:1 }  // 13
+        ];
+
+        // ---- Формируем массив ресурсов ----
+        let resources = [];
+
+        // Корабли (уровни 1..14)
+        for (let i = 0; i < shipNames.length; i++) {
+            resources.push({
+                name: `🛸 ${shipNames[i]}`,
+                cryptoId: cryptoPool[resources.length % cryptoPool.length],
+                basePrice: 2000 + i * 300,   // от 2000 до 5900
+                isExotic: false
+            });
+        }
+
+        // Транспортеры (уровни 1..7)
+        for (let i = 0; i < transporterData.length; i++) {
+            resources.push({
+                name: `🚚 ${transporterData[i].name}`,
+                cryptoId: cryptoPool[resources.length % cryptoPool.length],
+                basePrice: 2500 + i * 500,   // от 2500 до 5500
+                isExotic: false
+            });
+        }
+
+        // Станции (уровни 1..14)
+        for (let i = 0; i < stationNames.length; i++) {
+            resources.push({
+                name: `🛰️ ${stationNames[i]}`,
+                cryptoId: cryptoPool[resources.length % cryptoPool.length],
+                basePrice: 3000 + i * 400,   // от 3000 до 8200
+                isExotic: false
+            });
+        }
+
+        // Экзотика (три редких корабля/станции)
+        resources.push(
+            { name: "🚀 Призрачный клипер 'Немезида'", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "🐉 Транспортер 'Кракен'", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "🏛️ Станция 'Вавилон'", isExotic: true, basePrice: 9999, cryptoId: null }
+        );
+
+        return resources;
+    }
+
+    // Данные
+    function buildDataResources() {
+        const names = [
+            "Кристаллы памяти", "Библиотеки геномов", "Архивы Империи", "Карты звёздных систем",
+            "Навигационные базы данных", "Логи демиургов", "Алгоритмы ИИ", "Нейросетевые матрицы",
+            "Записи сенсоров", "Каталоги минералов", "Медицинские базы", "Технические чертежи",
+            "Криптографические ключи", "Исторические хроники", "Квантовые вычисления", "Эмуляторы сознания",
+            "Музыкальные файлы", "Видеонаблюдение с планет", "Данные телеметрии", "Сны и воспоминания",
+            "Библиотеки молитв", "Биржевые котировки", "Архивы новостей", "Личные дневники колонистов",
+            "Системы шифрования"
+        ];
+        let res = names.map((name, idx) => ({
+            name: name,
+            cryptoId: cryptoPool[idx % cryptoPool.length],
+            basePrice: 20 + idx * 17,
+            isExotic: false
+        }));
+        res.push(
+            { name: "Первая печать (логос демиургов)", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Слепок души робота-монаха", isExotic: true, basePrice: 9999, cryptoId: null },
+            { name: "Архив исчезнувшей цивилизации Припяти-97", isExotic: true, basePrice: 9999, cryptoId: null }
+        );
+        return res;
+    }
+
+    // ================== СОСТОЯНИЕ РЫНКОВ ==================
+    let markets = {
+        mining:   { name: 'Добыча', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
+        energy:   { name: 'Энергия', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
+        bio:      { name: 'Био', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
+        industry: { name: 'Промышленность', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
+        data:     { name: 'Данные', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} }
+    };
+
+    // Глобальные переменные
+    let prevCryptoPrices = {};
+    let currentMarket = 'mining';
+    let apiError = false;
+    let nextUpdateTime = Date.now() + 10 * 60 * 1000;
+    let autosaveTimer = null;
+    const STORAGE_KEY = 'elite_markets_config';
+
+    // ================== СОХРАНЕНИЕ/ЗАГРУЗКА ==================
+    function saveToLocalStorage() {
+        try {
+            const config = {};
+            for (let key in markets) {
+                config[key] = {
+                    name: markets[key].name,
+                    resources: markets[key].resources.map(r => ({
+                        name: r.name,
+                        basePrice: r.basePrice,
+                        isExotic: r.isExotic,
+                        cryptoId: r.cryptoId
+                    }))
+                };
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+            document.getElementById('autosave-status').innerHTML = '✅ автосохранение ' + new Date().toLocaleTimeString();
+        } catch (e) {
+            console.warn('Ошибка сохранения', e);
+        }
+    }
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return false;
+        try {
+            const config = JSON.parse(saved);
+            for (let key in config) {
+                if (!markets[key]) continue;
+                if (!config[key].resources || !Array.isArray(config[key].resources)) continue;
+                markets[key].resources = config[key].resources.map(r => ({
+                    ...r,
+                    isExotic: r.isExotic || false
+                }));
+            }
+            return true;
+        } catch (e) {
+            console.warn('Ошибка загрузки', e);
+            return false;
+        }
+    }
+
+    // Инициализация ресурсов по умолчанию
+    function initDefaultResources() {
+        markets.mining.resources = buildMiningResources();
+        markets.energy.resources = buildEnergyResources();
+        markets.bio.resources = buildBioResources();
+        markets.industry.resources = buildIndustryResources();
+        markets.data.resources = buildDataResources();
+    }
+
+    // Применить цвета и сбросить временные данные
+    function applyColorsAndReset() {
+        for (let key in markets) {
+            markets[key].resources.forEach((r, idx) => {
+                r.color = getColorForIndex(idx, key);
+            });
+            markets[key].priceHistory = markets[key].resources.map(() => []);
+            markets[key].currentPrices = {};
+            markets[key].events = [];
+            markets[key].trades = [];
+        }
+    }
+
+    // Инициализация цен и исторических сделок
+    function initPricesAndTrades() {
+        const defaultPrices = {
+            'bitcoin': 65000, 'ethereum': 3500, 'solana': 140, 'dogecoin': 0.12,
+            'chainlink': 14, 'matic-network': 0.9, 'litecoin': 80, 'ripple': 0.6,
+            'cardano': 0.4, 'binancecoin': 300
+        };
+        cryptoPool.forEach(id => { prevCryptoPrices[id] = defaultPrices[id] || 100; });
+
+        for (let key in markets) {
+            const market = markets[key];
+            market.resources.forEach((r, idx) => {
+                if (r.isExotic) {
+                    market.currentPrices[r.name] = 9999;
+                    market.priceHistory[idx] = [9999];
+                } else {
+                    const base = r.basePrice;
+                    const price = base * (0.9 + Math.random() * 0.2);
+                    market.currentPrices[r.name] = Math.round(price * 100) / 100;
+                    market.priceHistory[idx] = [market.currentPrices[r.name]];
+                }
+            });
+            generateHistoricalTradesForMarket(key);
+        }
+    }
+
+    // Генерация исторических сделок
+    function generateHistoricalTradesForMarket(marketKey) {
+        const market = markets[marketKey];
+        const resources = market.resources;
+        const now = Date.now();
+        const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+        for (let i = 0; i < 500; i++) {
+            const randTime = thirtyDaysAgo + Math.random() * (now - thirtyDaysAgo);
+            const useExotic = Math.random() < 0.1;
+            let res;
+            if (useExotic) {
+                const exoticResources = resources.filter(r => r.isExotic);
+                if (exoticResources.length === 0) continue;
+                res = exoticResources[Math.floor(Math.random() * exoticResources.length)];
+            } else {
+                const normalResources = resources.filter(r => !r.isExotic);
+                res = normalResources[Math.floor(Math.random() * normalResources.length)];
+            }
+            const pastPrice = res.isExotic ? 9999 : (res.basePrice * (0.7 + Math.random() * 0.6));
+            const gamePrice = Math.round(pastPrice * 100) / 100;
+            let sellerIdx = Math.floor(Math.random() * allSubs.length);
+            let buyerIdx;
+            do { buyerIdx = Math.floor(Math.random() * allSubs.length); } while (buyerIdx === sellerIdx);
+            const seller = allSubs[sellerIdx];
+            const buyer = allSubs[buyerIdx];
+            let amount;
+            if (res.isExotic) {
+                amount = Math.floor(Math.random() * 15) + 1;
+            } else if (res.basePrice >= 200) amount = Math.floor(Math.random() * 10) + 1;
+            else if (res.basePrice >= 50) amount = Math.floor(Math.random() * 30) + 5;
+            else amount = Math.floor(Math.random() * 200) + 20;
+            const total = Math.round(amount * gamePrice * 100) / 100;
+            market.trades.push({ timestamp: randTime, resource: res.name, seller, buyer, amount, price: gamePrice, total, isExotic: res.isExotic });
+        }
+        market.trades.sort((a,b) => b.timestamp - a.timestamp);
+    }
+
+    // Генерация событий
+    function generateEventsForMarket(marketKey) {
+        const market = markets[marketKey];
+        const resources = market.resources;
+        const factors = resources.map(() => 1.0);
+        const eventTexts = [];
+
+        const possibleEvents = [
+            { type: 'global', factor: 1.10, prob: 0.15, text: '🔆 Спрос на энергию: цены +10%' },
+            { type: 'global', factor: 0.92, prob: 0.1, text: '🌧️ Перепроизводство: цены -8%' },
+            { type: 'global', factor: 1.08, prob: 0.12, text: '⚙️ Технологический скачок: цены +8%' },
+            { type: 'global', factor: 0.95, prob: 0.1, text: '💼 Складской кризис: цены -5%' },
+            { type: 'specific', factor: 0.85, prob: 0.15, text: '⛏️ Богатое месторождение {res}: цена -15%' },
+            { type: 'specific', factor: 1.15, prob: 0.12, text: '🔥 Авария на производстве {res}: цена +15%' },
+            { type: 'specific', factor: 1.10, prob: 0.1, text: '🏴‍☠️ Пираты атакуют {res}: цена +10%' },
+            { type: 'specific', factor: 0.90, prob: 0.08, text: '✨ Научный прорыв в {res}: цена -10%' }
+        ];
+
+        for (let ev of possibleEvents) {
+            if (Math.random() < ev.prob) {
+                if (ev.type === 'global') {
+                    for (let i = 0; i < factors.length; i++) factors[i] *= ev.factor;
+                    eventTexts.push(ev.text);
+                } else {
+                    const nonExoticIndices = resources
+                        .map((r, idx) => r.isExotic ? -1 : idx)
+                        .filter(idx => idx !== -1);
+                    if (nonExoticIndices.length === 0) continue;
+                    const idx = nonExoticIndices[Math.floor(Math.random() * nonExoticIndices.length)];
+                    factors[idx] *= ev.factor;
+                    eventTexts.push(ev.text.replace('{res}', resources[idx].name));
+                }
+            }
+        }
+        return { events: eventTexts.slice(0, 3), factors };
+    }
+
+    // Запрос к CoinGecko
+    async function fetchCryptoPrices() {
+        const allIds = [];
+        for (let key in markets) {
+            markets[key].resources.forEach(r => {
+                if (r.cryptoId) allIds.push(r.cryptoId);
+            });
+        }
+        const uniqueIds = [...new Set(allIds)];
+        const ids = uniqueIds.join(',');
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const prices = {};
+            uniqueIds.forEach(id => {
+                prices[id] = data[id]?.usd ?? null;
+            });
+            apiError = false;
+            document.getElementById('api-error').style.display = 'none';
+            return prices;
+        } catch (e) {
+            console.warn('Ошибка API', e);
+            apiError = true;
+            document.getElementById('api-error').style.display = 'block';
+            const fallback = {};
+            uniqueIds.forEach(id => {
+                fallback[id] = prevCryptoPrices[id] || 
+                    (id === 'bitcoin' ? 65000 : 
+                     id === 'ethereum' ? 3500 : 100);
+            });
+            return fallback;
+        }
+    }
+
+    // Обновление рынка
+    async function refreshMarket(marketKey, cryptoPrices) {
+        const market = markets[marketKey];
+        const resources = market.resources;
+        const { events: newEvents, factors: eventFactors } = generateEventsForMarket(marketKey);
+
+        if (newEvents.length > 0) {
+            const timestampStr = new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            newEvents.forEach(evText => {
+                market.events.unshift(`[${timestampStr}] ${evText}`);
+            });
+            if (market.events.length > 20) market.events = market.events.slice(0, 20);
+        }
+
+        for (let i = 0; i < resources.length; i++) {
+            const r = resources[i];
+            if (r.isExotic) {
+                market.currentPrices[r.name] = 9999;
+                if (!market.priceHistory[i]) market.priceHistory[i] = [];
+                market.priceHistory[i].push(9999);
+                if (market.priceHistory[i].length > 30) market.priceHistory[i].shift();
+                continue;
+            }
+
+            const current = cryptoPrices[r.cryptoId] || prevCryptoPrices[r.cryptoId] || 1;
+            const yesterday = prevCryptoPrices[r.cryptoId] || current;
+
+            const ratio = yesterday > 0 ? current / yesterday : 1;
+            const randomFactor = 1 + (Math.random() * 0.1 - 0.05);
+            const eventFactor = eventFactors[i];
+
+            let gamePrice = r.basePrice * ratio * randomFactor * eventFactor;
+            gamePrice = Math.round(gamePrice * 100) / 100;
+
+            market.currentPrices[r.name] = gamePrice;
+
+            if (!market.priceHistory[i]) market.priceHistory[i] = [];
+            market.priceHistory[i].push(gamePrice);
+            if (market.priceHistory[i].length > 30) market.priceHistory[i].shift();
+        }
+
+        const newTradesCount = Math.floor(Math.random() * 4) + 1;
+        for (let i = 0; i < newTradesCount; i++) {
+            const useExotic = Math.random() < 0.15;
+            let candidateIndices;
+            if (useExotic) {
+                candidateIndices = resources
+                    .map((r, idx) => r.isExotic ? idx : -1)
+                    .filter(idx => idx !== -1);
+            } else {
+                candidateIndices = resources
+                    .map((r, idx) => !r.isExotic ? idx : -1)
+                    .filter(idx => idx !== -1);
+            }
+            if (candidateIndices.length === 0) continue;
+            const resIdx = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
+            const trade = generateRandomTrade(marketKey, resIdx, Date.now());
+            if (trade) market.trades.unshift(trade);
+        }
+
+        const now = Date.now();
+        const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+        market.trades = market.trades.filter(t => t.timestamp >= thirtyDaysAgo);
+        if (market.trades.length > 1500) market.trades = market.trades.slice(0, 1500);
+        market.trades.sort((a,b) => b.timestamp - a.timestamp);
+    }
+
+    function generateRandomTrade(marketKey, resIdx, timestamp) {
+        const market = markets[marketKey];
+        const res = market.resources[resIdx];
+        const gamePrice = market.currentPrices[res.name];
+        if (!gamePrice) return null;
+        if (allSubs.length < 2) return null;
+        let sellerIdx = Math.floor(Math.random() * allSubs.length);
+        let buyerIdx;
+        do { buyerIdx = Math.floor(Math.random() * allSubs.length); } while (buyerIdx === sellerIdx);
+        const seller = allSubs[sellerIdx];
+        const buyer = allSubs[buyerIdx];
+        let amount;
+        if (res.isExotic) {
+            amount = Math.floor(Math.random() * 20) + 1;
+        } else if (res.basePrice >= 200) amount = Math.floor(Math.random() * 10) + 1;
+        else if (res.basePrice >= 50) amount = Math.floor(Math.random() * 30) + 5;
+        else amount = Math.floor(Math.random() * 200) + 20;
+        const total = Math.round(amount * gamePrice * 100) / 100;
+        return { timestamp, resource: res.name, seller, buyer, amount, price: gamePrice, total, isExotic: res.isExotic };
+    }
+
+    // ================== ОТРИСОВКА ==================
+    function renderCurrentMarket() {
+        const market = markets[currentMarket];
+        document.getElementById('events-title').innerText = `📡 События ${market.name.toLowerCase()}`;
+        document.getElementById('market-title').innerHTML = `📈 Котировки ${market.name.toLowerCase()}`;
+        document.getElementById('trades-title').innerHTML = `📜 Сделки с ${market.name.toLowerCase()} за последний месяц`;
+        renderPrices(market);
+        renderEvents(market);
+        renderTrades(market);
+    }
+
+    function renderPrices(market) {
+        const tbody = document.getElementById('price-table-body');
+        let html = '';
+        for (let i = 0; i < market.resources.length; i++) {
+            const r = market.resources[i];
+            const gamePrice = market.currentPrices[r.name] || r.basePrice;
+            const history = market.priceHistory[i] || [r.basePrice];
+            const spark = renderSparkline(history);
+            const color = r.color || '#cccccc';
+            html += `<tr>
+                <td><span class="color-indicator" style="background-color: ${color};"></span><span class="editable-name" data-market="${currentMarket}" data-index="${i}">${r.name}</span></td>
+                <td>₡${r.basePrice.toFixed(2)}</td>
+                <td style="color:#3f6b4f; font-weight:600;">₡${gamePrice.toFixed(2)}</td>
+                <td><div class="spark">${spark}</div></td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+        attachNameEditListeners();
+    }
+
+    function renderSparkline(history) {
+        if (!history.length) return '';
+        const width = 120, height = 40;
+        const min = Math.min(...history);
+        const max = Math.max(...history);
+        const range = max - min || 1;
+        const points = history.map((val, idx) => {
+            const x = (idx / (history.length - 1)) * width;
+            const y = height - ((val - min) / range) * height;
+            return `${x},${y}`;
+        }).join(' ');
+        return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+            <polyline points="${points}" stroke="#9d6b4a" stroke-width="2" fill="none" />
+        </svg>`;
+    }
+
+    function renderEvents(market) {
+        const container = document.getElementById('eventsList');
+        if (market.events.length === 0) {
+            container.innerHTML = '<div class="event-item">Событий не зарегистрировано</div>';
+            return;
+        }
+        let html = '';
+        market.events.forEach(ev => {
+            let cls = '';
+            if (ev.includes('авария') || ev.includes('пират') || ev.includes('кризис')) cls = 'event-high';
+            else if (ev.includes('месторождение') || ev.includes('прорыв') || ev.includes('сверхновая')) cls = 'event-low';
+            html += `<div class="event-item ${cls}">${ev}</div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function renderTrades(market) {
+        const tbody = document.getElementById('trade-table-body');
+        if (!market.trades.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Нет сделок</td></tr>';
+            return;
+        }
+        const top50 = market.trades.slice(0, 50);
+        let html = '';
+        top50.forEach(t => {
+            const date = new Date(t.timestamp).toLocaleString('ru-RU', {
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second:'2-digit'
+            }).replace(',','');
+            const amountDisplay = t.isExotic ? t.amount + ' квантов' : t.amount;
+            html += `<tr>
+                <td>${date}</td>
+                <td>${t.resource}</td>
+                <td>${t.seller}</td>
+                <td>${t.buyer}</td>
+                <td>${amountDisplay}</td>
+                <td>₡${t.price.toFixed(2)}</td>
+                <td>₡${t.total.toFixed(2)}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderCorporations() {
+        let html = '';
+        corporations.forEach(corp => {
+            html += `<div class="corp-group"><strong>${corp.name}</strong><ul>`;
+            corp.subs.forEach(sub => { html += `<li>${sub}</li>`; });
+            html += `</ul></div>`;
+        });
+        document.getElementById('corp-list').innerHTML = html;
+    }
+
+    // ================== РЕДАКТИРОВАНИЕ НАЗВАНИЙ ==================
+    function attachNameEditListeners() {
+        document.querySelectorAll('.editable-name').forEach(el => {
+            el.removeEventListener('dblclick', startEdit);
+            el.addEventListener('dblclick', startEdit);
+        });
+    }
+
+    function startEdit(e) {
+        const span = e.target;
+        if (span.classList.contains('editing')) return;
+        const oldName = span.innerText;
+        const marketKey = span.dataset.market;
+        const index = span.dataset.index;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldName;
+        input.classList.add('edit-input');
+        span.innerHTML = '';
+        span.appendChild(input);
+        span.classList.add('editing');
+        input.focus();
+        input.addEventListener('blur', () => finishEdit(span, marketKey, index, input.value));
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                input.blur();
+            }
+        });
+    }
+
+    function finishEdit(span, marketKey, index, newName) {
+        span.classList.remove('editing');
+        if (!newName.trim()) {
+            span.innerText = span.dataset.oldName || '?';
+            return;
+        }
+        const market = markets[marketKey];
+        const resource = market.resources[index];
+        const oldName = resource.name;
+        if (oldName === newName) {
+            span.innerText = oldName;
+            return;
+        }
+        resource.name = newName;
+        market.currentPrices[newName] = market.currentPrices[oldName];
+        delete market.currentPrices[oldName];
+        market.trades.forEach(t => {
+            if (t.resource === oldName) t.resource = newName;
+        });
+        span.innerText = newName;
+        saveToLocalStorage();
+        renderPrices(market);
+    }
+
+    // ================== ЭКСПОРТ/ИМПОРТ ==================
+    function exportConfig() {
+        const config = {};
+        for (let key in markets) {
+            config[key] = {
+                name: markets[key].name,
+                resources: markets[key].resources.map(r => ({
+                    name: r.name,
+                    basePrice: r.basePrice,
+                    isExotic: r.isExotic,
+                    cryptoId: r.cryptoId
+                }))
+            };
+        }
+        const dataStr = JSON.stringify(config, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'markets_config.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importConfig(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const config = JSON.parse(e.target.result);
+                for (let key in config) {
+                    if (!markets[key]) continue;
+                    if (!config[key].resources || !Array.isArray(config[key].resources)) throw new Error('Нет resources');
+                    markets[key].resources = config[key].resources.map(r => ({
+                        ...r,
+                        isExotic: r.isExotic || false
+                    }));
+                }
+                applyColorsAndReset();
+                initPricesAndTrades();
+                renderCurrentMarket();
+                saveToLocalStorage();
+            } catch (err) {
+                alert('Ошибка импорта JSON: ' + err.message);
+            }
+            document.getElementById('import-file-input').value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    // ================== ОБНОВЛЕНИЕ ==================
+    async function updateCurrentMarket(manual = false) {
+        const cryptoPrices = await fetchCryptoPrices();
+        prevCryptoPrices = { ...prevCryptoPrices, ...cryptoPrices };
+        await refreshMarket(currentMarket, cryptoPrices);
+        renderCurrentMarket();
+        document.getElementById('last-update-time').innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        if (manual) {
+            nextUpdateTime = Date.now() + 10 * 60 * 1000;
+        }
+    }
+
+    function startCountdown() {
+        setInterval(() => {
+            const now = Date.now();
+            const diff = nextUpdateTime - now;
+            if (diff <= 0) {
+                nextUpdateTime = now + 10 * 60 * 1000;
+                updateCurrentMarket(false);
+            }
+            const totalSec = Math.max(0, Math.floor(diff / 1000));
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            document.getElementById('next-update').innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+        }, 500);
+    }
+
+    // ================== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ==================
+    function setupTabs() {
+        const tabs = document.querySelectorAll('.tab-button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const marketKey = tab.dataset.market;
+                if (!marketKey) return;
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentMarket = marketKey;
+                renderCurrentMarket();
+                document.getElementById('last-update-time').innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+            });
+        });
+    }
+
+    // ================== ЗАПУСК ==================
+    document.addEventListener('DOMContentLoaded', async () => {
+        const loaded = loadFromLocalStorage();
+        if (!loaded) {
+            initDefaultResources();
+        }
+        applyColorsAndReset();
+        initPricesAndTrades();
+        renderCorporations();
+        setupTabs();
+        await updateCurrentMarket(false);
+        startCountdown();
+
+        if (!loaded) {
+            saveToLocalStorage();
+        }
+
+        autosaveTimer = setInterval(saveToLocalStorage, 300000);
+
+        document.getElementById('manual-update').addEventListener('click', () => {
+            updateCurrentMarket(true);
+        });
+
+        document.getElementById('export-json').addEventListener('click', exportConfig);
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json,application/json';
+        fileInput.style.display = 'none';
+        fileInput.id = 'import-file-input';
+        document.body.appendChild(fileInput);
+        fileInput.addEventListener('change', importConfig);
+        document.getElementById('import-json').addEventListener('click', () => fileInput.click());
+    });
+})();
+</script>
+<script>
+window._gs = null;
+window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+</script>
+</body>
+</html>

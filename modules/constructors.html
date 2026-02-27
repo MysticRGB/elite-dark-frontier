@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELITE COMPLEX 314 • ТРИ КОНСТРУКТОРА</title>
+    <!-- Three.js (один раз для всех) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0310;
+            font-family: 'VT323', monospace;
+            color: #ffaa00;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            overflow-x: auto;
+            overflow-y: auto;
+            justify-content: center;
+        }
+        .constructors-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 560px);
+            gap: 24px;
+            padding: 10px;
+            margin: 0 auto;
+        }
+        .constructor-card {
+            width: 560px;
+            height: 380px;
+            pointer-events: all;
+            z-index: 2000;
+        }
+        /* общие стили для рамок (как в оригинале) */
+        .constructor-frame {
+            background: rgba(0, 0, 0, 0.95);
+            border: 4px solid #ffaa00;
+            box-shadow: 0 0 20px #cc8800, inset 0 0 15px #442200;
+            padding: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .constructor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .constructor-title {
+            color: #ffff88;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px #ffaa00;
+            cursor: help;
+            border-bottom: 1px dashed #ffaa00;
+        }
+        .button-group {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-small {
+            background: rgba(40, 30, 10, 0.95);
+            border: 2px solid #ffaa00;
+            color: #ffff88;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            padding: 2px 16px;
+            cursor: pointer;
+            box-shadow: 0 0 6px #cc8800;
+            transition: 0.1s;
+            letter-spacing: 1px;
+        }
+        .btn-small:hover {
+            background: rgba(80, 50, 20, 0.95);
+            border-color: #ffff88;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+        .btn-small.reset {
+            background: rgba(60, 20, 20, 0.95);
+        }
+        .constructor-canvas {
+            flex: 1;
+            position: relative;
+            background: rgba(10, 5, 0, 0.9);
+            border: 2px solid #ffaa00;
+            overflow: hidden;
+            cursor: move;
+        }
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding: 8px 4px;
+            border-top: 1px dashed #ffaa00;
+            font-size: 16px;
+            gap: 16px;
+            background: rgba(0,0,0,0.6);
+            justify-content: space-around;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: help;
+        }
+        .stat-label {
+            color: #cc8800;
+        }
+        .stat-value {
+            color: #ffff88;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .stat-value span {
+            display: inline-block;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(10, 5, 0, 0.98);
+            border: 2px solid #ffaa00;
+            padding: 8px 12px;
+            font-size: 16px;
+            color: #ffff88;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 0 15px #cc8800;
+            z-index: 3000;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.15s;
+            border-radius: 0;
+            font-family: 'VT323', monospace;
+        }
+        .tooltip.active {
+            opacity: 1;
+        }
+        .tooltip table {
+            border-collapse: collapse;
+        }
+        .tooltip td {
+            padding: 2px 8px;
+        }
+        .tooltip .stat-name {
+            color: #cc8800;
+        }
+        .tooltip .stat-star {
+            color: #ffaa00;
+        }
+        .full-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffaa00;
+            padding: 8px 16px;
+            color: #ffff88;
+            font-size: 20px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px #cc8800;
+            z-index: 3500;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .full-message.show {
+            opacity: 1;
+        }
+        .ai-stats-data {
+            display: none;
+        }
+        /* уникальные id для скрытых элементов */
+        #ship-ai-stats-data, #transporter-ai-stats-data, #station-ai-stats-data {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="constructors-grid">
+        
+        <!-- ================ КОРАБЛЬ (Генератор корабля Мастер_07) ================ -->
+        <div id="ship-constructor" class="constructor-card">
+            <div class="constructor-frame">
+                <div class="constructor-header">
+                    <span class="constructor-title" id="ship-title">КОБРА</span>
+                    <div class="button-group">
+                        <button class="btn-small" id="ship-add-module-btn" title="➕">➕</button>
+                        <button class="btn-small reset" id="ship-reset-btn">✖</button>
+                    </div>
+                </div>
+                <div class="constructor-canvas" id="ship-canvas"></div>
+                <div class="stats-panel" id="ship-stats-panel"></div>
+            </div>
+            <!-- выносные элементы для тултипов и данных (каждый со своим id) -->
+            <div class="tooltip" id="ship-module-tooltip"></div>
+            <div class="full-message" id="ship-full-message">ПОЛНАЯ СБОРКА</div>
+            <div class="ai-stats-data" id="ship-ai-stats-data"></div>
+        </div>
+
+        <!-- ================ ТРАНСПОРТНИК (Все трое_Q_09) ================ -->
+        <div id="transporter-constructor" class="constructor-card">
+            <div class="constructor-frame">
+                <div class="constructor-header">
+                    <span class="constructor-title" id="transporter-title">КУРЬЕР</span>
+                    <div class="button-group">
+                        <button class="btn-small" id="transporter-add-module-btn" title="➕">➕</button>
+                        <button class="btn-small reset" id="transporter-reset-btn">✖</button>
+                    </div>
+                </div>
+                <div class="constructor-canvas" id="transporter-canvas"></div>
+                <div class="stats-panel" id="transporter-stats-panel"></div>
+            </div>
+            <div class="tooltip" id="transporter-module-tooltip"></div>
+            <div class="full-message" id="transporter-full-message">ЛЕВИАФАН ГОТОВ</div>
+            <div class="ai-stats-data" id="transporter-ai-stats-data"></div>
+        </div>
+
+        <!-- ================ СТАНЦИЯ (Космическая станция_03) ================ -->
+        <div id="station-constructor" class="constructor-card">
+            <div class="constructor-frame">
+                <div class="constructor-header">
+                    <span class="constructor-title" id="station-title">ОСНОВА</span>
+                    <div class="button-group">
+                        <button class="btn-small" id="station-add-module-btn" title="➕">➕</button>
+                        <button class="btn-small reset" id="station-reset-btn">✖</button>
+                    </div>
+                </div>
+                <div class="constructor-canvas" id="station-canvas"></div>
+                <div class="stats-panel" id="station-stats-panel"></div>
+            </div>
+            <div class="tooltip" id="station-module-tooltip"></div>
+            <div class="full-message" id="station-full-message">СТАНЦИЯ ПОСТРОЕНА</div>
+            <div class="ai-stats-data" id="station-ai-stats-data"></div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // КОРАБЛЬ (адаптированный код из Генератор корабля Мастер_07.html)
+        // =========================================================================
+        (function() {
+            const SHIP_NAMES = [
+                "КОБРА", "ШНЫРЬ", "ДЕРЗКИЙ", "БУНТ", "КИНЖАЛ",
+                "ПЕГАС", "ОРИОН", "КОРВЕТ", "УНИВЕРСАЛ", "БАРХАН",
+                "ИКАРУС", "АТЛАНТ", "ДАМИР", "БУРАН"
+            ];
+
+            const MODULE_DATA = [
+                { // 0: Базовый корпус
+                    name: 'БАЗОВЫЙ КОРПУС',
+                    color: 0xffaa00,
+                    stats: { speed: 1, mining: 1, fuel: 1, health: 1, shield: 1 },
+                    center: { vertices: [[0,0,0], [-2,-1,-4], [2,-1,-4], [0,2,-4]], edges: [[0,1],[0,2],[0,3],[1,2],[2,3],[3,1]] }
+                },
+                { // 1: Кабина
+                    name: 'КАБИНА',
+                    color: 0x44aaff,
+                    stats: { speed: 1, mining: 1, fuel: 0, health: 0, shield: 0 },
+                    center: { vertices: [[-2,-1,-4],[2,-1,-4],[0,2,-4],[-3,-1.5,-8],[3,-1.5,-8],[0,2.5,-8],[-1,2.2,-6],[1,2.2,-6],[-1,2.5,-5.5],[1,2.5,-5.5]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-4,0.5,-5],[-5.5,0.5,-5],[-5.5,1.5,-5],[-4,1.5,-5],[-4.2,0.3,-7],[-5.7,0.3,-7],[-5.7,1.7,-7],[-4.2,1.7,-7],[-5,0.8,-3.5],[-5,1.2,-3.5],[-6,1,-3.5]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] },
+                    right: { vertices: [[4,0.5,-5],[5.5,0.5,-5],[5.5,1.5,-5],[4,1.5,-5],[4.2,0.3,-7],[5.7,0.3,-7],[5.7,1.7,-7],[4.2,1.7,-7],[5,0.8,-3.5],[5,1.2,-3.5],[6,1,-3.5]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] }
+                },
+                { // 2: Топливный бак
+                    name: 'ТОПЛИВНЫЙ БАК',
+                    color: 0x44ddff,
+                    stats: { speed: 1, mining: 0, fuel: 1, health: 0, shield: 0 },
+                    center: { vertices: [[-3,-1.5,-8],[3,-1.5,-8],[0,2.5,-8],[-5,-2.5,-13],[5,-2.5,-13],[0,3.5,-13],[-4,-1,-10.5],[4,-1,-10.5]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7]] },
+                    left: { vertices: [[-6,-1,-9],[-7.5,-1,-9],[-7.5,2,-9],[-6,2,-9],[-6.2,-1.5,-12],[-7.7,-1.5,-12],[-7.7,2.5,-12],[-6.2,2.5,-12],[-8,0.5,-10],[-8,1.5,-10]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] },
+                    right: { vertices: [[6,-1,-9],[7.5,-1,-9],[7.5,2,-9],[6,2,-9],[6.2,-1.5,-12],[7.7,-1.5,-12],[7.7,2.5,-12],[6.2,2.5,-12],[8,0.5,-10],[8,1.5,-10]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] }
+                },
+                { // 3: Маршевый двигатель
+                    name: 'МАРШЕВЫЙ ДВИГАТЕЛЬ',
+                    color: 0xff5555,
+                    stats: { speed: 1, mining: 0, fuel: 0, health: 1, shield: 0 },
+                    center: { vertices: [[-5,-2.5,-13],[5,-2.5,-13],[0,3.5,-13],[-6.5,-3.5,-19],[6.5,-3.5,-19],[0,4.5,-19],[-2,-1,-16],[2,-1,-16],[-2,1,-16],[2,1,-16]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-7.5,-2,-14],[-9.5,-2,-14],[-9.5,3,-14],[-7.5,3,-14],[-8,-4,-18],[-10,-4,-18],[-10,5,-18],[-8,5,-18],[-10,-1,-16],[-10,1,-16],[-11,0,-16]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] },
+                    right: { vertices: [[7.5,-2,-14],[9.5,-2,-14],[9.5,3,-14],[7.5,3,-14],[8,-4,-18],[10,-4,-18],[10,5,-18],[8,5,-18],[10,-1,-16],[10,1,-16],[11,0,-16]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] }
+                },
+                { // 4: Грузовой трюм
+                    name: 'ГРУЗОВОЙ ТРЮМ',
+                    color: 0x88dd88,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 0, shield: 1 },
+                    center: { vertices: [[-6.5,-3.5,-19],[6.5,-3.5,-19],[0,4.5,-19],[-7.5,-4,-25],[7.5,-4,-25],[0,5,-25],[-5,-2,-22],[5,-2,-22],[-5,2,-22],[5,2,-22]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-9,-3,-20],[-11.5,-3,-20],[-11.5,4,-20],[-9,4,-20],[-9.5,-5,-24],[-12,-5,-24],[-12,6,-24],[-9.5,6,-24],[-10.5,-1,-22],[-10.5,2,-22]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] },
+                    right: { vertices: [[9,-3,-20],[11.5,-3,-20],[11.5,4,-20],[9,4,-20],[9.5,-5,-24],[12,-5,-24],[12,6,-24],[9.5,6,-24],[10.5,-1,-22],[10.5,2,-22]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9]] }
+                },
+                { // 5: Энергоблок
+                    name: 'ЭНЕРГОБЛОК',
+                    color: 0xaa88ff,
+                    stats: { speed: 0, mining: 1, fuel: 1, health: 0, shield: 0 },
+                    center: { vertices: [[-7.5,-4,-25],[7.5,-4,-25],[0,5,-25],[-8,-4.5,-31],[8,-4.5,-31],[0,5.5,-31],[-6,-1.5,-28],[6,-1.5,-28],[-6,2.5,-28],[6,2.5,-28]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-10.5,-3.5,-26],[-13.5,-3.5,-26],[-13.5,4.5,-26],[-10.5,4.5,-26],[-11,-5.5,-30],[-14,-5.5,-30],[-14,6.5,-30],[-11,6.5,-30],[-12,-2,-28],[-12,3,-28],[-13.5,0.5,-27]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] },
+                    right: { vertices: [[10.5,-3.5,-26],[13.5,-3.5,-26],[13.5,4.5,-26],[10.5,4.5,-26],[11,-5.5,-30],[14,-5.5,-30],[14,6.5,-30],[11,6.5,-30],[12,-2,-28],[12,3,-28],[13.5,0.5,-27]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,8]] }
+                },
+                { // 6: Бронеплиты
+                    name: 'БРОНЕПЛИТЫ',
+                    color: 0xffaa66,
+                    stats: { speed: 0, mining: 1, fuel: 0, health: 1, shield: 0 },
+                    center: { vertices: [[-8,-4.5,-31],[8,-4.5,-31],[0,5.5,-31],[-8.5,-5,-37],[8.5,-5,-37],[0,6,-37],[-7,-2,-34],[7,-2,-34],[-7,3,-34],[7,3,-34]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-12,-4,-32],[-15.5,-4,-32],[-15.5,5,-32],[-12,5,-32],[-12.5,-6,-36],[-16,-6,-36],[-16,7,-36],[-12.5,7,-36],[-13,-5,-33],[-15,-5,-33],[-15,6,-33],[-13.5,-5.5,-35],[-15.5,-5.5,-35],[-15.5,6.5,-35],[-13.5,6.5,-35],[-14,0.5,-30],[-14,2.5,-30]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[12,-4,-32],[15.5,-4,-32],[15.5,5,-32],[12,5,-32],[12.5,-6,-36],[16,-6,-36],[16,7,-36],[12.5,7,-36],[13,-5,-33],[15,-5,-33],[15,6,-33],[13.5,-5.5,-35],[15.5,-5.5,-35],[15.5,6.5,-35],[13.5,6.5,-35],[14,0.5,-30],[14,2.5,-30]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 7: Маневровые
+                    name: 'МАНЕВРОВЫЕ',
+                    color: 0xff3333,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 0, shield: 1 },
+                    center: { vertices: [[-8.5,-5,-37],[8.5,-5,-37],[0,6,-37],[-9,-5.5,-43],[9,-5.5,-43],[0,6.5,-43],[-5,-2.5,-40],[5,-2.5,-40],[-5,3,-40],[5,3,-40]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-13.5,-4.5,-38],[-17.5,-4.5,-38],[-17.5,5.5,-38],[-13.5,5.5,-38],[-14,-7,-42],[-18,-7,-42],[-18,8,-42],[-14,8,-42],[-16,-3,-35],[-19,-3,-35],[-19,4,-35],[-16.5,-6,-34],[-19.5,-6,-34],[-19.5,7,-34],[-16.5,7,-34],[-15.5,0.5,-44],[-15.5,2.5,-44],[-17,1.5,-45]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] },
+                    right: { vertices: [[13.5,-4.5,-38],[17.5,-4.5,-38],[17.5,5.5,-38],[13.5,5.5,-38],[14,-7,-42],[18,-7,-42],[18,8,-42],[14,8,-42],[16,-3,-35],[19,-3,-35],[19,4,-35],[16.5,-6,-34],[19.5,-6,-34],[19.5,7,-34],[16.5,7,-34],[15.5,0.5,-44],[15.5,2.5,-44],[17,1.5,-45]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] }
+                },
+                { // 8: Хвост
+                    name: 'ХВОСТ',
+                    color: 0xffaa00,
+                    stats: { speed: 0, mining: 0, fuel: 1, health: 1, shield: 0 },
+                    center: { vertices: [[-9,-5.5,-43],[9,-5.5,-43],[0,6.5,-43],[-9.5,-6,-49],[9.5,-6,-49],[0,7,-49],[-5,-2,-46],[5,-2,-46],[-5,3,-46],[5,3,-46]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-15,-5,-44],[-20,-5,-44],[-20,6,-44],[-15,6,-44],[-15.5,-7.5,-48],[-20.5,-7.5,-48],[-20.5,8.5,-48],[-15.5,8.5,-48],[-17,7,-46],[-22,9,-46],[-22,11,-46],[-17.5,6.5,-47],[-22.5,8.5,-47],[-22.5,10.5,-47],[-17.5,8.5,-47],[-19,-2,-50],[-19,3,-50]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[15,-5,-44],[20,-5,-44],[20,6,-44],[15,6,-44],[15.5,-7.5,-48],[20.5,-7.5,-48],[20.5,8.5,-48],[15.5,8.5,-48],[17,7,-46],[22,9,-46],[22,11,-46],[17.5,6.5,-47],[22.5,8.5,-47],[22.5,10.5,-47],[17.5,8.5,-47],[19,-2,-50],[19,3,-50]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 9: Тяжёлый корпус
+                    name: 'ТЯЖЁЛЫЙ КОРПУС',
+                    color: 0xddbb33,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 0, shield: 1 },
+                    center: { vertices: [[-9.5,-6,-49],[9.5,-6,-49],[0,7,-49],[-10,-6.5,-55],[10,-6.5,-55],[0,7.5,-55],[-6,-2,-52],[6,-2,-52],[-6,3,-52],[6,3,-52]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-16.5,-5.5,-50],[-22.5,-5.5,-50],[-22.5,6.5,-50],[-16.5,6.5,-50],[-17,-8,-54],[-23,-8,-54],[-23,9,-54],[-17,9,-54],[-19,8,-52],[-21,12,-52],[-21,14,-52],[-19.5,7.5,-53],[-21.5,11.5,-53],[-21.5,13.5,-53],[-19.5,9.5,-53],[-20,-3,-57],[-20,4,-57]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[16.5,-5.5,-50],[22.5,-5.5,-50],[22.5,6.5,-50],[16.5,6.5,-50],[17,-8,-54],[23,-8,-54],[23,9,-54],[17,9,-54],[19,8,-52],[21,12,-52],[21,14,-52],[19.5,7.5,-53],[21.5,11.5,-53],[21.5,13.5,-53],[19.5,9.5,-53],[20,-3,-57],[20,4,-57]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 10: Гипердрайв
+                    name: 'ГИПЕРДРАЙВ',
+                    color: 0xff66aa,
+                    stats: { speed: 0, mining: 0, fuel: 0, health: 1, shield: 1 },
+                    center: { vertices: [[-10,-6.5,-55],[10,-6.5,-55],[0,7.5,-55],[-10.5,-7,-61],[10.5,-7,-61],[0,8,-61],[-7,-2.5,-58],[7,-2.5,-58],[-7,3.5,-58],[7,3.5,-58]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-18,-6,-56],[-25,-6,-56],[-25,7,-56],[-18,7,-56],[-18.5,-8.5,-60],[-25.5,-8.5,-60],[-25.5,9.5,-60],[-18.5,9.5,-60],[-20,-7,-57],[-24,-7,-57],[-24,8,-57],[-20.5,-7.5,-59],[-24.5,-7.5,-59],[-24.5,8.5,-59],[-20.5,8.5,-59],[-22,0.5,-62],[-22,2.5,-62],[-23,1.5,-63]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] },
+                    right: { vertices: [[18,-6,-56],[25,-6,-56],[25,7,-56],[18,7,-56],[18.5,-8.5,-60],[25.5,-8.5,-60],[25.5,9.5,-60],[18.5,9.5,-60],[20,-7,-57],[24,-7,-57],[24,8,-57],[20.5,-7.5,-59],[24.5,-7.5,-59],[24.5,8.5,-59],[20.5,8.5,-59],[22,0.5,-62],[22,2.5,-62],[23,1.5,-63]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] }
+                },
+                { // 11: Экраны
+                    name: 'ЭКРАНЫ',
+                    color: 0xaa99ff,
+                    stats: { speed: 1, mining: 0, fuel: 0, health: 0, shield: 0 },
+                    center: { vertices: [[-10.5,-7,-61],[10.5,-7,-61],[0,8,-61],[-11,-10,-70],[11,-10,-70],[0,11,-70],[-8,-4,-65],[8,-4,-65],[-8,5,-65],[8,5,-65]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-20,-6.5,-62],[-28,-6.5,-62],[-28,7.5,-62],[-20,7.5,-62],[-20.5,-12,-68],[-28.5,-12,-68],[-28.5,13,-68],[-20.5,13,-68],[-24,-9,-64],[-32,-15,-75],[-32,16,-75],[-24,10,-64],[-26,-2,-70],[-26,3,-70]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[8,4],[11,7],[12,13]] },
+                    right: { vertices: [[20,-6.5,-62],[28,-6.5,-62],[28,7.5,-62],[20,7.5,-62],[20.5,-12,-68],[28.5,-12,-68],[28.5,13,-68],[20.5,13,-68],[24,-9,-64],[32,-15,-75],[32,16,-75],[24,10,-64],[26,-2,-70],[26,3,-70]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[8,4],[11,7],[12,13]] }
+                },
+                { // 12: Майнинг-комплекс
+                    name: 'МАЙНИНГ-КОМПЛЕКС',
+                    color: 0x88ff88,
+                    stats: { speed: 0, mining: 1, fuel: 0, health: 0, shield: 0 },
+                    center: { vertices: [[-11,-10,-70],[11,-10,-70],[0,13,-70],[-12,-12,-80],[12,-12,-80],[0,15,-80],[-8,-6,-75],[8,-6,-75],[-8,7,-75],[8,7,-75]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-28,-9,-72],[-34,-9,-72],[-34,10,-72],[-28,10,-72],[-29,-14,-78],[-35,-14,-78],[-35,15,-78],[-29,15,-78],[-30,-11,-74],[-33,-11,-74],[-33,12,-74],[-31,-13,-76],[-34,-13,-76],[-34,14,-76],[-31,14,-76],[-32,-2,-80],[-32,3,-80]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] },
+                    right: { vertices: [[28,-9,-72],[34,-9,-72],[34,10,-72],[28,10,-72],[29,-14,-78],[35,-14,-78],[35,15,-78],[29,15,-78],[30,-11,-74],[33,-11,-74],[33,12,-74],[31,-13,-76],[34,-13,-76],[34,14,-76],[31,14,-76],[32,-2,-80],[32,3,-80]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17]] }
+                },
+                { // 13: Флагман
+                    name: 'ФЛАГМАН',
+                    color: 0xffdd44,
+                    stats: { speed: 0, mining: 0, fuel: 1, health: 0, shield: 0 },
+                    center: { vertices: [[-12,-12,-80],[12,-12,-80],[0,15,-80],[-13,-14,-90],[13,-14,-90],[0,17,-90],[-9,-7,-85],[9,-7,-85],[-9,8,-85],[9,8,-85]], edges: [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5],[6,7],[8,9],[6,8],[7,9]] },
+                    left: { vertices: [[-34,-11,-82],[-40,-11,-82],[-40,12,-82],[-34,12,-82],[-35,-16,-88],[-41,-16,-88],[-41,17,-88],[-35,17,-88],[-36,-13,-84],[-39,-13,-84],[-39,14,-84],[-37,-15,-86],[-40,-15,-86],[-40,16,-86],[-37,16,-86],[-38,0,-92],[-38,2,-92],[-39,1,-93]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] },
+                    right: { vertices: [[34,-11,-82],[40,-11,-82],[40,12,-82],[34,12,-82],[35,-16,-88],[41,-16,-88],[41,17,-88],[35,17,-88],[36,-13,-84],[39,-13,-84],[39,14,-84],[37,-15,-86],[40,-15,-86],[40,16,-86],[37,16,-86],[38,0,-92],[38,2,-92],[39,1,-93]], edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[8,9],[9,10],[10,11],[11,8],[12,13],[13,14],[14,15],[15,12],[8,12],[9,13],[10,14],[11,15],[16,17],[17,18],[18,16]] }
+                }
+            ];
+
+            const MAX_MODULES = 14;
+            let scene, camera, renderer;
+            let shipGroup = new THREE.Group();
+            let currentModuleIndex = 0;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            const cameraTarget = new THREE.Vector3(0, 0, -40);
+
+            // изменённые id
+            const tooltipDiv = document.getElementById('ship-module-tooltip');
+            const titleSpan = document.getElementById('ship-title');
+            const fullMessageDiv = document.getElementById('ship-full-message');
+            const aiDataDiv = document.getElementById('ship-ai-stats-data');
+
+            function buildFacesFromBlock(vertices, edges) {
+                const vCount = vertices.length;
+                if (vCount % 4 !== 0) return [];
+                const groups = [];
+                for (let i = 0; i < vCount; i += 4) groups.push([i, i+1, i+2, i+3]);
+                const faces = [];
+                for (let g = 0; g < groups.length; g += 2) {
+                    if (g+1 >= groups.length) break;
+                    const front = groups[g];
+                    const back = groups[g+1];
+                    faces.push([front[0], front[1], front[2], front[3]]);
+                    faces.push([back[0], back[1], back[2], back[3]]);
+                    for (let i = 0; i < 4; i++) {
+                        const next = (i+1)%4;
+                        faces.push([front[i], front[next], back[next], back[i]]);
+                    }
+                }
+                return faces;
+            }
+
+            function createMeshFromBlock(blockData, color) {
+                if (!blockData || !blockData.vertices) return null;
+                const vertices = blockData.vertices;
+                const faces = buildFacesFromBlock(vertices, blockData.edges);
+                if (faces.length === 0) return null;
+                const triangles = [];
+                faces.forEach(quad => {
+                    triangles.push([quad[0], quad[1], quad[2]]);
+                    triangles.push([quad[0], quad[2], quad[3]]);
+                });
+                const positions = [];
+                triangles.forEach(tri => {
+                    tri.forEach(idx => {
+                        if (vertices[idx]) positions.push(vertices[idx][0], vertices[idx][1], vertices[idx][2]);
+                    });
+                });
+                if (positions.length === 0) return null;
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geometry.computeVertexNormals();
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x000000,
+                    transparent: true,
+                    opacity: 0.15,
+                    side: THREE.DoubleSide,
+                    depthWrite: true,
+                    depthTest: true
+                });
+                return new THREE.Mesh(geometry, material);
+            }
+
+            function createLinesFromBlock(blockData, lineColor) {
+                if (!blockData || !blockData.edges || !blockData.vertices) return null;
+                const geometry = new THREE.BufferGeometry();
+                const positions = [];
+                blockData.edges.forEach(([v1, v2]) => {
+                    const p1 = blockData.vertices[v1];
+                    const p2 = blockData.vertices[v2];
+                    if (p1 && p2) {
+                        positions.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+                    }
+                });
+                if (positions.length === 0) return null;
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                const material = new THREE.LineBasicMaterial({ color: lineColor });
+                return new THREE.LineSegments(geometry, material);
+            }
+
+            function addModule(moduleData, index) {
+                try {
+                    if (moduleData.center) {
+                        const mesh = createMeshFromBlock(moduleData.center, moduleData.color);
+                        if (mesh) shipGroup.add(mesh);
+                        const lines = createLinesFromBlock(moduleData.center, moduleData.color);
+                        if (lines) shipGroup.add(lines);
+                    }
+                    if (moduleData.left) {
+                        const mesh = createMeshFromBlock(moduleData.left, moduleData.color);
+                        if (mesh) shipGroup.add(mesh);
+                        const lines = createLinesFromBlock(moduleData.left, moduleData.color);
+                        if (lines) shipGroup.add(lines);
+                    }
+                    if (moduleData.right) {
+                        const mesh = createMeshFromBlock(moduleData.right, moduleData.color);
+                        if (mesh) shipGroup.add(mesh);
+                        const lines = createLinesFromBlock(moduleData.right, moduleData.color);
+                        if (lines) shipGroup.add(lines);
+                    }
+                } catch (e) {
+                    console.warn(`Ошибка при добавлении модуля ${index}:`, e);
+                }
+                currentModuleIndex++;
+                updateStats();
+                adjustCameraToFit();
+                updateShipName();
+            }
+
+            function addNextModule() {
+                if (currentModuleIndex < MAX_MODULES) {
+                    addModule(MODULE_DATA[currentModuleIndex], currentModuleIndex);
+                } else {
+                    fullMessageDiv.classList.add('show');
+                    setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
+                }
+            }
+
+            function resetShip() {
+                while (shipGroup.children.length) shipGroup.remove(shipGroup.children[0]);
+                currentModuleIndex = 0;
+                addModule(MODULE_DATA[0], 0);
+                adjustCameraToFit();
+            }
+
+            function updateShipName() {
+                if (currentModuleIndex > 0 && currentModuleIndex <= SHIP_NAMES.length) {
+                    titleSpan.textContent = SHIP_NAMES[currentModuleIndex - 1];
+                } else {
+                    titleSpan.textContent = "КОБРА";
+                }
+            }
+
+            function starString(val) {
+                let s = '';
+                for (let i = 0; i < Math.min(val, 5); i++) {
+                    s += '<span style="color:#ffff88">★</span>';
+                }
+                for (let i = val; i < 5; i++) {
+                    s += '<span style="color:#666666">☆</span>';
+                }
+                return s;
+            }
+
+            function updateStats() {
+                const totalStats = { speed: 0, mining: 0, fuel: 0, health: 0, shield: 0 };
+                for (let i = 0; i < currentModuleIndex; i++) {
+                    const s = MODULE_DATA[i].stats;
+                    totalStats.speed += s.speed;
+                    totalStats.mining += s.mining;
+                    totalStats.fuel += s.fuel;
+                    totalStats.health += s.health;
+                    totalStats.shield += s.shield;
+                }
+                const statTitles = {
+                    speed: '⚡ Скорость',
+                    mining: '⛏ Добыча',
+                    fuel: '⛽ Топливоёмкость',
+                    health: '❤ Здоровье',
+                    shield: '🛡 Защита',
+                    modules: '📦 Установлено модулей'
+                };
+                document.getElementById('ship-stats-panel').innerHTML = `
+                    <div class="stat-item" title="${statTitles.speed}"><span class="stat-label">⚡СК:</span><span class="stat-value">${starString(totalStats.speed)}</span></div>
+                    <div class="stat-item" title="${statTitles.mining}"><span class="stat-label">⛏ДОБ:</span><span class="stat-value">${starString(totalStats.mining)}</span></div>
+                    <div class="stat-item" title="${statTitles.fuel}"><span class="stat-label">⛽ТОП:</span><span class="stat-value">${starString(totalStats.fuel)}</span></div>
+                    <div class="stat-item" title="${statTitles.health}"><span class="stat-label">❤ЗД:</span><span class="stat-value">${starString(totalStats.health)}</span></div>
+                    <div class="stat-item" title="${statTitles.shield}"><span class="stat-label">🛡ЗЩ:</span><span class="stat-value">${starString(totalStats.shield)}</span></div>
+                    <div class="stat-item" title="${statTitles.modules}"><span class="stat-label">МОД:</span><span class="stat-value">${currentModuleIndex}/${MAX_MODULES}</span></div>
+                `;
+                aiDataDiv.textContent = JSON.stringify({
+                    modules: currentModuleIndex,
+                    stats: totalStats,
+                    shipName: SHIP_NAMES[currentModuleIndex-1] || "КОБРА"
+                });
+            }
+
+            function adjustCameraToFit() {
+                const bbox = new THREE.Box3().setFromObject(shipGroup);
+                const size = bbox.getSize(new THREE.Vector3());
+                const center = bbox.getCenter(new THREE.Vector3());
+                cameraTarget.copy(center);
+                const maxDim = Math.max(size.x, size.y, size.z, 15);
+                const fov = camera.fov * (Math.PI / 180);
+                let distance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+                distance = Math.max(distance, 30);
+                const direction = new THREE.Vector3(1, 0.5, 1).normalize();
+                camera.position.copy(center.clone().add(direction.multiplyScalar(distance)));
+                camera.lookAt(center);
+                renderer.render(scene, camera);
+            }
+
+            function setupCameraControls(container) {
+                container.addEventListener('mousedown', (e) => {
+                    if (e.button === 0) {
+                        isDragging = true;
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                        container.style.cursor = 'grabbing';
+                        e.stopPropagation();
+                    }
+                });
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    container.style.cursor = 'move';
+                });
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaMove = { x: e.clientX - previousMousePosition.x, y: e.clientY - previousMousePosition.y };
+                        const rotateSpeed = 0.005;
+                        const currentPos = camera.position.clone().sub(cameraTarget);
+                        currentPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), deltaMove.x * rotateSpeed);
+                        currentPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), deltaMove.y * rotateSpeed);
+                        const verticalAngle = Math.atan2(currentPos.y, Math.sqrt(currentPos.x*currentPos.x + currentPos.z*currentPos.z));
+                        if (Math.abs(verticalAngle) < Math.PI * 0.45) {
+                            camera.position.copy(currentPos.add(cameraTarget));
+                            camera.lookAt(cameraTarget);
+                            renderer.render(scene, camera);
+                        }
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                    }
+                });
+                container.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
+            function showTooltip() {
+                if (currentModuleIndex >= MAX_MODULES) {
+                    tooltipDiv.innerHTML = '<span style="color:#ffaa00">⚡ ВСЕ МОДУЛИ УСТАНОВЛЕНЫ ⚡</span>';
+                } else {
+                    const next = MODULE_DATA[currentModuleIndex];
+                    const s = next.stats;
+                    tooltipDiv.innerHTML = `
+                        <table>
+                            <tr><td colspan="2" style="text-align:center; border-bottom:1px solid #ffaa00;">${next.name}</td></tr>
+                            <tr><td class="stat-name">⚡ Скорость:</td><td class="stat-star">${'★'.repeat(s.speed)}${'☆'.repeat(5-s.speed)}</td></tr>
+                            <tr><td class="stat-name">⛏ Добыча:</td><td class="stat-star">${'★'.repeat(s.mining)}${'☆'.repeat(5-s.mining)}</td></tr>
+                            <tr><td class="stat-name">⛽ Топливо:</td><td class="stat-star">${'★'.repeat(s.fuel)}${'☆'.repeat(5-s.fuel)}</td></tr>
+                            <tr><td class="stat-name">❤ Прочность:</td><td class="stat-star">${'★'.repeat(s.health)}${'☆'.repeat(5-s.health)}</td></tr>
+                            <tr><td class="stat-name">🛡 Защита:</td><td class="stat-star">${'★'.repeat(s.shield)}${'☆'.repeat(5-s.shield)}</td></tr>
+                        </table>
+                    `;
+                }
+                tooltipDiv.classList.add('active');
+            }
+            function hideTooltip() {
+                tooltipDiv.classList.remove('active');
+            }
+
+            titleSpan.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showTooltip();
+                setTimeout(hideTooltip, 2000);
+            });
+
+            function init() {
+                const container = document.getElementById('ship-canvas');
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0a0500);
+                camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(renderer.domElement);
+                scene.add(shipGroup);
+                setupCameraControls(container);
+                addModule(MODULE_DATA[0], 0);
+                window.addEventListener('resize', () => {
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    adjustCameraToFit();
+                });
+                document.getElementById('ship-add-module-btn').addEventListener('click', addNextModule);
+                document.getElementById('ship-reset-btn').addEventListener('click', resetShip);
+            }
+            window.addEventListener('load', init);
+        })();
+    </script>
+
+    <script>
+        // =========================================================================
+        // ТРАНСПОРТНИК (Все трое_Q_09) с уникальными id
+        // =========================================================================
+        (function() {
+            const SHIP_NAMES = ["КУРЬЕР", "ГРУЗОВИК", "ТЯГАЧ", "ЛИХТЕР", "БАЛКЕР", "КАРАВАН", "ЛЕВИАФАН"];
+            const MAX_VERSIONS = 7;
+
+            let scene, camera, renderer;
+            let shipGroup = new THREE.Group();
+            let cameraPivot = new THREE.Object3D();
+            let currentVersion = 0;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let cameraDistance = 80;
+            let cameraAngleH = Math.PI / 4;
+            let cameraAngleV = Math.PI / 6;
+
+            let cycleGeometry;
+            let cycleMaterial;
+            let cycleInstances = [];
+
+            let volumeData = {
+                totalCanisters: 0,
+                totalCycles: 0,
+                storageVolume: 0
+            };
+
+            const tooltipDiv = document.getElementById('transporter-module-tooltip');
+            const titleSpan = document.getElementById('transporter-title');
+            const fullMessageDiv = document.getElementById('transporter-full-message');
+            const aiDataDiv = document.getElementById('transporter-ai-stats-data');
+
+            const VERSION_DATA = [
+                { name: 'КУРЬЕР', cargoSections: 1, engines: 2, stats: { storage: 1, defense: 1, wormholeSpeed: 1, quantumCalc: 1, insurance: 1 }},
+                { name: 'ГРУЗОВИК', cargoSections: 2, engines: 4, stats: { storage: 2, defense: 1, wormholeSpeed: 2, quantumCalc: 1, insurance: 2 }},
+                { name: 'ТЯГАЧ', cargoSections: 3, engines: 6, stats: { storage: 3, defense: 2, wormholeSpeed: 2, quantumCalc: 2, insurance: 2 }},
+                { name: 'ЛИХТЕР', cargoSections: 4, engines: 8, stats: { storage: 4, defense: 2, wormholeSpeed: 3, quantumCalc: 2, insurance: 3 }},
+                { name: 'БАЛКЕР', cargoSections: 5, engines: 10, stats: { storage: 5, defense: 3, wormholeSpeed: 3, quantumCalc: 3, insurance: 3 }},
+                { name: 'КАРАВАН', cargoSections: 6, engines: 12, stats: { storage: 6, defense: 3, wormholeSpeed: 4, quantumCalc: 3, insurance: 4 }},
+                { name: 'ЛЕВИАФАН', cargoSections: 7, engines: 14, stats: { storage: 7, defense: 4, wormholeSpeed: 4, quantumCalc: 4, insurance: 4 }}
+            ];
+
+            function createCycleGeometry() {
+                const segments = 32;
+                const geometry = new THREE.BufferGeometry();
+                const positions = [];
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    positions.push(Math.cos(angle), Math.sin(angle), 0);
+                }
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                return geometry;
+            }
+
+            function createCycleMaterial(color = '#ffdd44') {
+                return new THREE.LineBasicMaterial({
+                    color: new THREE.Color(color),
+                    linewidth: 2,
+                    transparent: true,
+                    opacity: 1,
+                    depthTest: false,
+                    depthWrite: false
+                });
+            }
+
+            function addCycleInstance(x, y, z, scale, color) {
+                const material = createCycleMaterial(color);
+                const cycle = new THREE.LineLoop(cycleGeometry, material);
+                cycle.position.set(x, y, z);
+                cycle.scale.set(scale, scale, 1);
+                cycle.renderOrder = 999;
+                shipGroup.add(cycle);
+                cycleInstances.push(cycle);
+                volumeData.totalCycles++;
+                return cycle;
+            }
+
+            function updateCycleOrientation() {
+                cycleInstances.forEach(cycle => {
+                    cycle.lookAt(camera.position);
+                });
+            }
+
+            function createFuturisticCabin(scale) {
+                const group = new THREE.Group();
+                const mainColor = 0x00ffff;
+                const vertices = [
+                    [0, 0, 0],
+                    [-2.5 * scale, -1.2 * scale, -4 * scale],
+                    [2.5 * scale, -1.2 * scale, -4 * scale],
+                    [0, 2.5 * scale, -4 * scale],
+                    [-2 * scale, -1 * scale, -6 * scale],
+                    [2 * scale, -1 * scale, -6 * scale],
+                    [0, 2 * scale, -6 * scale]
+                ];
+                const edges = [
+                    [0,1], [0,2], [0,3],
+                    [1,2], [2,3], [3,1],
+                    [1,4], [2,5], [3,6],
+                    [4,5], [5,6], [6,4]
+                ];
+                const linePositions = [];
+                edges.forEach(([v1, v2]) => {
+                    linePositions.push(vertices[v1][0], vertices[v1][1], vertices[v1][2]);
+                    linePositions.push(vertices[v2][0], vertices[v2][1], vertices[v2][2]);
+                });
+                const lineGeometry = new THREE.BufferGeometry();
+                lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                const lineMaterial = new THREE.LineBasicMaterial({ color: mainColor, linewidth: 2 });
+                const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+                group.add(lines);
+                vertices.forEach(v => {
+                    addCycleInstance(v[0], v[1], v[2], 0.5 * scale, '#00ffff');
+                });
+                return group;
+            }
+
+            function createFuturisticCanister(x, y, z, baseRadius, baseHeight, color, index, versionScale) {
+                const group = new THREE.Group();
+                const segments = 12;
+                const cappedVersion = Math.min(currentVersion, 4);
+                const cappedScale = Math.pow(2, cappedVersion);
+                const radius = baseRadius * cappedScale;
+                const height = baseHeight * cappedScale;
+                const frontEllipse = [];
+                const backEllipse = [];
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    frontEllipse.push([radius * Math.cos(angle), radius * Math.sin(angle), z]);
+                    backEllipse.push([radius * Math.cos(angle), radius * Math.sin(angle), z - height]);
+                }
+                const linePositions = [];
+                for (let i = 0; i < segments; i++) {
+                    linePositions.push(...frontEllipse[i], ...frontEllipse[i+1]);
+                    linePositions.push(...backEllipse[i], ...backEllipse[i+1]);
+                }
+                for (let i = 0; i < segments; i += 3) {
+                    linePositions.push(...frontEllipse[i], ...backEllipse[i]);
+                }
+                const lineGeometry = new THREE.BufferGeometry();
+                lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                const lineMaterial = new THREE.LineBasicMaterial({ color: color, linewidth: 2, transparent: true, opacity: 0.9 });
+                const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+                group.add(lines);
+                addCycleInstance(x, y, z - height/2, radius * 0.6, '#00ffff');
+                return group;
+            }
+
+            function createCargoBlock(zOffset, sectionIndex, scale, versionScale) {
+                const group = new THREE.Group();
+                const canistersPerSection = Math.pow(2, sectionIndex + 1);
+                const baseCanisterRadius = 1.0 * scale;
+                const baseCanisterHeight = 3.5 * scale;
+                const color = sectionIndex % 2 === 0 ? 0x00ffff : 0x0088ff;
+                const cappedVersion = Math.min(currentVersion, 4);
+                const cappedScale = Math.pow(2, cappedVersion);
+                const rows = Math.ceil(Math.sqrt(canistersPerSection));
+                const cols = Math.ceil(canistersPerSection / rows);
+                const spacing = baseCanisterRadius * 2.5 * cappedScale;
+                let canisterCount = 0;
+                for (let row = 0; row < rows && canisterCount < canistersPerSection; row++) {
+                    for (let col = 0; col < cols && canisterCount < canistersPerSection; col++) {
+                        const xOffset = (col - (cols-1)/2) * spacing;
+                        const yOffset = (row - (rows-1)/2) * spacing * 0.8;
+                        const hexOffset = (currentVersion >= 5 && row % 2 === 1) ? spacing * 0.5 : 0;
+                        const x = xOffset + hexOffset;
+                        const y = yOffset;
+                        const canister = createFuturisticCanister(x, y, zOffset, baseCanisterRadius, baseCanisterHeight, color, canisterCount, cappedScale);
+                        group.add(canister);
+                        volumeData.totalCanisters++;
+                        canisterCount++;
+                    }
+                }
+                const frameSize = Math.max(rows, cols) * spacing;
+                const frameGeometry = new THREE.BufferGeometry();
+                const framePositions = [
+                    -frameSize/2, -frameSize/2, zOffset, frameSize/2, -frameSize/2, zOffset,
+                    frameSize/2, -frameSize/2, zOffset, frameSize/2, frameSize/2, zOffset,
+                    frameSize/2, frameSize/2, zOffset, -frameSize/2, frameSize/2, zOffset,
+                    -frameSize/2, frameSize/2, zOffset, -frameSize/2, -frameSize/2, zOffset
+                ];
+                frameGeometry.setAttribute('position', new THREE.Float32BufferAttribute(framePositions, 3));
+                const frameMaterial = new THREE.LineBasicMaterial({ color: 0xff00ff, linewidth: 2 });
+                const frame = new THREE.LineLoop(frameGeometry, frameMaterial);
+                group.add(frame);
+                return group;
+            }
+
+            function createEnginesCircular(engineCount, startZ, scale, versionScale) {
+                const group = new THREE.Group();
+                const baseEngineRadius = 0.8 * scale;
+                const baseEngineLength = 3 * scale;
+                const circleRadius = 3 * scale * versionScale;
+                for (let i = 0; i < engineCount; i++) {
+                    const angle = (i / engineCount) * Math.PI * 2;
+                    const engineX = Math.cos(angle) * circleRadius;
+                    const engineY = Math.sin(angle) * circleRadius;
+                    const cappedVersion = Math.min(currentVersion, 4);
+                    const cappedScale = Math.pow(2, cappedVersion);
+                    const engineRadius = baseEngineRadius * cappedScale;
+                    const engineLength = baseEngineLength * cappedScale;
+                    const vertices = [];
+                    for (let j = 0; j <= 8; j++) {
+                        const a = (j / 8) * Math.PI * 2;
+                        vertices.push([engineX + engineRadius * 0.7 * Math.cos(a), engineY + engineRadius * 0.7 * Math.sin(a), startZ]);
+                    }
+                    for (let j = 0; j <= 8; j++) {
+                        const a = (j / 8) * Math.PI * 2;
+                        vertices.push([engineX + engineRadius * Math.cos(a), engineY + engineRadius * Math.sin(a), startZ - engineLength]);
+                    }
+                    const edges = [];
+                    for (let j = 0; j < 8; j++) {
+                        edges.push([j, j+1]);
+                        edges.push([j+9, j+10]);
+                        edges.push([j, j+9]);
+                    }
+                    const linePositions = [];
+                    edges.forEach(([v1, v2]) => {
+                        if (vertices[v1] && vertices[v2]) {
+                            linePositions.push(...vertices[v1], ...vertices[v2]);
+                        }
+                    });
+                    const lineGeometry = new THREE.BufferGeometry();
+                    lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff4400, linewidth: 2 });
+                    const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+                    group.add(lines);
+                    addCycleInstance(engineX, engineY, startZ - engineLength/2, engineRadius * 1.5, '#ff4400');
+                    const nozzleGeometry = new THREE.BufferGeometry();
+                    const nozzlePositions = [
+                        engineX - engineRadius*0.5, engineY, startZ - engineLength,
+                        engineX + engineRadius*0.5, engineY, startZ - engineLength,
+                        engineX, engineY - engineRadius*0.5, startZ - engineLength,
+                        engineX, engineY + engineRadius*0.5, startZ - engineLength
+                    ];
+                    nozzleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(nozzlePositions, 3));
+                    const nozzle = new THREE.LineLoop(nozzleGeometry, lineMaterial);
+                    group.add(nozzle);
+                }
+                return group;
+            }
+
+            function createAntenna(x, y, z, length, angle, color, versionScale) {
+                const group = new THREE.Group();
+                const cappedVersion = Math.min(currentVersion, 4);
+                const cappedScale = Math.pow(2, cappedVersion);
+                const scaledLength = length * cappedScale;
+                const endX = x + Math.cos(angle) * scaledLength;
+                const endY = y + Math.sin(angle) * scaledLength;
+                const lineGeometry = new THREE.BufferGeometry();
+                lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute([x, y, z, endX, endY, z], 3));
+                const lineMaterial = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                group.add(line);
+                addCycleInstance(endX, endY, z, 0.8 * cappedScale, '#00ffff');
+                return group;
+            }
+
+            function createConnectorBlock(x, y, z, scale) {
+                const group = new THREE.Group();
+                addCycleInstance(x, y, z, 2 * scale, '#ffdd44');
+                return group;
+            }
+
+            function addVersion() {
+                if (currentVersion < MAX_VERSIONS) {
+                    cycleInstances.forEach(cycle => shipGroup.remove(cycle));
+                    cycleInstances = [];
+                    while (shipGroup.children.length) {
+                        shipGroup.remove(shipGroup.children[0]);
+                    }
+                    volumeData = { totalCanisters: 0, totalCycles: 0, storageVolume: 0 };
+                    const data = VERSION_DATA[currentVersion];
+                    const scale = Math.max(0.3, 1.0 - (currentVersion * 0.08));
+                    const cappedVersion = Math.min(currentVersion, 4);
+                    const versionScale = Math.pow(2, cappedVersion);
+                    const cabin = createFuturisticCabin(scale);
+                    shipGroup.add(cabin);
+                    const sectionSpacing = 5 * scale * versionScale;
+                    for (let section = 0; section < data.cargoSections; section++) {
+                        const zOffset = -8 * scale - (section * sectionSpacing);
+                        const cargoBlock = createCargoBlock(zOffset, section, scale, versionScale);
+                        shipGroup.add(cargoBlock);
+                        if (section < data.cargoSections - 1) {
+                            const connectorZ = zOffset - sectionSpacing * 0.5;
+                            const connector = createConnectorBlock(0, 0, connectorZ, scale);
+                            shipGroup.add(connector);
+                        }
+                    }
+                    const engineStartZ = -8 * scale - (data.cargoSections * sectionSpacing) - 2 * scale;
+                    const engines = createEnginesCircular(data.engines, engineStartZ, scale, versionScale);
+                    shipGroup.add(engines);
+                    const antennaCount = Math.min(12, 4 + currentVersion * 2);
+                    for (let i = 0; i < antennaCount; i++) {
+                        const angle = (i / antennaCount) * Math.PI * 2;
+                        const antennaX = Math.cos(angle) * (10 + currentVersion * 2) * scale * versionScale;
+                        const antennaY = Math.sin(angle) * (10 + currentVersion * 2) * scale * versionScale;
+                        const antenna = createAntenna(antennaX, antennaY, -3 * scale, 6 * scale, angle + Math.PI, 0x00ffff, versionScale);
+                        shipGroup.add(antenna);
+                    }
+                    volumeData.storageVolume = (volumeData.totalCanisters * 100) + (volumeData.totalCycles * 10);
+                    currentVersion++;
+                    updateStats();
+                    updateCameraPosition();
+                    updateShipName();
+                } else {
+                    fullMessageDiv.classList.add('show');
+                    setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
+                }
+            }
+
+            function resetShip() {
+                currentVersion = 0;
+                cameraDistance = 80;
+                cameraAngleH = Math.PI / 4;
+                cameraAngleV = Math.PI / 6;
+                cameraPivot.position.set(0, 0, 0);
+                volumeData = { totalCanisters: 0, totalCycles: 0, storageVolume: 0 };
+                cycleInstances.forEach(cycle => shipGroup.remove(cycle));
+                cycleInstances = [];
+                addVersion();
+                updateCameraPosition();
+            }
+
+            function updateShipName() {
+                if (currentVersion > 0 && currentVersion <= SHIP_NAMES.length) {
+                    titleSpan.textContent = SHIP_NAMES[currentVersion - 1];
+                } else {
+                    titleSpan.textContent = "КУРЬЕР";
+                }
+            }
+
+            function starString(val, max = 5) {
+                let s = '';
+                const scaledVal = Math.min(max, Math.ceil((val / MAX_VERSIONS) * max));
+                for (let i = 0; i < scaledVal; i++) {
+                    s += '<span style="color:#ffff88">★</span>';
+                }
+                for (let i = scaledVal; i < max; i++) {
+                    s += '<span style="color:#666666">☆</span>';
+                }
+                return s;
+            }
+
+            function updateStats() {
+                if (currentVersion === 0) return;
+                const data = VERSION_DATA[currentVersion - 1];
+                const statTitles = {
+                    storage: '📦 Объём хранилища',
+                    defense: '🛡 Защита от пиратства',
+                    wormholeSpeed: '🌀 Скорость в кротовой норе',
+                    quantumCalc: '⚛ Квантовый просчёт',
+                    insurance: '💰 Уровень страховки',
+                    version: '🔢 Версия'
+                };
+                document.getElementById('transporter-stats-panel').innerHTML = `
+                    <div class="stat-item" title="${statTitles.storage}"><span class="stat-label">📦ХРН:</span><span class="stat-value">${starString(data.stats.storage, 5)}</span></div>
+                    <div class="stat-item" title="${statTitles.defense}"><span class="stat-label">🛡ЗАЩ:</span><span class="stat-value">${starString(data.stats.defense, 5)}</span></div>
+                    <div class="stat-item" title="${statTitles.wormholeSpeed}"><span class="stat-label">🌀КРОТ:</span><span class="stat-value">${starString(data.stats.wormholeSpeed, 5)}</span></div>
+                    <div class="stat-item" title="${statTitles.quantumCalc}"><span class="stat-label">⚛КВАН:</span><span class="stat-value">${starString(data.stats.quantumCalc, 5)}</span></div>
+                    <div class="stat-item" title="${statTitles.insurance}"><span class="stat-label">💰СТРХ:</span><span class="stat-value">${starString(data.stats.insurance, 5)}</span></div>
+                    <div class="stat-item" title="${statTitles.version}"><span class="stat-label">ВЕР:</span><span class="stat-value">${currentVersion}/${MAX_VERSIONS}</span></div>
+                `;
+                aiDataDiv.textContent = JSON.stringify({
+                    version: currentVersion,
+                    shipName: SHIP_NAMES[currentVersion-1] || "КУРЬЕР",
+                    cargoSections: data.cargoSections,
+                    engines: data.engines,
+                    totalCanisters: volumeData.totalCanisters,
+                    totalCycles: volumeData.totalCycles,
+                    storageVolume: volumeData.storageVolume,
+                    stats: data.stats
+                });
+            }
+
+            function updateCameraPosition() {
+                cameraPivot.position.set(0, 0, 0);
+                const x = cameraDistance * Math.cos(cameraAngleV) * Math.sin(cameraAngleH);
+                const y = cameraDistance * Math.sin(cameraAngleV);
+                const z = cameraDistance * Math.cos(cameraAngleV) * Math.cos(cameraAngleH);
+                camera.position.set(x, y, z);
+                camera.lookAt(cameraPivot.position);
+                updateCycleOrientation();
+                renderer.render(scene, camera);
+            }
+
+            function setupCameraControls(container) {
+                container.addEventListener('mousedown', (e) => {
+                    if (e.button === 0) {
+                        isDragging = true;
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                        container.style.cursor = 'grabbing';
+                        e.stopPropagation();
+                    }
+                });
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    container.style.cursor = 'move';
+                });
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaX = e.clientX - previousMousePosition.x;
+                        const deltaY = e.clientY - previousMousePosition.y;
+                        cameraAngleH -= deltaX * 0.005;
+                        cameraAngleV -= deltaY * 0.005;
+                        cameraAngleV = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleV));
+                        updateCameraPosition();
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                    }
+                });
+                container.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    cameraDistance += e.deltaY * 0.1;
+                    cameraDistance = Math.max(10, cameraDistance);
+                    updateCameraPosition();
+                }, { passive: false });
+                container.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
+            function showTooltip() {
+                if (currentVersion >= MAX_VERSIONS) {
+                    tooltipDiv.innerHTML = '<span style="color:#ffaa00">⚡ МАКСИМАЛЬНАЯ ВЕРСИЯ ⚡</span>';
+                } else {
+                    const next = VERSION_DATA[currentVersion];
+                    const barrelScale = Math.pow(2, Math.min(currentVersion, 4));
+                    const autoVolume = volumeData.storageVolume;
+                    tooltipDiv.innerHTML = `
+                        <table>
+                            <tr><td colspan="2" style="text-align:center; border-bottom:1px solid #ffaa00;">${next.name}</td></tr>
+                            <tr><td class="stat-name">📦 Грузовых секций:</td><td>${next.cargoSections}</td></tr>
+                            <tr><td class="stat-name">🚀 Двигателей:</td><td>${next.engines}</td></tr>
+                            <tr><td class="stat-name">📦 Бочек:</td><td>${volumeData.totalCanisters}</td></tr>
+                            <tr><td class="stat-name">🔵 Cycle точек:</td><td>${volumeData.totalCycles}</td></tr>
+                            <tr><td class="stat-name">📏 Размер бочек:</td><td>${barrelScale}x (макс 16x)</td></tr>
+                            <tr><td class="stat-name" style="border-top:1px solid #ffaa00;">💾 ОБЪЁМ ХРАНИЛИЩА:</td><td style="color:#ffff88;font-weight:bold;">${autoVolume.toLocaleString()}</td></tr>
+                        </table>
+                    `;
+                }
+                tooltipDiv.classList.add('active');
+            }
+
+            function hideTooltip() {
+                tooltipDiv.classList.remove('active');
+            }
+
+            titleSpan.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showTooltip();
+                setTimeout(hideTooltip, 2000);
+            });
+
+            function init() {
+                const container = document.getElementById('transporter-canvas');
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x050810);
+                camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(renderer.domElement);
+                cycleGeometry = createCycleGeometry();
+                cycleMaterial = createCycleMaterial('#ffdd44');
+                scene.add(cameraPivot);
+                scene.add(shipGroup);
+                setupCameraControls(container);
+                addVersion();
+                window.addEventListener('resize', () => {
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    updateCameraPosition();
+                });
+                document.getElementById('transporter-add-module-btn').addEventListener('click', addVersion);
+                document.getElementById('transporter-reset-btn').addEventListener('click', resetShip);
+            }
+            window.addEventListener('load', init);
+        })();
+    </script>
+
+    <script>
+        // =========================================================================
+        // СТАНЦИЯ (Космическая станция_03) с уникальными id
+        // =========================================================================
+        (function() {
+            const STATION_NAMES = [
+                "ОСНОВА", "УЗЕЛ", "КОЛЬЦО", "СПИРАЛЬ", "КЛАСТЕР",
+                "ФОРПОСТ", "КОМПЛЕКС", "АРКА", "СФЕРА", "ЦИТАДЕЛЬ",
+                "МЕГАПОЛИС", "ИМПЕРИЯ", "КОЛОНИЯ", "ОЛИМП"
+            ];
+            const MAX_MODULES = 14;
+            let scene, camera, renderer;
+            let stationGroup = new THREE.Group();
+            let currentModuleIndex = 0;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            const cameraTarget = new THREE.Vector3(0, 0, 0);
+            let spriteMaterial;
+            let modulePoints = [];
+
+            const tooltipDiv = document.getElementById('station-module-tooltip');
+            const titleSpan = document.getElementById('station-title');
+            const fullMessageDiv = document.getElementById('station-full-message');
+            const aiDataDiv = document.getElementById('station-ai-stats-data');
+
+            function createSpriteTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 32;
+                canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.arc(16, 16, 12, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(16, 16, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffaa00';
+                ctx.fill();
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            function createCircleLines(radius, zOffset, segments = 32) {
+                const lines = [];
+                const points = [];
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    points.push(new THREE.Vector3(x, y, zOffset));
+                }
+                for (let i = 0; i < segments; i++) {
+                    lines.push([points[i], points[i + 1]]);
+                }
+                return { lines, points };
+            }
+
+            function createAxisLines(height, segments = 8) {
+                const lines = [];
+                const points = [];
+                const axisPoints = [];
+                for (let i = 0; i <= segments; i++) {
+                    const z = -height/2 + (height / segments) * i;
+                    axisPoints.push(new THREE.Vector3(0, 0, z));
+                    points.push(new THREE.Vector3(0, 0, z));
+                }
+                for (let i = 0; i < axisPoints.length - 1; i++) {
+                    lines.push([axisPoints[i], axisPoints[i + 1]]);
+                }
+                for (let i = 0; i <= segments; i += 2) {
+                    const z = -height/2 + (height / segments) * i;
+                    const radius = 1.5;
+                    const nodePoints = [];
+                    for (let j = 0; j <= 8; j++) {
+                        const angle = (j / 8) * Math.PI * 2;
+                        const x = radius * Math.cos(angle);
+                        const y = radius * Math.sin(angle);
+                        nodePoints.push(new THREE.Vector3(x, y, z));
+                        points.push(new THREE.Vector3(x, y, z));
+                    }
+                    for (let j = 0; j < 8; j++) {
+                        lines.push([nodePoints[j], nodePoints[j + 1]]);
+                    }
+                }
+                return { lines, points };
+            }
+
+            function createAntennaLines(xOffset, yOffset, zOffset, length, angle = 0) {
+                const lines = [];
+                const points = [];
+                const endX = xOffset + Math.cos(angle) * length;
+                const endY = yOffset + Math.sin(angle) * length;
+                points.push(new THREE.Vector3(xOffset, yOffset, zOffset));
+                points.push(new THREE.Vector3(endX, endY, zOffset));
+                lines.push([points[0], points[1]]);
+                return { lines, points };
+            }
+
+            function createSideModuleLines(xOffset, zOffset, size) {
+                const lines = [];
+                const points = [];
+                const corners = [
+                    new THREE.Vector3(-size/2 + xOffset, -size/2, -size/2 + zOffset),
+                    new THREE.Vector3(size/2 + xOffset, -size/2, -size/2 + zOffset),
+                    new THREE.Vector3(size/2 + xOffset, size/2, -size/2 + zOffset),
+                    new THREE.Vector3(-size/2 + xOffset, size/2, -size/2 + zOffset),
+                    new THREE.Vector3(-size/2 + xOffset, -size/2, size/2 + zOffset),
+                    new THREE.Vector3(size/2 + xOffset, -size/2, size/2 + zOffset),
+                    new THREE.Vector3(size/2 + xOffset, size/2, size/2 + zOffset),
+                    new THREE.Vector3(-size/2 + xOffset, size/2, size/2 + zOffset)
+                ];
+                points.push(...corners);
+                const edges = [
+                    [0,1], [1,2], [2,3], [3,0],
+                    [4,5], [5,6], [6,7], [7,4],
+                    [0,4], [1,5], [2,6], [3,7]
+                ];
+                edges.forEach(([a, b]) => {
+                    lines.push([corners[a], corners[b]]);
+                });
+                return { lines, points };
+            }
+
+            const MODULE_DATA = [
+                { name: 'ЦЕНТРАЛЬНАЯ ОСЬ', color: 0xffaa00, stats: { storage: 1, energy: 1, population: 0, defense: 1, research: 0 }, type: 'axis', params: { height: 12 } },
+                { name: 'ПЕРВОЕ КОЛЬЦО', color: 0x44aaff, stats: { storage: 1, energy: 0, population: 1, defense: 0, research: 0 }, type: 'circle', params: { radius: 6, zOffset: -8 } },
+                { name: 'ВТОРОЕ КОЛЬЦО', color: 0x44ddff, stats: { storage: 0, energy: 1, population: 0, defense: 0, research: 1 }, type: 'circle', params: { radius: 6, zOffset: 8 } },
+                { name: 'ТРЕТЬЕ КОЛЬЦО', color: 0xff5555, stats: { storage: 1, energy: 1, population: 0, defense: 0, research: 0 }, type: 'circle', params: { radius: 9, zOffset: -14 } },
+                { name: 'АНТЕННЫ ALPHA', color: 0x88dd88, stats: { storage: 0, energy: 1, population: 0, defense: 1, research: 0 }, type: 'antenna', params: { positions: [[0, 7], [0, -7], [7, 0], [-7, 0]], length: 5 } },
+                { name: 'ЧЕТВЁРТОЕ КОЛЬЦО', color: 0xaa88ff, stats: { storage: 1, energy: 0, population: 1, defense: 0, research: 1 }, type: 'circle', params: { radius: 9, zOffset: 14 } },
+                { name: 'ПЯТОЕ КОЛЬЦО', color: 0xffaa66, stats: { storage: 1, energy: 1, population: 0, defense: 1, research: 0 }, type: 'circle', params: { radius: 12, zOffset: -20 } },
+                { name: 'ШЕСТОЕ КОЛЬЦО', color: 0xff3333, stats: { storage: 0, energy: 0, population: 1, defense: 0, research: 1 }, type: 'circle', params: { radius: 12, zOffset: 20 } },
+                { name: 'АНТЕННЫ BETA', color: 0xffaa00, stats: { storage: 1, energy: 1, population: 1, defense: 0, research: 0 }, type: 'antenna', params: { positions: [[9, 9], [-9, 9], [9, -9], [-9, -9]], length: 7 } },
+                { name: 'СЕДЬМОЕ КОЛЬЦО', color: 0xddbb33, stats: { storage: 0, energy: 0, population: 1, defense: 1, research: 0 }, type: 'circle', params: { radius: 15, zOffset: -26 } },
+                { name: 'ВОСЬМОЕ КОЛЬЦО', color: 0xff66aa, stats: { storage: 1, energy: 1, population: 0, defense: 0, research: 1 }, type: 'circle', params: { radius: 15, zOffset: 26 } },
+                { name: 'АНТЕННЫ GAMMA', color: 0xaa99ff, stats: { storage: 0, energy: 1, population: 0, defense: 1, research: 1 }, type: 'antenna', params: { positions: [[0, 12], [0, -12], [12, 0], [-12, 0]], length: 9 } },
+                { name: 'БОКОВЫЕ МОДУЛИ', color: 0x88ff88, stats: { storage: 1, energy: 0, population: 1, defense: 1, research: 0 }, type: 'side', params: { positions: [[-16, 0], [16, 0], [0, -16], [0, 16]], size: 6 } },
+                { name: 'ФИНАЛЬНОЕ КОЛЬЦО', color: 0xffdd44, stats: { storage: 1, energy: 1, population: 1, defense: 1, research: 1 }, type: 'circle', params: { radius: 18, zOffset: 0 } }
+            ];
+
+            function addModule(moduleData, index) {
+                let result;
+                switch(moduleData.type) {
+                    case 'axis':
+                        result = createAxisLines(moduleData.params.height);
+                        break;
+                    case 'circle':
+                        result = createCircleLines(moduleData.params.radius, moduleData.params.zOffset);
+                        break;
+                    case 'antenna':
+                        moduleData.params.positions.forEach((pos, i) => {
+                            const angle = i * Math.PI / 2;
+                            const antennaResult = createAntennaLines(pos[0], pos[1], 0, moduleData.params.length, angle);
+                            addLinesAndPoints(antennaResult.lines, antennaResult.points, moduleData.color, index);
+                        });
+                        currentModuleIndex++;
+                        updateStats();
+                        adjustCameraToFit();
+                        updateStationName();
+                        return;
+                    case 'side':
+                        moduleData.params.positions.forEach(pos => {
+                            const sideResult = createSideModuleLines(pos[0], pos[1], moduleData.params.size);
+                            addLinesAndPoints(sideResult.lines, sideResult.points, moduleData.color, index);
+                        });
+                        currentModuleIndex++;
+                        updateStats();
+                        adjustCameraToFit();
+                        updateStationName();
+                        return;
+                    default:
+                        return;
+                }
+                if (result) {
+                    addLinesAndPoints(result.lines, result.points, moduleData.color, index);
+                }
+                currentModuleIndex++;
+                updateStats();
+                adjustCameraToFit();
+                updateStationName();
+            }
+
+            function addLinesAndPoints(lines, points, color, moduleIndex) {
+                if (lines && lines.length > 0) {
+                    const lineGeometry = new THREE.BufferGeometry();
+                    const linePositions = [];
+                    lines.forEach(([start, end]) => {
+                        linePositions.push(start.x, start.y, start.z);
+                        linePositions.push(end.x, end.y, end.z);
+                    });
+                    lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                    const lineMaterial = new THREE.LineBasicMaterial({ color: color, linewidth: 2, transparent: true, opacity: 0.9 });
+                    const lineMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
+                    stationGroup.add(lineMesh);
+                }
+                if (points && points.length > 0) {
+                    modulePoints.push({ points: points, color: color, moduleIndex: moduleIndex });
+                    addPointsForModule(moduleIndex);
+                }
+            }
+
+            function addPointsForModule(moduleIndex) {
+                const moduleData = modulePoints.find(mp => mp.moduleIndex === moduleIndex);
+                if (!moduleData || !spriteMaterial) return;
+                moduleData.points.forEach((point, i) => {
+                    if (i % 4 === 0) {
+                        const sprite = new THREE.Sprite(spriteMaterial);
+                        sprite.position.copy(point);
+                        sprite.scale.set(0.6, 0.6, 1);
+                        stationGroup.add(sprite);
+                    }
+                });
+            }
+
+            function addNextModule() {
+                if (currentModuleIndex < MAX_MODULES) {
+                    addModule(MODULE_DATA[currentModuleIndex], currentModuleIndex);
+                } else {
+                    fullMessageDiv.classList.add('show');
+                    setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
+                }
+            }
+
+            function resetStation() {
+                while (stationGroup.children.length) stationGroup.remove(stationGroup.children[0]);
+                currentModuleIndex = 0;
+                modulePoints = [];
+                addModule(MODULE_DATA[0], 0);
+                adjustCameraToFit();
+            }
+
+            function updateStationName() {
+                if (currentModuleIndex > 0 && currentModuleIndex <= STATION_NAMES.length) {
+                    titleSpan.textContent = STATION_NAMES[currentModuleIndex - 1];
+                } else {
+                    titleSpan.textContent = "ОСНОВА";
+                }
+            }
+
+            function starString(val) {
+                let s = '';
+                for (let i = 0; i < Math.min(val, 5); i++) {
+                    s += '<span style="color:#ffff88">★</span>';
+                }
+                for (let i = val; i < 5; i++) {
+                    s += '<span style="color:#666666">☆</span>';
+                }
+                return s;
+            }
+
+            function updateStats() {
+                const totalStats = { storage: 0, energy: 0, population: 0, defense: 0, research: 0 };
+                for (let i = 0; i < currentModuleIndex; i++) {
+                    const s = MODULE_DATA[i].stats;
+                    totalStats.storage += s.storage;
+                    totalStats.energy += s.energy;
+                    totalStats.population += s.population;
+                    totalStats.defense += s.defense;
+                    totalStats.research += s.research;
+                }
+                const statTitles = {
+                    storage: '💾 Объём хранилища',
+                    energy: '⚡ Энергетика',
+                    population: '👥 Население',
+                    defense: '🛡 Защита',
+                    research: '🔬 Исследования',
+                    modules: '📦 Установлено модулей'
+                };
+                document.getElementById('station-stats-panel').innerHTML = `
+                    <div class="stat-item" title="${statTitles.storage}"><span class="stat-label">💾ХРН:</span><span class="stat-value">${starString(totalStats.storage)}</span></div>
+                    <div class="stat-item" title="${statTitles.energy}"><span class="stat-label">⚡ЭНГ:</span><span class="stat-value">${starString(totalStats.energy)}</span></div>
+                    <div class="stat-item" title="${statTitles.population}"><span class="stat-label">👥НАС:</span><span class="stat-value">${starString(totalStats.population)}</span></div>
+                    <div class="stat-item" title="${statTitles.defense}"><span class="stat-label">🛡ЗЩТ:</span><span class="stat-value">${starString(totalStats.defense)}</span></div>
+                    <div class="stat-item" title="${statTitles.research}"><span class="stat-label">🔬НАУ:</span><span class="stat-value">${starString(totalStats.research)}</span></div>
+                    <div class="stat-item" title="${statTitles.modules}"><span class="stat-label">МОД:</span><span class="stat-value">${currentModuleIndex}/${MAX_MODULES}</span></div>
+                `;
+                aiDataDiv.textContent = JSON.stringify({
+                    modules: currentModuleIndex,
+                    stats: totalStats,
+                    stationName: STATION_NAMES[currentModuleIndex-1] || "ОСНОВА"
+                });
+            }
+
+            function adjustCameraToFit() {
+                const bbox = new THREE.Box3().setFromObject(stationGroup);
+                const size = bbox.getSize(new THREE.Vector3());
+                const center = bbox.getCenter(new THREE.Vector3());
+                cameraTarget.copy(center);
+                const maxDim = Math.max(size.x, size.y, size.z, 30);
+                const fov = camera.fov * (Math.PI / 180);
+                let distance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+                distance = Math.max(distance, 45);
+                distance = Math.min(distance, 120);
+                const direction = new THREE.Vector3(1, 0.5, 1).normalize();
+                camera.position.copy(center.clone().add(direction.multiplyScalar(distance)));
+                camera.lookAt(center);
+                renderer.render(scene, camera);
+            }
+
+            function setupCameraControls(container) {
+                container.addEventListener('mousedown', (e) => {
+                    if (e.button === 0) {
+                        isDragging = true;
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                        container.style.cursor = 'grabbing';
+                        e.stopPropagation();
+                    }
+                });
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    container.style.cursor = 'move';
+                });
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaMove = { x: e.clientX - previousMousePosition.x, y: e.clientY - previousMousePosition.y };
+                        const rotateSpeed = 0.005;
+                        const currentPos = camera.position.clone().sub(cameraTarget);
+                        currentPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), deltaMove.x * rotateSpeed);
+                        currentPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), deltaMove.y * rotateSpeed);
+                        const verticalAngle = Math.atan2(currentPos.y, Math.sqrt(currentPos.x*currentPos.x + currentPos.z*currentPos.z));
+                        if (Math.abs(verticalAngle) < Math.PI * 0.45) {
+                            camera.position.copy(currentPos.add(cameraTarget));
+                            camera.lookAt(cameraTarget);
+                            renderer.render(scene, camera);
+                        }
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                    }
+                });
+                container.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
+            function showTooltip() {
+                if (currentModuleIndex >= MAX_MODULES) {
+                    tooltipDiv.innerHTML = '<span style="color:#ffaa00">⚡ СТАНЦИЯ ПОЛНОСТЬЮ ПОСТРОЕНА ⚡</span>';
+                } else {
+                    const next = MODULE_DATA[currentModuleIndex];
+                    const s = next.stats;
+                    tooltipDiv.innerHTML = `
+                        <table>
+                            <tr><td colspan="2" style="text-align:center; border-bottom:1px solid #ffaa00;">${next.name}</td></tr>
+                            <tr><td class="stat-name">💾 Хранилище:</td><td class="stat-star">${'★'.repeat(s.storage)}${'☆'.repeat(5-s.storage)}</td></tr>
+                            <tr><td class="stat-name">⚡ Энергия:</td><td class="stat-star">${'★'.repeat(s.energy)}${'☆'.repeat(5-s.energy)}</td></tr>
+                            <tr><td class="stat-name">👥 Население:</td><td class="stat-star">${'★'.repeat(s.population)}${'☆'.repeat(5-s.population)}</td></tr>
+                            <tr><td class="stat-name">🛡 Защита:</td><td class="stat-star">${'★'.repeat(s.defense)}${'☆'.repeat(5-s.defense)}</td></tr>
+                            <tr><td class="stat-name">🔬 Исследования:</td><td class="stat-star">${'★'.repeat(s.research)}${'☆'.repeat(5-s.research)}</td></tr>
+                        </table>
+                    `;
+                }
+                tooltipDiv.classList.add('active');
+            }
+            function hideTooltip() {
+                tooltipDiv.classList.remove('active');
+            }
+
+            titleSpan.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showTooltip();
+                setTimeout(hideTooltip, 2000);
+            });
+
+            function init() {
+                const container = document.getElementById('station-canvas');
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0a0500);
+                camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(renderer.domElement);
+                const spriteTexture = createSpriteTexture();
+                spriteMaterial = new THREE.SpriteMaterial({ map: spriteTexture, color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+                scene.add(stationGroup);
+                setupCameraControls(container);
+                addModule(MODULE_DATA[0], 0);
+                window.addEventListener('resize', () => {
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    adjustCameraToFit();
+                });
+                document.getElementById('station-add-module-btn').addEventListener('click', addNextModule);
+                document.getElementById('station-reset-btn').addEventListener('click', resetStation);
+            }
+            window.addEventListener('load', init);
+        })();
+    </script>
+<script>
+// Bridge to parent hub
+window._gs = null;
+window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+</script>
+</body>
+</html>

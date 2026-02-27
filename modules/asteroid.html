@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10 градиентов · 7 стадий · мягкая кисть 150px</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        #info {
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(20,20,20,0.85); color: #eee;
+            padding: 12px 24px; border-radius: 40px;
+            backdrop-filter: blur(5px); border: 1px solid #444;
+            font-size: 14px; pointer-events: none; z-index: 10;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        #info span { color: #ffaa66; font-weight: bold; }
+        #status {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(10,10,10,0.8); color: #ddd;
+            padding: 8px 18px; border-radius: 30px;
+            font-size: 14px; border: 1px solid #333;
+            backdrop-filter: blur(4px); z-index: 30;
+            cursor: pointer; user-select: none; transition: background 0.2s;
+        }
+        #status:hover { background: rgba(30,30,40,0.9); border-color: #88ccff; }
+        #progressPercent { color: #ffaa66; font-weight: 600; }
+        #levelDisplay { color: #88ccff; font-weight: 600; text-decoration: underline dotted; }
+        #gradient-panel {
+            position: absolute; top: 80px; right: 20px;
+            background: rgba(10,10,10,0.8); backdrop-filter: blur(5px);
+            border: 1px solid #444; border-radius: 20px;
+            padding: 15px; color: #ddd; width: 260px; z-index: 40;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        #gradient-panel h3 { margin: 0 0 12px 0; font-size: 16px; text-align: center; color: #ffaa66; }
+        .gradient-option { margin-bottom: 8px; display: flex; align-items: center; }
+        .gradient-option input[type="radio"] { margin-right: 10px; accent-color: #88ccff; transform: scale(1.1); cursor: pointer; }
+        .gradient-option label { cursor: pointer; font-size: 13px; }
+        .gradient-option label:hover { color: #88ccff; }
+        #instruction {
+            position: absolute; bottom: 80px; left: 20px;
+            background: rgba(0,0,0,0.6); color: #aaa;
+            padding: 6px 15px; border-radius: 20px;
+            font-size: 13px; border: 1px solid #333;
+            backdrop-filter: blur(4px); z-index: 10;
+        }
+        .gradient-note {
+            position: absolute; bottom: 30px; right: 30px;
+            background: rgba(0,0,0,0.5); color: #aaa;
+            padding: 8px 15px; border-radius: 20px;
+            font-size: 13px; border: 1px solid #3a3a3a;
+            backdrop-filter: blur(4px); z-index: 10;
+        }
+        /* Визуализация кисти */
+        #brush-preview {
+            position: absolute;
+            pointer-events: none;
+            border: 2px solid rgba(255,170,102,0.6);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 50;
+            box-shadow: 0 0 20px rgba(255,170,102,0.3);
+        }
+        #brush-preview::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px; height: 4px;
+            background: rgba(255,170,102,0.9);
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">🪨 <span>ЛКМ</span> — 7 кликов для фикса · <span>Ctrl+движение</span> — скульптинг кистью · <span>клик на уровень</span> — новый астероид</div>
+    <div id="status">
+        <span>прогресс: <span id="progressPercent">0%</span></span>&nbsp;&nbsp;|&nbsp;
+        <span id="levelLabel">уровень: <span id="levelDisplay">1</span>/7</span>
+    </div>
+    <div id="gradient-panel">
+        <h3>🎨 3D-градиент (выбери стиль)</h3>
+        <div id="gradient-list"></div>
+    </div>
+    <div id="instruction">✨ зажми Ctrl и двигай мышью — мягкая кисть 150px</div>
+    <div class="gradient-note" id="gradientInfo">градиент: 1 цвет</div>
+    <div id="brush-preview"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==================== НАСТРОЙКИ ====================
+        const STAGES = 7;                    // сколько кликов нужно для полного «исцеления»
+        const BRUSH_RADIUS_PX = 150;         // радиус кисти в пикселях
+        const BASE_STEP = 1 / STAGES;        // базовый шаг прогресса за один «полный» клик
+        const FALLOFF_EXP = 2;               // степень затухания: 1=линейно, 2=квадратично (мягче)
+
+        // ==================== СЦЕНА ====================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(8, 5, 12);
+        camera.lookAt(0, 0, 0);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
+        controls.maxPolarAngle = Math.PI;
+
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(2, 3, 4);
+        scene.add(dirLight);
+        const backLight = new THREE.PointLight(0x446688, 0.8);
+        backLight.position.set(-3, -1, -4);
+        scene.add(backLight);
+
+        // Звёзды
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 2000;
+        const starPos = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount; i++) {
+            const r = 150 + Math.random() * 100;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            starPos[i*3+2] = r * Math.cos(phi);
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const stars = new THREE.Points(starsGeo, new THREE.PointsMaterial({color: 0xaaccff, size: 0.3}));
+        scene.add(stars);
+
+        // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+        let currentLevel = 1, asteroidMesh = null, wireframeMesh = null, geometry = null;
+        let progress = null, vertexCount = 0, completed = false, colorStops = [];
+        let outerRadius = 1.0, innerRadius = 1.0;
+        const vec3 = new THREE.Vector3();
+        const brushPreview = document.getElementById('brush-preview');
+
+        // ==================== 10 ГРАДИЕНТОВ ====================
+        const gradientFunctions = [
+            (x, y, z) => { const r = Math.sqrt(x*x + y*y + z*z); return (outerRadius - r) / (outerRadius - innerRadius); },
+            (x, y, z) => { const rx = Math.sqrt((x*x)*2 + (y*y)*1 + (z*z)*0.5); return (outerRadius - rx) / (outerRadius - innerRadius); },
+            (x, y, z) => { const q = x*x + 2*y*y + 3*z*z; const maxQ = outerRadius*outerRadius * 3; return 1 - Math.sqrt(q / maxQ); },
+            (x, y, z) => { const det = x*(z*z - x*x) - y*(y*z - x*y) + z*(y*x - z*z); const norm = Math.abs(det) / (outerRadius**3); return Math.min(1, norm); },
+            (x, y, z) => { const r = Math.sqrt(x*x + y*y + z*z); const theta = Math.atan2(y, x); const phi = Math.acos(z / (r+0.001)); const spiral = (r - innerRadius) / (outerRadius - innerRadius) + 0.2 * theta / (2*Math.PI) + 0.1 * phi / Math.PI; return Math.min(1, Math.max(0, spiral % 1.0)); },
+            (x, y, z) => { const r = Math.sqrt(x*x + y*y + z*z); return 1 - (innerRadius / r); },
+            (x, y, z) => { const trace = x*x + y*y + z*z + 2*(x*y + y*z + z*x); const maxTrace = 4 * outerRadius*outerRadius; return trace / maxTrace; },
+            (x, y, z) => { const r = Math.sqrt(x*x + y*y + z*z); const nx = x/r, ny = y/r, nz = z/r; return (nx*0.5 + ny*0.3 + nz*0.2 + 1) / 2; },
+            (x, y, z) => { const r = Math.sqrt(x*x + y*y + z*z); return Math.sin(r*2) * 0.5 + 0.5; },
+            (x, y, z) => { const a=1.5,b=1.0,c=0.7; const q = (x*x)/(a*a)+(y*y)/(b*b)+(z*z)/(c*c); return 1 - Math.sqrt(q)/2; }
+        ];
+        const gradientNames = ["Радиальный","Эллипсоидальный","Квадратичная","Детерминантный","Спиральный","Гиперболический","Тензор инерции","Углы Эйлера","Кривизна (sin)","Квадрика"];
+        let currentGradientIndex = 0;
+
+        function computeT(x, y, z) {
+            let t = gradientFunctions[currentGradientIndex](x, y, z);
+            return Math.max(0, Math.min(1, t));
+        }
+
+        const keyColors = [
+            { pos: 0.0, color: new THREE.Color(0x000000) },
+            { pos: 0.25, color: new THREE.Color(0x0000ff) },
+            { pos: 0.5, color: new THREE.Color(0x00ff00) },
+            { pos: 0.75, color: new THREE.Color(0xffff00) },
+            { pos: 1.0, color: new THREE.Color(0xff0000) }
+        ];
+
+        function generateColorStops(L) {
+            const stops = [];
+            for (let i = 0; i < L; i++) {
+                const t = i / (L - 1);
+                let j = 0;
+                while (j < keyColors.length - 1 && keyColors[j+1].pos < t) j++;
+                if (t <= keyColors[j].pos) stops.push(keyColors[j].color.clone());
+                else if (t >= keyColors[keyColors.length-1].pos) stops.push(keyColors[keyColors.length-1].color.clone());
+                else {
+                    const left = keyColors[j], right = keyColors[j+1];
+                    const localT = (t - left.pos) / (right.pos - left.pos);
+                    stops.push(left.color.clone().lerp(right.color, localT));
+                }
+            }
+            return stops;
+        }
+
+        function getColorByPosition(x, y, z) {
+            const t = computeT(x, y, z);
+            if (t <= 0) return new THREE.Color(0x000000);
+            if (t >= 1) return colorStops[colorStops.length-1].clone();
+            const index = Math.floor(t * (colorStops.length - 1));
+            const nextIndex = Math.min(index + 1, colorStops.length - 1);
+            const localT = (t - index / (colorStops.length - 1)) * (colorStops.length - 1);
+            return colorStops[index].clone().lerp(colorStops[nextIndex], localT);
+        }
+
+        // ==================== СОЗДАНИЕ АСТЕРОИДА ====================
+        function createAsteroid(level) {
+            if (asteroidMesh) { scene.remove(asteroidMesh); scene.remove(wireframeMesh); }
+            currentLevel = level;
+            innerRadius = 1.0;
+            outerRadius = innerRadius * Math.pow(2, level);
+            const detail = Math.min(level, 4);
+            
+            const baseGeo = new THREE.IcosahedronGeometry(1, detail);
+            geometry = baseGeo.toNonIndexed();
+            vertexCount = geometry.attributes.position.count;
+            
+            const dirArray = new Float32Array(vertexCount * 3);
+            const posAttr = geometry.attributes.position;
+            for (let i = 0; i < vertexCount; i++) {
+                const ix = i*3, iy = i*3+1, iz = i*3+2;
+                const x = posAttr.array[ix], y = posAttr.array[iy], z = posAttr.array[iz];
+                const len = Math.sqrt(x*x + y*y + z*z);
+                dirArray[ix] = x/len; dirArray[iy] = y/len; dirArray[iz] = z/len;
+            }
+            
+            const outerPositions = new Float32Array(vertexCount * 3);
+            const innerPositions = new Float32Array(vertexCount * 3);
+            const noiseAmp = 0.3 * outerRadius;
+            
+            for (let i = 0; i < vertexCount; i++) {
+                const ix = i*3, iy = i*3+1, iz = i*3+2;
+                const dx = dirArray[ix], dy = dirArray[iy], dz = dirArray[iz];
+                const theta = Math.acos(dy), phi = Math.atan2(dz, dx);
+                const noise = Math.sin(theta*5)*Math.cos(phi*3)*1.2 + Math.sin(theta*12)*Math.sin(phi*5)*0.8 + Math.cos(theta*8+phi*2)*0.6;
+                const rOuter = outerRadius + noise * noiseAmp;
+                outerPositions[ix] = dx * rOuter; outerPositions[iy] = dy * rOuter; outerPositions[iz] = dz * rOuter;
+                innerPositions[ix] = dx * innerRadius; innerPositions[iy] = dy * innerRadius; innerPositions[iz] = dz * innerRadius;
+            }
+            
+            geometry.userData.outerPositions = outerPositions;
+            geometry.userData.innerPositions = innerPositions;
+            posAttr.array.set(outerPositions);
+            posAttr.needsUpdate = true;
+            
+            progress = new Float32Array(vertexCount).fill(0);
+            colorStops = generateColorStops(level);
+            document.getElementById('gradientInfo').innerText = `градиент: ${level} цветов`;
+            
+            const colors = new Float32Array(vertexCount * 3);
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            for (let i = 0; i < vertexCount; i++) {
+                const ix = i*3, iy = i*3+1, iz = i*3+2;
+                const col = getColorByPosition(outerPositions[ix], outerPositions[iy], outerPositions[iz]);
+                colors[ix] = col.r; colors[iy] = col.g; colors[iz] = col.b;
+            }
+            geometry.attributes.color.needsUpdate = true;
+            
+            const material = new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, shininess: 15 });
+            asteroidMesh = new THREE.Mesh(geometry, material);
+            scene.add(asteroidMesh);
+            
+            const wireframeMat = new THREE.MeshPhongMaterial({ color: 0xaaaaaa, wireframe: true, transparent: true, opacity: 0.35 });
+            wireframeMesh = new THREE.Mesh(geometry, wireframeMat);
+            scene.add(wireframeMesh);
+            
+            completed = false;
+            updateDisplay();
+        }
+
+        // ==================== ОБНОВЛЕНИЕ ====================
+        function updatePositionsAndColors() {
+            const posAttr = geometry.attributes.position;
+            const posArray = posAttr.array;
+            const colorAttr = geometry.attributes.color;
+            const colorArray = colorAttr.array;
+            const outerPositions = geometry.userData.outerPositions;
+            const innerPositions = geometry.userData.innerPositions;
+            
+            for (let i = 0; i < vertexCount; i++) {
+                const ix = i*3, iy = i*3+1, iz = i*3+2;
+                const t = progress[i];
+                posArray[ix] = outerPositions[ix] * (1-t) + innerPositions[ix] * t;
+                posArray[iy] = outerPositions[iy] * (1-t) + innerPositions[iy] * t;
+                posArray[iz] = outerPositions[iz] * (1-t) + innerPositions[iz] * t;
+                const col = getColorByPosition(posArray[ix], posArray[iy], posArray[iz]);
+                colorArray[ix] = col.r; colorArray[iy] = col.g; colorArray[iz] = col.b;
+            }
+            posAttr.needsUpdate = true;
+            colorAttr.needsUpdate = true;
+            geometry.computeVertexNormals();
+            
+            const allRed = progress.every(v => v >= 1.0 - 1e-9);
+            if (allRed && !completed) {
+                completed = true;
+                asteroidMesh.material.emissive.setHex(0x335588);
+                wireframeMesh.material.emissive.setHex(0x224488);
+                wireframeMesh.material.color.setHex(0x88aaff);
+            }
+        }
+
+        function updateColorsOnly() {
+            const posArray = geometry.attributes.position.array;
+            const colorArray = geometry.attributes.color.array;
+            for (let i = 0; i < vertexCount; i++) {
+                const ix = i*3, iy = i*3+1, iz = i*3+2;
+                const col = getColorByPosition(posArray[ix], posArray[iy], posArray[iz]);
+                colorArray[ix] = col.r; colorArray[iy] = col.g; colorArray[iz] = col.b;
+            }
+            geometry.attributes.color.needsUpdate = true;
+        }
+
+        function updateDisplay() {
+            const avg = progress.reduce((a, b) => a + b, 0) / vertexCount;
+            document.getElementById('progressPercent').innerText = Math.round(avg * 100) + '%';
+            document.getElementById('levelDisplay').innerText = currentLevel;
+        }
+
+        // ==================== 🎨 МЯГКАЯ КИСТЬ С 7 СТАДИЯМИ ====================
+        function applySculptAtMouse(event) {
+            if (completed) return;
+            
+            const rect = renderer.domElement.getBoundingClientRect();
+            const screenX = event.clientX - rect.left;
+            const screenY = event.clientY - rect.top;
+            const mouseNDC = new THREE.Vector2(
+                (screenX / rect.width) * 2 - 1,
+                -(screenY / rect.height) * 2 + 1
+            );
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouseNDC, camera);
+            const intersects = raycaster.intersectObject(asteroidMesh);
+            if (intersects.length === 0) return;
+            
+            const posArray = geometry.attributes.position.array;
+            let affected = 0;
+            
+            for (let i = 0; i < vertexCount; i++) {
+                const ix = i*3, iy = i*3+1, iz = i*3+2;
+                vec3.set(posArray[ix], posArray[iy], posArray[iz]).project(camera);
+                
+                // NDC → пиксели
+                const px = (vec3.x * 0.5 + 0.5) * rect.width;
+                const py = (vec3.y * -0.5 + 0.5) * rect.height;
+                
+                const dx = px - screenX, dy = py - screenY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < BRUSH_RADIUS_PX) {
+                    // 🔥 Мягкий фейд: t² для плавного края
+                    const t = 1 - (dist / BRUSH_RADIUS_PX);
+                    const falloff = Math.pow(t, FALLOFF_EXP);
+                    
+                    // 🔥 7 стадий: каждый клик добавляет ~1/7, умноженное на falloff
+                    progress[i] = Math.min(1.0, progress[i] + BASE_STEP * falloff);
+                    affected++;
+                }
+            }
+            
+            if (affected > 0) {
+                updatePositionsAndColors();
+                updateDisplay();
+            }
+        }
+
+        // ==================== ОБРАБОТЧИКИ ====================
+        renderer.domElement.addEventListener('click', (event) => {
+            if (event.target.closest('#status') || event.target.closest('#gradient-panel')) return;
+            applySculptAtMouse(event);
+        });
+
+        // Ctrl+mousemove для скульптинга
+        renderer.domElement.addEventListener('mousemove', (event) => {
+            if (!event.ctrlKey) {
+                brushPreview.style.display = 'none';
+                return;
+            }
+            event.preventDefault();
+            
+            // Показываем предпросмотр кисти
+            brushPreview.style.display = 'block';
+            brushPreview.style.left = event.clientX + 'px';
+            brushPreview.style.top = event.clientY + 'px';
+            brushPreview.style.width = (BRUSH_RADIUS_PX * 2) + 'px';
+            brushPreview.style.height = (BRUSH_RADIUS_PX * 2) + 'px';
+            
+            applySculptAtMouse(event);
+        });
+
+        // Скрываем кисть при отпускании Ctrl
+        renderer.domElement.addEventListener('mouseleave', () => {
+            brushPreview.style.display = 'none';
+        });
+
+        // Клик по статусу — следующий уровень
+        document.getElementById('status').addEventListener('click', () => {
+            let nextLevel = currentLevel % 7 + 1;
+            createAsteroid(nextLevel);
+        });
+
+        // Радио-кнопки градиентов
+        const gradientList = document.getElementById('gradient-list');
+        gradientNames.forEach((name, index) => {
+            const div = document.createElement('div');
+            div.className = 'gradient-option';
+            const radio = document.createElement('input');
+            radio.type = 'radio'; radio.name = 'gradient'; radio.value = index; radio.id = `grad-${index}`;
+            if (index === 0) radio.checked = true;
+            radio.addEventListener('change', () => { currentGradientIndex = index; updateColorsOnly(); });
+            const label = document.createElement('label');
+            label.htmlFor = `grad-${index}`; label.textContent = name;
+            div.appendChild(radio); div.appendChild(label);
+            gradientList.appendChild(div);
+        });
+
+        // ==================== ЗАПУСК ====================
+        createAsteroid(1);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        window.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+<script>
+window._gs = null;
+window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+</script>
+</body>
+</html>
