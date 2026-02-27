@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elite: Dark Frontier — Бортовой журнал разработки</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+:root {
+  --amber: #ffaa00; --gold: #ffdd99; --dark: #060810;
+  --red: #ff4444; --green: #44ff88; --blue: #44aaff; --purple: #cc66ff; --cyan: #00eeff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--dark);
+  font-family: 'VT323', monospace;
+  color: var(--gold);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg,rgba(255,200,100,.02) 0px,rgba(0,0,0,.12) 2px,transparent 3px);
+  mix-blend-mode:multiply;
+}
+
+/* Header */
+.header {
+  text-align:center; padding:30px 20px 20px;
+  border-bottom:3px solid var(--amber);
+  background:linear-gradient(180deg, rgba(255,170,0,.06) 0%, transparent 100%);
+}
+.header h1 {
+  font-family:'Press Start 2P',cursive; font-size:18px; color:#ffff88;
+  text-shadow:0 0 20px var(--amber),0 0 40px #cc6600;
+  margin-bottom:8px;
+}
+.header .sub {
+  font-size:18px; color:#cc8800; max-width:700px; margin:0 auto;
+}
+
+/* Breaking news ticker */
+.ticker-wrap {
+  background:rgba(255,0,0,.08); border-bottom:2px solid #ff4444;
+  overflow:hidden; height:36px; display:flex; align-items:center;
+  position:relative;
+}
+.ticker-tag {
+  background:var(--red); color:#000; font-family:'Press Start 2P',cursive;
+  font-size:7px; padding:6px 12px; white-space:nowrap; flex-shrink:0;
+  letter-spacing:2px; animation:pulse-tag 1.5s infinite;
+  text-shadow:none; z-index:2;
+}
+@keyframes pulse-tag { 0%,100%{opacity:1} 50%{opacity:.7} }
+.ticker-scroll { flex:1; overflow:hidden; position:relative; height:100%; }
+.ticker-text {
+  white-space:nowrap; color:#ff8888; font-size:16px;
+  position:absolute; top:50%; transform:translateY(-50%);
+  animation: scroll-left 40s linear infinite;
+}
+@keyframes scroll-left {
+  0% { left:100%; }
+  100% { left:-200%; }
+}
+
+/* Filter bar */
+.filters {
+  display:flex; gap:6px; padding:16px 24px; flex-wrap:wrap;
+  border-bottom:1px solid #221100; align-items:center;
+}
+.filters .label {
+  font-family:'Press Start 2P',cursive; font-size:8px;
+  color:#886622; margin-right:8px;
+}
+.filter-btn {
+  background:transparent; border:1px solid #332200; color:#886622;
+  padding:5px 12px; cursor:pointer; font-family:'VT323',monospace;
+  font-size:15px; transition:all .15s; text-transform:uppercase;
+}
+.filter-btn:hover { border-color:var(--amber); color:var(--gold); }
+.filter-btn.active {
+  background:rgba(255,170,0,.15); border-color:var(--amber);
+  color:#ffff88; text-shadow:0 0 8px var(--amber);
+}
+
+/* Timeline */
+.timeline { max-width:900px; margin:0 auto; padding:20px 24px 60px; position:relative; }
+.timeline::before {
+  content:''; position:absolute; left:36px; top:0; bottom:0;
+  width:2px; background:linear-gradient(180deg,var(--amber),#332200,transparent);
+}
+
+/* Version block */
+.version-block { margin-bottom:32px; position:relative; }
+.version-header {
+  display:flex; align-items:center; gap:12px; margin-bottom:12px;
+  position:relative; padding-left:56px;
+}
+.version-dot {
+  position:absolute; left:28px; width:18px; height:18px;
+  border-radius:50%; border:2px solid var(--amber);
+  background:var(--dark); z-index:2;
+  box-shadow:0 0 10px rgba(255,170,0,.4);
+}
+.version-dot.hot { background:var(--red); border-color:var(--red); box-shadow:0 0 12px var(--red); }
+.version-tag {
+  font-family:'Press Start 2P',cursive; font-size:12px; color:#ffff88;
+  text-shadow:0 0 10px var(--amber);
+  background:rgba(255,170,0,.08); border:1px solid var(--amber);
+  padding:4px 12px;
+}
+.version-date { font-size:15px; color:#886622; }
+.version-title { font-size:20px; color:var(--gold); font-weight:bold; }
+
+/* Entry cards */
+.entries { padding-left:56px; display:flex; flex-direction:column; gap:8px; }
+.entry {
+  display:flex; gap:10px; padding:10px 14px;
+  border:1px solid #221100; background:rgba(255,170,0,.02);
+  transition:all .2s; position:relative; overflow:hidden;
+}
+.entry:hover {
+  border-color:var(--amber); background:rgba(255,170,0,.06);
+  transform:translateX(4px);
+}
+.entry::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+}
+.entry.feat::before { background:var(--green); }
+.entry.fix::before { background:var(--red); }
+.entry.improve::before { background:var(--blue); }
+.entry.visual::before { background:var(--purple); }
+.entry.data::before { background:var(--cyan); }
+
+.entry-badge {
+  font-family:'Press Start 2P',cursive; font-size:6px;
+  padding:3px 8px; border-radius:2px; flex-shrink:0;
+  white-space:nowrap; align-self:flex-start; margin-top:2px;
+}
+.entry.feat .entry-badge { background:rgba(68,255,136,.15); color:var(--green); border:1px solid var(--green); }
+.entry.fix .entry-badge { background:rgba(255,68,68,.15); color:var(--red); border:1px solid var(--red); }
+.entry.improve .entry-badge { background:rgba(68,170,255,.15); color:var(--blue); border:1px solid var(--blue); }
+.entry.visual .entry-badge { background:rgba(204,102,255,.15); color:var(--purple); border:1px solid var(--purple); }
+.entry.data .entry-badge { background:rgba(0,238,255,.15); color:var(--cyan); border:1px solid var(--cyan); }
+
+.entry-body { flex:1; }
+.entry-title { font-size:17px; color:var(--gold); font-weight:bold; }
+.entry-desc { font-size:14px; color:#886622; margin-top:2px; line-height:1.4; }
+.entry-module {
+  font-size:11px; color:#553311; margin-top:3px;
+  font-family:'Press Start 2P',cursive; letter-spacing:1px;
+}
+
+/* Stats */
+.stats-bar {
+  display:flex; gap:16px; padding:14px 24px;
+  background:rgba(255,170,0,.03); border-bottom:1px solid #221100;
+  flex-wrap:wrap;
+}
+.stat-item { text-align:center; }
+.stat-num { font-size:24px; color:#ffff88; font-weight:bold; }
+.stat-label { font-size:11px; color:#664400; font-family:'Press Start 2P',cursive; letter-spacing:1px; }
+
+/* Scroll fade */
+.timeline::after {
+  content:''; position:fixed; bottom:0; left:0; right:0; height:60px;
+  background:linear-gradient(transparent,var(--dark));
+  pointer-events:none; z-index:100;
+}
+
+/* Mobile */
+@media(max-width:700px){
+  .header h1{font-size:12px;} .timeline{padding:12px 10px 40px;}
+  .timeline::before{left:16px;} .version-header{padding-left:36px;}
+  .version-dot{left:8px;} .entries{padding-left:36px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>БОРТОВОЙ ЖУРНАЛ РАЗРАБОТКИ</h1>
+  <div class="sub">Секретные передачи из штаба ELITE: DARK FRONTIER. Все обновления, патчи и новые системы.</div>
+</div>
+
+<div class="ticker-wrap">
+  <div class="ticker-tag">HOT NEWS</div>
+  <div class="ticker-scroll">
+    <div class="ticker-text" id="ticker-text"></div>
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<div class="filters">
+  <span class="label">ФИЛЬТР:</span>
+  <button class="filter-btn active" data-filter="all">ВСЕ</button>
+  <button class="filter-btn" data-filter="feat">НОВОЕ</button>
+  <button class="filter-btn" data-filter="fix">ФИКСЫ</button>
+  <button class="filter-btn" data-filter="improve">УЛУЧШЕНИЯ</button>
+  <button class="filter-btn" data-filter="visual">ВИЗУАЛ</button>
+  <button class="filter-btn" data-filter="data">ДАННЫЕ</button>
+</div>
+
+<div class="timeline" id="timeline"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CHANGELOG DATA
+// ═══════════════════════════════════════════════════
+const CHANGELOG = [
+  {
+    version: 'v4.2.0', date: '28 ФЕВ 2026', title: 'КАПИТАЛЬНАЯ ПЕРЕСТРОЙКА ЗВЁЗДНОЙ КАРТЫ',
+    hot: true,
+    entries: [
+      {type:'feat', title:'Карта неба переписана с нуля', desc:'2117 строк → 680. Чистый модульный код, все фичи сохранены. Быстрее, стабильнее, читаемее.', module:'STARMAP'},
+      {type:'improve', title:'Оптимизация маршрутизации', desc:'Снижено с 25 до 10 путей — расчёт мгновенный, без зависаний. Алгоритм тот же, но быстрее.', module:'STARMAP'},
+      {type:'improve', title:'Торговые частицы оптимизированы', desc:'800 вместо 1500 частиц. Плавная анимация на слабых GPU.', module:'STARMAP'},
+      {type:'visual', title:'CSS через переменные', desc:'Единый стиль .panel/.btn. Все панели унифицированы. Меньше дублирования.', module:'STARMAP'},
+      {type:'fix', title:'Исправлен баг dollyIn/dollyOut', desc:'OrbitControls r132 не имеет публичных dolly-методов. Заменено на lerp камеры.', module:'STARMAP'},
+      {type:'feat', title:'Бортовой журнал разработки', desc:'Новый модуль — вы сейчас его читаете. Hot news, фильтры, таймлайн.', module:'CHANGELOG'},
+    ]
+  },
+  {
+    version: 'v4.1.0', date: '27 ФЕВ 2026', title: 'NASA LIVE DATA',
+    entries: [
+      {type:'feat', title:'NASA APOD на главной', desc:'Астрономическое фото дня загружается с api.nasa.gov. Реальное изображение космоса каждый день.', module:'ГЛАВНАЯ'},
+      {type:'feat', title:'NASA NEO — околоземные объекты', desc:'Реальные астероиды, пролетающие мимо Земли сегодня. Данные обновляются ежедневно.', module:'STARMAP'},
+      {type:'data', title:'15 галактических новостей', desc:'Научные факты + игровой лор. Нейтронные звёзды, экзопланеты, торговые кризисы.', module:'STARMAP'},
+    ]
+  },
+  {
+    version: 'v4.0.0', date: '26 ФЕВ 2026', title: 'ЕДИНАЯ ЭКОНОМИКА И НАВИГАЦИЯ',
+    entries: [
+      {type:'feat', title:'Модульная архитектура', desc:'index.html — хаб с iframe-модулями. Единый gameState через postMessage. Навбар, профиль пилота.', module:'CORE'},
+      {type:'feat', title:'Кабинет пилота', desc:'Навыки (6 веток), ранги, XP, репутация, статистика. Панель справа с анимацией.', module:'PROFILE'},
+      {type:'feat', title:'Карта 5000+ звёзд', desc:'Реальные звёзды из каталога HIP (Hipparcos). Цвета по B-V индексу. Солнечная система с 8 планетами.', module:'STARMAP'},
+      {type:'feat', title:'Просчёт маршрутов', desc:'Выбор двух звёзд → поиск путей с визуализацией. Список альтернативных маршрутов, расчёт топлива.', module:'STARMAP'},
+      {type:'feat', title:'Торговые маршруты', desc:'Безье-кривые между массивными звёздами. 800 анимированных частиц. Корабли-метки у станций.', module:'STARMAP'},
+      {type:'feat', title:'Верфь кораблей', desc:'3 конструктора: боевой корабль, транспорт, станция. До 14 модулей, wireframe-рендер.', module:'CONSTRUCTORS'},
+      {type:'feat', title:'Добыча ресурсов', desc:'Полёт в поле астероидов, лазерная стрельба, сбор руды в трюм.', module:'MINING'},
+      {type:'feat', title:'Скульптинг астероидов', desc:'7 стадий обработки с 10 математическими градиентами. 2D canvas + процедурная генерация.', module:'ASTEROID'},
+      {type:'feat', title:'Планетарий', desc:'8 типов планет с Perlin-генерацией. 84 уникальных ресурса. Атмосферы и кольца.', module:'PLANETARIUM'},
+      {type:'feat', title:'Ровер', desc:'6-колёсный ровер на процедурном террене. WASD-управление, разведка и сбор ресурсов.', module:'ROVER'},
+      {type:'feat', title:'Спутниковый сканер', desc:'Сканирование терренов сверху. 8 биом-палитр, WebGL шейдеры, добыча ресурсов.', module:'TERRAFORMING'},
+      {type:'feat', title:'Биржа', desc:'5 секторов рынка с CoinGecko API. Спарклайны, покупка/продажа акций. Динамика цен.', module:'MARKET'},
+    ]
+  },
+  {
+    version: 'v3.0.0', date: '24 ФЕВ 2026', title: 'РОЖДЕНИЕ ТЁМНОГО ФРОНТИРА',
+    entries: [
+      {type:'feat', title:'Первая версия звёздной карты', desc:'Three.js, OrbitControls, 5000 звёзд. Базовая навигация и торговля.', module:'STARMAP'},
+      {type:'visual', title:'Ретро-стиль CRT', desc:'Scanline overlay, шрифты Press Start 2P + VT323. Янтарная палитра в стиле Elite 1984.', module:'CORE'},
+      {type:'data', title:'stars.json — реальные звёзды', desc:'5000 ближайших звёзд из каталога Hipparcos. Координаты, магнитуда, спектр, B-V индекс.', module:'DATA'},
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════
+const BADGE_LABELS = {feat:'НОВОЕ', fix:'ФИКС', improve:'УЛУЧШЕНИЕ', visual:'ВИЗУАЛ', data:'ДАННЫЕ'};
+let currentFilter = 'all';
+
+function renderTimeline(filter) {
+  const box = document.getElementById('timeline');
+  box.innerHTML = '';
+  CHANGELOG.forEach(ver => {
+    const entries = filter === 'all' ? ver.entries : ver.entries.filter(e => e.type === filter);
+    if (!entries.length) return;
+
+    const block = document.createElement('div');
+    block.className = 'version-block';
+    block.innerHTML = `
+      <div class="version-header">
+        <div class="version-dot ${ver.hot ? 'hot' : ''}"></div>
+        <span class="version-tag">${ver.version}</span>
+        <span class="version-date">${ver.date}</span>
+        <span class="version-title">${ver.title}</span>
+      </div>
+      <div class="entries">
+        ${entries.map(e => `
+          <div class="entry ${e.type}">
+            <span class="entry-badge">${BADGE_LABELS[e.type]}</span>
+            <div class="entry-body">
+              <div class="entry-title">${e.title}</div>
+              <div class="entry-desc">${e.desc}</div>
+              <div class="entry-module">${e.module}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    box.appendChild(block);
+  });
+}
+
+function renderStats() {
+  let feats=0, fixes=0, improves=0, total=0;
+  CHANGELOG.forEach(v => v.entries.forEach(e => {
+    total++;
+    if(e.type==='feat')feats++;
+    if(e.type==='fix')fixes++;
+    if(e.type==='improve')improves++;
+  }));
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat-item"><div class="stat-num">${CHANGELOG.length}</div><div class="stat-label">ВЕРСИЙ</div></div>
+    <div class="stat-item"><div class="stat-num">${total}</div><div class="stat-label">ИЗМЕНЕНИЙ</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--green)">${feats}</div><div class="stat-label">НОВЫХ ФИЧЕЙ</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--red)">${fixes}</div><div class="stat-label">ФИКСОВ</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--blue)">${improves}</div><div class="stat-label">УЛУЧШЕНИЙ</div></div>
+  `;
+}
+
+function initTicker() {
+  const hot = [];
+  CHANGELOG.forEach(v => {
+    if (v.hot) v.entries.forEach(e => hot.push(`${v.version}: ${e.title}`));
+  });
+  if (!hot.length) {
+    const latest = CHANGELOG[0];
+    latest.entries.slice(0,3).forEach(e => hot.push(`${latest.version}: ${e.title}`));
+  }
+  document.getElementById('ticker-text').textContent = hot.join('   ///   ') + '   ///   ' + hot.join('   ///   ');
+}
+
+// Filters
+document.querySelector('.filters').addEventListener('click', e => {
+  if (!e.target.classList.contains('filter-btn')) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentFilter = e.target.dataset.filter;
+  renderTimeline(currentFilter);
+});
+
+// Init
+renderStats();
+renderTimeline('all');
+initTicker();
+
+// Parent communication
+window.addEventListener('message', e => { if(e.data && e.data.type === 'game_state') window._gs = e.data.state; });
+if (window.parent !== window) window.parent.postMessage({type:'get_state'}, '*');
+</script>
+</body>
+</html>

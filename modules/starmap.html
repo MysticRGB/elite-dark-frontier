@@ -3,2115 +3,1244 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Elite: Dark Frontier + Маршрутизация v4</title>
+<title>Elite: Dark Frontier — Карта неба</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-body {
-margin: 0;
-overflow: hidden;
-font-family: 'VT323', monospace;
-background: #0a0c10;
-color: #ffdd99;
-text-shadow: 0 0 5px #cc8800;
+:root {
+  --amber: #ffaa00; --gold: #ffdd99; --dim: #664422;
+  --panel-bg: rgba(0,0,0,0.85); --panel-border: 2px solid var(--amber);
+  --glow: 0 0 10px #cc8800, inset 0 0 5px #442200;
+  --font-title: 'Press Start 2P', cursive;
+  --font-body: 'VT323', monospace;
 }
-#screen-overlay {
-position: fixed;
-top: 0; left: 0;
-width: 100%; height: 100%;
-pointer-events: none;
-background: repeating-linear-gradient(0deg, rgba(255,200,100,0.03) 0px, rgba(0,0,0,0.2) 2px, transparent 3px);
-z-index: 1500;
-mix-blend-mode: multiply;
-}
-#info, #hud-left, #hud-right, #hud-crew, #controls, #quicktravel, #news-widget, #news-modal,
-#trade-panel, #equipment-panel, #missions-panel, #travel-message, #hover-info, #route-panel,
-#waypoint-context-menu, #star-selection-panel, #fuel-requirement-panel, .star-name-label {
-z-index: 2000;
-}
-#info {
-position: absolute; top: 20px; left: 20px; padding: 12px 20px;
-border: 2px solid #ffaa00;
-box-shadow: 0 0 10px #cc8800, inset 0 0 5px #442200;
-background: rgba(0, 0, 0, 0.35);
-backdrop-filter: blur(2px);
-}
-#star-count { font-size: 14px; }
-#current-system { color: #ffaa00; }
-#hud {
-position: absolute; bottom: 30px; left: 20px; right: 20px;
-display: flex; justify-content: space-between;
-color: #ffdd99;
-font-family: 'Press Start 2P', cursive;
-font-size: 10px;
-line-height: 1.5;
-z-index: 2000;
-pointer-events: none;
-gap: 10px;
-}
-#hud-left, #hud-right, #hud-crew {
-padding: 10px 15px;
-min-width: 200px;
-text-transform: uppercase;
-border: 2px solid #ffaa00;
-box-shadow: 0 0 10px #cc8800, inset 0 0 5px #442200;
-background: rgba(0, 0, 0, 0.35);
-backdrop-filter: blur(2px);
-}
-#hud-left { text-align: left; }
-#hud-right { text-align: right; }
-#hud-crew { text-align: center; }
-.label { color: #ffcc66; }
-.value { color: #ffff88; font-weight: bold; }
-#cargo-grid {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 2px;
-margin-top: 8px;
-}
-.cargo-slot {
-background: #111;
-border: 1px solid #2a6f97;
-padding: 2px;
-font-size: 8px;
-text-align: center;
-color: #ffcc99;
-}
-#psychosis-bar {
-width: 100%; height: 8px;
-background: #222;
-border: 1px solid #ffaa00;
-margin: 5px 0;
-}
-#psychosis-fill { height: 100%; background: #ff6666; width: 0%; }
-#controls {
-position: absolute; top: 20px; right: 20px;
-padding: 15px; width: 280px; max-height: 90vh;
-overflow-y: auto; pointer-events: all;
-font-size: 12px;
-border: 2px solid #ffaa00;
-box-shadow: 0 0 10px #cc8800, inset 0 0 5px #442200;
-background: rgba(0, 0, 0, 0.35);
-backdrop-filter: blur(2px);
-}
-#controls h3 { color: #ffff88; margin-top: 0; }
-#controls button {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; padding: 6px 8px; margin: 4px 2px;
-cursor: pointer; font-family: 'Press Start 2P', cursive;
-font-size: 8px; text-transform: uppercase;
-}
-#controls button:hover { background: #aa6633; box-shadow: 0 0 10px #ff8800; }
-#controls button.active { background: #aa6633; box-shadow: 0 0 10px #ff8800; }
-#controls .full-width { width: 100%; }
-#controls input[type="range"] { width: 100%; background: #111; accent-color: #ffaa00; }
-#controls .value-display { float: right; color: #ffff88; }
-#quicktravel {
-position: absolute; bottom: 280px; left: 20px;
-padding: 15px; pointer-events: all; max-width: 300px;
-border: 2px solid #ffaa00;
-box-shadow: 0 0 10px #cc8800, inset 0 0 5px #442200;
-background: rgba(0, 0, 0, 0.35);
-backdrop-filter: blur(2px);
-}
-#quicktravel h4 { color: #ffff88; margin: 0 0 10px; }
-.travel-button {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; padding: 5px; margin: 3px;
-font-size: 10px; cursor: pointer;
-}
-.travel-button:hover { background: #aa6633; }
-.travel-button.locked {
-border-color: #ff6600;
-background: #553311;
-}
-.add-button {
-background: #3a7a3a; border: 1px solid #55aa55;
-color: #ffffff; padding: 5px 10px; margin: 3px;
-font-size: 12px; cursor: pointer;
-}
-.add-button:hover { background: #4a8a4a; }
-#news-widget {
-position: absolute; bottom: 30px; right: 320px;
-width: 300px; padding: 10px; pointer-events: all;
-font-size: 12px; border: 2px solid #ffaa00;
-box-shadow: 0 0 10px #cc8800, inset 0 0 5px #442200;
-background: rgba(0, 0, 0, 0.35);
-backdrop-filter: blur(2px);
-}
-#news-widget h4 {
-color: #ffff88; margin: 0 0 8px;
-font-family: 'Press Start 2P', cursive;
-font-size: 10px; cursor: pointer;
-}
-.news-ticker {
-max-height: 120px; overflow-y: auto;
-scrollbar-width: thin; scrollbar-color: #ffaa00 #111;
-}
-.news-ticker-item {
-border-bottom: 1px dashed #ffaa00;
-padding: 4px 0; display: flex;
-align-items: center; gap: 6px;
-}
-.news-icon {
-width: 24px; height: 24px;
-background: #332211; border: 1px solid #ffaa00;
-color: #ffaa00; font-size: 16px;
-display: flex; align-items: center; justify-content: center;
-}
-.news-ticker-item .title { flex: 1; color: #ffff88; cursor: pointer; }
-.news-ticker-item .system { font-size: 8px; color: #ffcc66; }
-#news-modal {
-position: absolute; top: 50%; left: 50%;
-transform: translate(-50%, -50%);
-width: 800px; max-height: 80vh;
-overflow-y: auto; padding: 20px; display: none;
-pointer-events: all; background: rgba(0,0,0,0.95);
-border: 4px solid #ffaa00;
-box-shadow: 0 0 10px #cc8800, inset 0 0 5px #442200;
-}
-#news-modal h2 {
-color: #ffff88; font-family: 'Press Start 2P', cursive;
-font-size: 16px; margin-top: 0; text-align: center;
-}
-.news-filter { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-.news-filter button {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; padding: 4px 8px; cursor: pointer;
-font-family: 'Press Start 2P', cursive; font-size: 8px;
-}
-.news-filter button.active { background: #aa6633; box-shadow: 0 0 5px #ff8800; }
-.news-list { display: flex; flex-direction: column; gap: 15px; }
-.news-item {
-display: flex; gap: 12px;
-border-bottom: 1px solid #ffaa00; padding-bottom: 10px;
-}
-.news-item .news-icon {
-width: 48px; height: 48px; font-size: 32px; border: 2px solid #ffaa00;
-}
-.news-content { flex: 1; }
-.news-title { color: #ffff88; font-size: 14px; font-weight: bold; }
-.news-meta { display: flex; gap: 15px; font-size: 10px; color: #ffcc66; margin: 4px 0; }
-.news-body { font-size: 12px; line-height: 1.4; }
-.modal-footer { display: flex; justify-content: space-between; margin-top: 20px; }
-.modal-footer button, #close-news {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; padding: 8px 16px; cursor: pointer;
-font-family: 'Press Start 2P', cursive; font-size: 10px;
-}
-.modal-footer button:hover, #close-news:hover { background: #aa6633; }
-#file-input { display: none; }
-#travel-message {
-position: absolute; bottom: 150px; left: 20px;
-background: #000; color: #ffaa00;
-padding: 10px 20px; border: 1px solid #ffaa00;
-opacity: 0; transition: opacity 0.3s;
-font-size: 14px; pointer-events: none;
-}
-#hover-info {
-position: absolute; background: #000;
-color: #ffdd99; padding: 12px;
-border: 2px solid #ffaa00; font-size: 12px;
-pointer-events: none; max-width: 280px;
-transform: translate(-50%, -100%);
-}
-.hover-info-title { color: #ffff88; font-weight: bold; }
-#trade-panel, #equipment-panel, #missions-panel {
-position: absolute; top: 50%; left: 50%;
-transform: translate(-50%, -50%);
-background: #000; border: 4px solid #ffaa00;
-padding: 20px; color: #ffdd99;
-width: 700px; max-height: 80vh;
-overflow-y: auto; display: none;
-font-family: 'VT323', monospace; font-size: 16px;
-}
-.close-panel {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; padding: 8px; width: 100%;
-cursor: pointer; margin-top: 10px;
-}
-.equipment-grid {
-display: grid; grid-template-columns: repeat(5, 1fr);
-gap: 8px; margin: 15px 0;
-}
-.equipment-slot {
-background: #111; border: 2px solid #ffaa00;
-padding: 8px; text-align: center; font-size: 12px;
-cursor: pointer; min-height: 50px;
-display: flex; align-items: center; justify-content: center;
-}
-.equipment-slot.empty { border-color: #664422; color: #664422; }
-.equipment-slot:hover { background: #332211; }
-.shop-list { margin-top: 20px; }
-.shop-item {
-display: flex; justify-content: space-between;
-border-bottom: 1px solid #ffaa00; padding: 8px 0;
-}
-.shop-item button {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; cursor: pointer;
-}
-.static-ship {
-font-family: 'VT323', monospace; font-size: 14px;
-color: #ffffaa; text-shadow: 0 0 6px #ff8800;
-background: rgba(40, 20, 0, 0.8);
-border: 2px solid #ffaa00; padding: 2px 6px;
-white-space: nowrap; pointer-events: none;
-user-select: none; backdrop-filter: blur(2px);
-}
-.no-pointerlock { pointer-events: all; }
-/* ===== МАРШРУТИЗАЦИЯ ===== */
-#route-panel {
-position: absolute;
-top: 100px;
-left: 20px;
-width: 450px;
-max-height: 80vh;
-overflow-y: auto;
-background: rgba(0,0,0,0.95);
-border: 4px solid #ffaa00;
-padding: 15px;
-color: #ffdd99;
-display: none;
-font-family: 'VT323', monospace;
-font-size: 14px;
-}
-#route-panel h3 {
-color: #ffff88; font-family: 'Press Start 2P', cursive;
-font-size: 12px; margin-top: 0; text-align: center;
-}
-.route-info {
-margin: 10px 0; padding: 8px;
-background: rgba(255,170,0,0.1); border: 1px solid #ffaa00;
-font-size: 12px;
-}
-.route-progress {
-width: 100%; height: 15px;
-background: #222; border: 1px solid #ffaa00;
-margin: 8px 0;
-}
-.route-progress-fill {
-height: 100%;
-background: linear-gradient(90deg, #ffaa00, #ffdd99);
-width: 0%; transition: width 0.3s;
-}
-.route-stats {
-display: grid; grid-template-columns: repeat(2, 1fr);
-gap: 8px; margin: 10px 0;
-}
-.route-stat {
-text-align: center; padding: 6px;
-background: rgba(255,170,0,0.05); border: 1px solid #664422;
-}
-.route-stat .label { font-size: 9px; color: #ffcc66; }
-.route-stat .value { font-size: 14px; color: #ffff88; }
-#fuel-requirement-panel {
-position: absolute;
-top: 450px;
-left: 20px;
-width: 350px;
-background: rgba(0,0,0,0.95);
-border: 3px solid #00ff88;
-padding: 12px;
-color: #00ff88;
-display: none;
-font-family: 'VT323', monospace;
-font-size: 13px;
-}
-#fuel-requirement-panel h4 {
-margin: 0 0 8px;
-color: #00ff88;
-font-family: 'Press Start 2P', cursive;
-font-size: 10px;
-}
-.fuel-stat {
-display: flex;
-justify-content: space-between;
-margin: 4px 0;
-}
-.fuel-stat .label { color: #88cc66; }
-.fuel-stat .value { color: #00ff88; font-weight: bold; }
-#waypoint-context-menu {
-position: absolute; background: #000;
-border: 2px solid #ffaa00; padding: 5px;
-display: none; min-width: 150px;
-}
-#waypoint-context-menu button {
-background: #664422; border: 1px solid #ffaa00;
-color: #ffdd99; padding: 6px 10px; margin: 2px 0;
-width: 100%; cursor: pointer;
-font-family: 'VT323', monospace; font-size: 12px; text-align: left;
-}
-#waypoint-context-menu button:hover { background: #aa6633; }
-#waypoint-context-menu button:disabled { opacity: 0.5; cursor: not-allowed; }
-#star-selection-panel {
-position: absolute; top: 20px; left: 50%;
-transform: translateX(-50%);
-background: rgba(0,0,0,0.9); border: 2px solid #ffaa00;
-padding: 15px; display: none; text-align: center;
-}
-#star-selection-panel .selection-info { margin: 10px 0; font-size: 12px; }
-.selection-point {
-display: inline-block; padding: 4px 12px; margin: 0 5px;
-border: 1px solid #ffaa00; font-size: 11px;
-}
-.selection-point.start { background: rgba(100,150,50,0.3); border-color: #88cc44; }
-.selection-point.end { background: rgba(50,100,150,0.3); border-color: #4488cc; }
-.calculate-btn {
-background: #446644; border: 1px solid #66aa66;
-color: #ffffff; padding: 8px 20px; margin: 10px 5px;
-cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 10px;
-}
-.calculate-btn:hover { background: #557755; }
-.calculate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.route-line { opacity: 0.8; }
-.route-line-calculating {
-opacity: 0.6;
-stroke-dasharray: 10,5;
-animation: dashAnimation 1s linear infinite;
-}
-@keyframes dashAnimation {
-to { stroke-dashoffset: -15; }
-}
-.star-name-label {
-font-family: 'VT323', monospace;
-font-size: 13px;
-color: #00ff88;
-text-shadow: 0 0 8px #00ff88, 0 0 15px #00aa55;
-background: rgba(0, 50, 20, 0.7);
-border: 1px solid #00ff88;
-padding: 3px 8px;
-white-space: nowrap;
-pointer-events: none;
-user-select: none;
-backdrop-filter: blur(2px);
-position: relative;
-}
-.route-marker-label {
-font-family: 'Press Start 2P', cursive;
-font-size: 10px;
-color: #ffff00;
-text-shadow: 0 0 10px #ffff00;
-background: rgba(50, 50, 0, 0.8);
-border: 2px solid #ffff00;
-padding: 4px 8px;
-white-space: nowrap;
-pointer-events: none;
-}
-/* ===== НОВЫЕ СТИЛИ ДЛЯ СПИСКА МАРШРУТОВ ===== */
-#route-list {
-    margin-top: 15px;
-    max-height: 300px;
-    overflow-y: auto;
-    border-top: 1px solid #ffaa00;
-    padding-top: 10px;
-}
-.route-item {
-    background: rgba(255, 170, 0, 0.05);
-    border: 1px solid #664422;
-    margin-bottom: 8px;
-    padding: 8px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-}
-.route-item:hover {
-    background: rgba(255, 170, 0, 0.15);
-}
-.route-color-indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 1px solid #fff;
-}
-.route-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.route-stars {
-    color: #ffcc66;
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.route-stats-mini {
-    display: flex;
-    gap: 10px;
-    font-size: 10px;
-    color: #ffff88;
-}
-#stop-calculation-btn {
-    background: #883333;
-    border-color: #ff4444;
-    color: #ffaaaa;
-    margin-top: 10px;
-}
-#stop-calculation-btn:hover {
-    background: #aa4444;
-}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { overflow:hidden; font-family:var(--font-body); background:#050510; color:var(--gold); }
+canvas { display:block; }
+
+/* CRT overlay */
+#crt { position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg,rgba(255,200,100,.03) 0px,rgba(0,0,0,.15) 2px,transparent 3px);
+  mix-blend-mode:multiply; }
+
+/* Panels base */
+.panel { position:absolute; padding:12px 16px; border:var(--panel-border);
+  box-shadow:var(--glow); background:var(--panel-bg); backdrop-filter:blur(3px);
+  font-size:14px; z-index:2000; }
+.panel h3, .panel h4 { font-family:var(--font-title); font-size:11px; color:#ffff88; margin-bottom:8px; }
+.panel .lbl { color:#cc8800; } .panel .val { color:#ffff88; font-weight:bold; }
+
+/* Buttons */
+.btn { background:var(--dim); border:1px solid var(--amber); color:var(--gold);
+  padding:6px 10px; cursor:pointer; font-family:var(--font-title); font-size:8px;
+  text-transform:uppercase; transition:all .15s; }
+.btn:hover { background:#aa6633; box-shadow:0 0 10px #ff8800; }
+.btn.active { background:#aa6633; box-shadow:0 0 10px #ff8800; }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.btn-full { width:100%; }
+.btn-green { background:#3a6a3a; border-color:#55aa55; color:#fff; }
+.btn-red { background:#6a3a3a; border-color:#aa5555; color:#ffaaaa; }
+
+/* Info panel (top-left) */
+#info { top:16px; left:16px; min-width:220px; }
+#info h2 { font-family:var(--font-title); font-size:12px; color:#ffff88; margin-bottom:6px; }
+
+/* Controls panel (top-right) */
+#controls { top:16px; right:16px; width:260px; max-height:90vh; overflow-y:auto; }
+#controls label { display:block; margin:8px 0 2px; font-size:13px; color:#cc8800; }
+#controls input[type=range] { width:100%; accent-color:var(--amber); }
+
+/* HUD (bottom) */
+#hud { position:absolute; bottom:20px; left:16px; right:16px; display:flex; gap:10px; z-index:2000; pointer-events:none; }
+.hud-block { flex:1; padding:10px 14px; border:var(--panel-border); box-shadow:var(--glow);
+  background:var(--panel-bg); backdrop-filter:blur(3px);
+  font-family:var(--font-title); font-size:9px; line-height:1.8; text-transform:uppercase; }
+
+/* Hover tooltip */
+#hover-info { position:absolute; background:#000; color:var(--gold); padding:10px;
+  border:2px solid var(--amber); font-size:13px; pointer-events:none; max-width:300px;
+  transform:translate(-50%,-110%); z-index:3000; display:none; }
+
+/* Travel message */
+#travel-msg { position:absolute; bottom:160px; left:16px; background:#000; color:var(--amber);
+  padding:8px 16px; border:1px solid var(--amber); font-size:14px; pointer-events:none;
+  opacity:0; transition:opacity .3s; z-index:2000; }
+
+/* Quick travel */
+#quicktravel { bottom:220px; left:16px; max-width:300px; }
+.wp-btn { background:var(--dim); border:1px solid var(--amber); color:var(--gold);
+  padding:4px 8px; margin:2px; font-size:11px; cursor:pointer; }
+.wp-btn:hover { background:#aa6633; }
+.wp-btn.locked { border-color:#ff6600; background:#553311; }
+
+/* Modal panels (trade, equip, missions) */
+.modal-panel { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:#000; border:4px solid var(--amber); padding:20px; color:var(--gold);
+  width:680px; max-height:80vh; overflow-y:auto; display:none; z-index:3000; font-size:15px; }
+.modal-panel h3 { font-family:var(--font-title); font-size:13px; color:#ffff88; margin-bottom:12px; }
+.close-modal { width:100%; margin-top:12px; }
+
+/* Route panel */
+#route-panel { top:100px; left:16px; width:420px; max-height:75vh; overflow-y:auto; display:none; }
+.route-progress { width:100%; height:12px; background:#222; border:1px solid var(--amber); margin:6px 0; }
+.route-fill { height:100%; background:linear-gradient(90deg,var(--amber),#ffff88); width:0%; transition:width .3s; }
+.route-stats { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0; }
+.route-stat { text-align:center; padding:5px; background:rgba(255,170,0,.05); border:1px solid #442200; }
+.route-stat .lbl { font-size:9px; } .route-stat .val { font-size:13px; }
+.route-item { display:flex; align-items:center; gap:8px; padding:6px; margin:4px 0;
+  border:1px solid #442200; cursor:pointer; font-size:12px; background:rgba(255,170,0,.03); }
+.route-item:hover { background:rgba(255,170,0,.12); }
+.route-dot { width:10px; height:10px; border-radius:50%; border:1px solid #fff; flex-shrink:0; }
+
+/* Star selection */
+#star-select { top:16px; left:50%; transform:translateX(-50%); text-align:center; display:none; }
+.sel-pt { display:inline-block; padding:3px 10px; margin:0 4px; border:1px solid var(--amber); font-size:11px; }
+.sel-pt.start { background:rgba(100,150,50,.3); border-color:#88cc44; }
+.sel-pt.end { background:rgba(50,100,150,.3); border-color:#4488cc; }
+
+/* Fuel panel */
+#fuel-panel { top:420px; left:16px; width:320px; border-color:#00ff88; color:#00ff88; display:none; }
+#fuel-panel h4 { color:#00ff88; } #fuel-panel .lbl { color:#88cc66; } #fuel-panel .val { color:#00ff88; }
+.fuel-row { display:flex; justify-content:space-between; margin:3px 0; }
+
+/* News */
+#news-widget { position:absolute; bottom:20px; right:300px; width:280px; z-index:2000; }
+#news-widget h4 { cursor:pointer; }
+.news-tick { max-height:110px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--amber) #111; }
+.news-item-sm { border-bottom:1px dashed #553311; padding:3px 0; font-size:12px; color:#cc8800; cursor:pointer; }
+#news-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:750px; max-height:80vh; overflow-y:auto; padding:20px; display:none;
+  background:rgba(0,0,0,.96); border:4px solid var(--amber); z-index:4000; }
+
+/* Star name labels */
+.star-label { font-family:var(--font-body); font-size:12px; color:#00ff88;
+  text-shadow:0 0 8px #00ff88; background:rgba(0,40,20,.7); border:1px solid #00ff88;
+  padding:2px 6px; white-space:nowrap; pointer-events:none; }
+
+/* Static ships */
+.ship-tag { font-family:var(--font-body); font-size:12px; color:#ffffaa;
+  text-shadow:0 0 5px #ff8800; background:rgba(30,15,0,.8); border:1px solid var(--amber);
+  padding:1px 5px; white-space:nowrap; pointer-events:none; }
+
+/* Help overlay */
+#help { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:50000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; gap:16px; }
+#help .title { font-family:var(--font-title); font-size:18px; color:#ffff88; text-shadow:0 0 20px var(--amber); }
+#help .body { color:var(--gold); font-size:20px; max-width:560px; text-align:center; line-height:1.6; }
+#help .key { color:#88ff88; }
+#help .hint { color:#886622; font-size:16px; animation:blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Context menu */
+#ctx-menu { position:absolute; background:#000; border:2px solid var(--amber); padding:4px;
+  display:none; min-width:140px; z-index:5000; }
+#ctx-menu button { display:block; width:100%; background:var(--dim); border:1px solid var(--amber);
+  color:var(--gold); padding:5px 8px; margin:2px 0; cursor:pointer; font-size:12px; text-align:left; }
+#ctx-menu button:hover { background:#aa6633; }
 </style>
 </head>
 <body>
-<div id="screen-overlay"></div>
-<div id="help-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:20px;font-family:'VT323',monospace;">
-  <div style="font-family:'Press Start 2P',cursive;font-size:18px;color:#ffff88;text-shadow:0 0 20px #ffaa00;">КАРТА ЗВЁЗДНОГО НЕБА</div>
-  <div style="color:#ffdd88;font-size:22px;max-width:600px;text-align:center;line-height:1.6;">
-    <div style="margin-bottom:8px;color:#88ccff;font-size:16px;">Каждая звезда — реальная из каталога HIP (Hipparcos).<br>Во Вселенной ≈2×10²³ звёзд. Здесь 5000 ближайших.</div>
-    <div style="margin-bottom:12px;border-bottom:1px dashed #ffaa00;padding-bottom:8px;">УПРАВЛЕНИЕ</div>
-    <div><span style="color:#88ff88;">ЛКМ + тянуть</span> — вращение камеры</div>
-    <div><span style="color:#88ff88;">ПКМ + тянуть</span> — панорамирование</div>
-    <div><span style="color:#88ff88;">КОЛЕСО</span> — зум</div>
-    <div><span style="color:#88ff88;">WASD</span> — полёт по осям</div>
-    <div><span style="color:#88ff88;">Q / E</span> — вверх / вниз</div>
-    <div><span style="color:#88ff88;">SHIFT</span> — ускорение x3</div>
-    <div><span style="color:#88ff88;">ДВОЙНОЙ КЛИК</span> — перелёт к звезде</div>
-    <div style="margin-top:12px;border-top:1px dashed #ffaa00;padding-top:8px;color:#88ccff;font-size:15px;">
-      🔭 ФАКТЫ: Млечный Путь — 100-400 млрд звёзд · ~1 трлн планет<br>
-      Ближайшая: Проксима Центавра (4.24 св.г) · 5700+ экзопланет (NASA 2024)
-    </div>
-  </div>
-  <div style="color:#886622;font-size:18px;animation:blink 1.2s infinite;">[ КЛИКНИТЕ ЧТОБЫ НАЧАТЬ ]</div>
-  <style>@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}</style>
-</div>
-<div id="info">
-<h2>✨ ELITE: DARK FRONTIER</h2>
-<div id="star-count">Загрузка...</div>
-<div>СИСТЕМА: <span id="current-system">—</span></div>
-<div>ИГРОК: <span id="player-name">Командор</span></div>
-</div>
-<div id="hud">
-<div id="hud-left">
-<div><span class="label">КРЕДИТЫ:</span> <span class="value" id="credits">10000</span></div>
-<div><span class="label">ТОПЛИВО:</span> <span class="value" id="fuel">7.0</span>/7.0 т</div>
-<div><span class="label">ГРУЗ:</span> <span class="value" id="cargo-used">0</span>/<span id="cargo-max">22</span> т</div>
-<div><span class="label">ПСИХОЗ:</span> <span class="value" id="psychosis-value">0%</span></div>
-<div id="psychosis-bar"><div id="psychosis-fill"></div></div>
-<div id="cargo-grid"></div>
-</div>
-<div id="hud-crew">
-<div><span class="label">МОРАЛЬ:</span> <span class="value" id="morale">НОРМА</span></div>
-<div><span class="label">РЕЙТИНГ:</span> <span class="value" id="rating">Harmless</span></div>
-<div><span class="label">ПОЛЁТОВ:</span> <span class="value" id="flight-count">0</span></div>
-</div>
-<div id="hud-right">
-<div><span class="label">КОРАБЛЬ:</span> <span class="value">Cobra Mk III</span></div>
-<div><span class="label">СИСТЕМА:</span> <span class="value" id="system-name">—</span></div>
-<div><span class="label">ПЛАНЕТА:</span> <span class="value" id="planet-type">—</span></div>
-<div><span class="label">ЭКОНОМИКА:</span> <span class="value" id="economy-type">—</span></div>
-<div><span class="label">ПРАВИТЕЛЬСТВО:</span> <span class="value" id="government-type">—</span></div>
-</div>
-</div>
-<div id="news-widget" class="no-pointerlock">
-<h4 onclick="toggleNewsModal()">📰 НОВОСТИ ГАЛАКТИКИ ▼</h4>
-<div class="news-ticker" id="news-ticker"></div>
-</div>
-<div id="news-modal" class="no-pointerlock">
-<h2>📰 ГАЛАКТИЧЕСКИЕ НОВОСТИ</h2>
-<div class="news-filter" id="news-filter">
-<button data-category="all" class="active">ВСЕ</button>
-<button data-category="market">РЫНОК</button>
-<button data-category="politics">ПОЛИТИКА</button>
-<button data-category="incident">ПРОИСШЕСТВИЯ</button>
-<button data-category="discovery">ОТКРЫТИЯ</button>
-<button data-category="crime">ПРЕСТУПНОСТЬ</button>
-<button data-category="technology">ТЕХНОЛОГИИ</button>
-<button data-category="science">НАУКА</button>
-<button data-category="culture">КУЛЬТУРА</button>
-</div>
-<div class="news-list" id="news-list"></div>
-<div class="modal-footer">
-<button id="download-news">💾 ЗАГРУЗИТЬ НОВОСТИ</button>
-<button id="close-news">ЗАКРЫТЬ</button>
-</div>
-</div>
-<input type="file" id="file-input" accept=".json,application/json">
-<div id="controls" class="no-pointerlock">
-<h3>⚙️ УПРАВЛЕНИЕ</h3>
-<button id="solar-system-btn" class="full-width">🪐 СОЛНЕЧНАЯ СИСТЕМА</button>
-<button id="sun-btn">☀️ СОЛНЦЕ</button>
-<button id="toggle-massive-lines">🔗 ЛИНИИ МАССИВНЫХ</button>
-<button id="toggle-trade-routes" class="full-width">🚀 ТОРГОВЫЕ МАРШРУТЫ</button>
-<button id="route-calculate-btn" class="full-width">🧮 ПРОСЧЁТ МАРШРУТА</button>
-<button id="save-progress-btn" class="full-width">💾 СОХРАНИТЬ ПРОГРЕСС</button>
-<button id="load-progress-btn" class="full-width">📂 ЗАГРУЗИТЬ ПРОГРЕСС</button>
-<button id="equipment-btn">🛠 СНАРЯЖЕНИЕ</button>
-<button id="missions-btn">📋 МИССИИ</button>
-<label>⭐ РАЗМЕР ЗВЁЗД <span id="size-value" class="value-display">13.0</span></label>
-<input type="range" id="star-size" min="1" max="30" step="0.1" value="13">
-<label>🚀 СКОРОСТЬ <span id="speed-value" class="value-display">200</span></label>
-<input type="range" id="speed-slider" min="1" max="10000" step="1" value="200">
-<label>🔆 ЯРКОСТЬ <span id="brightness-value" class="value-display">1.0</span></label>
-<input type="range" id="star-brightness" min="0.2" max="2.0" step="0.1" value="1.0">
-<p style="font-size:10px; color:#ffcc66;">ЛКМ-тянуть – вращение, ПКМ-тянуть – пан, колесо – зум</p>
-<p style="font-size:10px; color:#ffcc66;">WASD – полёт, Q/E – вверх/вниз, Shift – ускорение</p>
-<p style="font-size:10px; color:#ffff88;">Двойной клик по звезде – прыжок к ней</p>
-</div>
-<div id="quicktravel" class="no-pointerlock">
-<h4>⚡ БЫСТРЫЙ ПЕРЕЛЁТ</h4>
-<div id="travel-buttons"></div>
-<button class="add-button" id="add-waypoint">+ ЗАПОМНИТЬ КООРДИНАТУ</button>
-</div>
-<div id="travel-message"></div>
-<div id="hover-info" style="display: none;"></div>
-<div id="trade-panel" class="no-pointerlock">
-<h3>ТОРГОВАЯ СТАНЦИЯ: <span id="station-name"></span></h3>
-<div id="trade-items"></div>
-<button class="close-panel" id="close-trade">ЗАКРЫТЬ</button>
-</div>
-<div id="equipment-panel" class="no-pointerlock">
-<h3>СНАРЯЖЕНИЕ</h3>
-<div id="equipment-slots"></div>
-<div id="equipment-shop"></div>
-<button class="close-panel" id="close-equipment">ЗАКРЫТЬ</button>
-</div>
-<div id="missions-panel" class="no-pointerlock">
-<h3>ДОСТУПНЫЕ МИССИИ</h3>
-<div id="missions-list"></div>
-<button class="close-panel" id="close-missions">ЗАКРЫТЬ</button>
-</div>
-<!-- ===== МАРШРУТИЗАЦИЯ ===== -->
-<div id="route-panel" class="no-pointerlock">
-<h3>🧮 БОРТОВОЙ ПРОСЧЁТ МАРШРУТА</h3>
-<div class="route-info">
-<div>Точка входа: <span id="route-start-star" style="color:#88cc44;">Не выбрана</span></div>
-<div>Точка выхода: <span id="route-end-star" style="color:#4488cc;">Не выбрана</span></div>
-</div>
-<div class="route-progress">
-<div class="route-progress-fill" id="route-progress-fill"></div>
-</div>
-<div class="route-stats">
-<div class="route-stat">
-<div class="label">ПУТЕЙ ПРОСЧИТАНО</div>
-<div class="value" id="route-paths-count">0/25</div>
-</div>
-<div class="route-stat">
-<div class="label">ЛУЧШИЙ ПУТЬ</div>
-<div class="value" id="route-best-path">—</div>
-</div>
-<div class="route-stat">
-<div class="label">РАССТОЯНИЕ</div>
-<div class="value" id="route-best-distance">—</div>
-</div>
-<div class="route-stat">
-<div class="label">ЗВЁЗД В ПУТИ</div>
-<div class="value" id="route-star-count">—</div>
-</div>
-</div>
-<!-- СПИСОК АЛЬТЕРНАТИВНЫХ МАРШРУТОВ -->
-<div id="route-list"></div>
+<div id="crt"></div>
 
-<button class="close-panel" id="close-route" style="margin-top:8px;">СКРЫТЬ ПАНЕЛЬ</button>
-<button id="stop-calculation-btn" class="close-panel">⛔ ОСТАНОВИТЬ ПОИСК</button>
-<p style="font-size:10px; color:#ffcc66; margin:5px 0 0;">После остановки поиск прекращается</p>
+<!-- HELP OVERLAY -->
+<div id="help">
+  <div class="title">КАРТА ЗВЁЗДНОГО НЕБА</div>
+  <div class="body">
+    <div style="color:#88ccff;font-size:15px;margin-bottom:10px;">Каждая звезда — реальная из каталога HIP (Hipparcos).<br>Во Вселенной ~2×10²³ звёзд. Здесь 5000 ближайших.</div>
+    <div><span class="key">ЛКМ + тянуть</span> — вращение</div>
+    <div><span class="key">ПКМ + тянуть</span> — панорамирование</div>
+    <div><span class="key">Колесо</span> — зум</div>
+    <div><span class="key">WASD / Q / E</span> — полёт</div>
+    <div><span class="key">Shift</span> — ускорение ×3</div>
+    <div><span class="key">Двойной клик</span> — перелёт к звезде</div>
+  </div>
+  <div class="hint">[ КЛИКНИТЕ ЧТОБЫ НАЧАТЬ ]</div>
 </div>
-<div id="fuel-requirement-panel" class="no-pointerlock">
-<h4>⛽ ТРЕБОВАНИЯ ТОПЛИВА</h4>
-<div class="fuel-stat">
-<span class="label">Расстояние:</span>
-<span class="value" id="fuel-distance">—</span>
+
+<!-- INFO -->
+<div id="info" class="panel">
+  <h2>✨ ELITE: DARK FRONTIER</h2>
+  <div id="star-count">Загрузка...</div>
+  <div>СИСТЕМА: <span id="cur-sys" class="val">—</span></div>
 </div>
-<div class="fuel-stat">
-<span class="label">Нужно топлива:</span>
-<span class="value" id="fuel-needed">—</span>
+
+<!-- CONTROLS -->
+<div id="controls" class="panel">
+  <h3>⚙ УПРАВЛЕНИЕ</h3>
+  <button class="btn btn-full" id="btn-solar">🪐 СОЛНЕЧНАЯ СИСТЕМА</button>
+  <button class="btn" id="btn-sun">☀ СОЛНЦЕ</button>
+  <button class="btn" id="btn-lines">🔗 ЛИНИИ МАССИВНЫХ</button>
+  <button class="btn btn-full" id="btn-trade">🚀 ТОРГОВЫЕ МАРШРУТЫ</button>
+  <button class="btn btn-full" id="btn-route">🧮 ПРОСЧЁТ МАРШРУТА</button>
+  <button class="btn btn-full" id="btn-save">💾 СОХРАНИТЬ</button>
+  <button class="btn btn-full" id="btn-load">📂 ЗАГРУЗИТЬ</button>
+  <button class="btn" id="btn-equip">🛠 СНАРЯЖЕНИЕ</button>
+  <button class="btn" id="btn-missions">📋 МИССИИ</button>
+  <label>⭐ Размер звёзд <span id="v-size" class="val">13</span></label>
+  <input type="range" id="sl-size" min="1" max="30" step="0.5" value="13">
+  <label>🚀 Скорость <span id="v-speed" class="val">200</span></label>
+  <input type="range" id="sl-speed" min="1" max="10000" step="1" value="200">
+  <label>🔆 Яркость <span id="v-bright" class="val">1.0</span></label>
+  <input type="range" id="sl-bright" min="0.2" max="2.0" step="0.1" value="1.0">
+  <p style="font-size:11px;color:#886622;margin-top:8px;">WASD — полёт · Q/E — вверх/вниз · Shift — ×3</p>
 </div>
-<div class="fuel-stat">
-<span class="label">Есть топлива:</span>
-<span class="value" id="fuel-available">—</span>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-block">
+    <div><span class="lbl">КРЕДИТЫ:</span> <span class="val" id="h-cred">10000</span></div>
+    <div><span class="lbl">ТОПЛИВО:</span> <span class="val" id="h-fuel">7.0</span>/7.0 т</div>
+    <div><span class="lbl">ГРУЗ:</span> <span class="val" id="h-cargo">0</span>/<span id="h-cmax">22</span> т</div>
+    <div><span class="lbl">ПОЛЁТОВ:</span> <span class="val" id="h-flights">0</span></div>
+  </div>
+  <div class="hud-block" style="text-align:center;">
+    <div><span class="lbl">РЕЙТИНГ:</span> <span class="val" id="h-rank">Harmless</span></div>
+    <div><span class="lbl">МОРАЛЬ:</span> <span class="val" id="h-morale">НОРМА</span></div>
+  </div>
+  <div class="hud-block" style="text-align:right;">
+    <div><span class="lbl">СИСТЕМА:</span> <span class="val" id="h-sys">—</span></div>
+    <div><span class="lbl">ПЛАНЕТА:</span> <span class="val" id="h-planet">—</span></div>
+    <div><span class="lbl">ЭКОНОМИКА:</span> <span class="val" id="h-econ">—</span></div>
+  </div>
 </div>
-<div class="fuel-stat">
-<span class="label">Статус:</span>
-<span class="value" id="fuel-status">—</span>
+
+<!-- QUICK TRAVEL -->
+<div id="quicktravel" class="panel">
+  <h4>⚡ БЫСТРЫЙ ПЕРЕЛЁТ</h4>
+  <div id="wp-list"></div>
+  <button class="btn btn-green" id="btn-addwp" style="margin-top:6px;">+ МЕТКА</button>
 </div>
-<button class="close-panel" id="close-fuel-panel" style="margin-top:8px;">ЗАКРЫТЬ</button>
+
+<!-- TRAVEL MESSAGE -->
+<div id="travel-msg"></div>
+
+<!-- HOVER INFO -->
+<div id="hover-info"></div>
+
+<!-- NEWS WIDGET -->
+<div id="news-widget" class="panel">
+  <h4 id="news-toggle">📰 НОВОСТИ ГАЛАКТИКИ ▼</h4>
+  <div class="news-tick" id="news-tick"></div>
 </div>
-<div id="star-selection-panel" class="no-pointerlock">
-<h4 style="color:#ffff88; margin:0 0 10px;">ВЫБОР ЗВЁЗД ДЛЯ МАРШРУТА</h4>
-<div class="selection-info">
-<span class="selection-point start">🟢 ПКМ = ВХОД</span>
-<span class="selection-point end">🔵 ПКМ = ВЫХОД</span>
+
+<!-- NEWS MODAL -->
+<div id="news-modal">
+  <h3 style="font-family:var(--font-title);font-size:14px;color:#ffff88;text-align:center;">📰 ГАЛАКТИЧЕСКИЕ НОВОСТИ</h3>
+  <div id="news-full" style="margin-top:12px;"></div>
+  <button class="btn btn-full" id="news-close" style="margin-top:12px;">ЗАКРЫТЬ</button>
 </div>
-<div id="selection-status">Выберите точку входа (ПКМ по звезде)</div>
-<button class="calculate-btn" id="start-calculation" disabled>НАЧАТЬ ПРОСЧЁТ</button>
-<button class="close-panel" id="close-selection" style="width:auto; padding:6px 15px;">ОТМЕНА</button>
+
+<!-- TRADE PANEL -->
+<div class="modal-panel" id="trade-panel">
+  <h3>СТАНЦИЯ: <span id="st-name"></span></h3>
+  <div id="trade-items"></div>
+  <button class="btn close-modal" id="close-trade">ЗАКРЫТЬ</button>
 </div>
-<div id="waypoint-context-menu">
-<button id="wp-rename">✏️ Переименовать</button>
-<button id="wp-lock">🔒 Заблокировать</button>
-<button id="wp-unlock">🔓 Разблокировать</button>
-<button id="wp-delete">🗑️ Удалить</button>
+
+<!-- EQUIPMENT PANEL -->
+<div class="modal-panel" id="equip-panel">
+  <h3>🛠 СНАРЯЖЕНИЕ</h3>
+  <div id="equip-slots" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;"></div>
+  <button class="btn close-modal" id="close-equip">ЗАКРЫТЬ</button>
 </div>
+
+<!-- MISSIONS PANEL -->
+<div class="modal-panel" id="missions-panel">
+  <h3>📋 МИССИИ</h3>
+  <div id="missions-list"><p style="color:#886622;">Нет доступных миссий в этой системе.</p></div>
+  <button class="btn close-modal" id="close-missions">ЗАКРЫТЬ</button>
+</div>
+
+<!-- ROUTE PANEL -->
+<div id="route-panel" class="panel">
+  <h3>🧮 ПРОСЧЁТ МАРШРУТА</h3>
+  <div style="margin:6px 0;">
+    <div>Вход: <span id="r-start" style="color:#88cc44;">—</span></div>
+    <div>Выход: <span id="r-end" style="color:#4488cc;">—</span></div>
+  </div>
+  <div class="route-progress"><div class="route-fill" id="r-fill"></div></div>
+  <div class="route-stats">
+    <div class="route-stat"><div class="lbl">ПУТЕЙ</div><div class="val" id="r-count">0/10</div></div>
+    <div class="route-stat"><div class="lbl">ЛУЧШИЙ</div><div class="val" id="r-best">—</div></div>
+    <div class="route-stat"><div class="lbl">РАССТОЯНИЕ</div><div class="val" id="r-dist">—</div></div>
+    <div class="route-stat"><div class="lbl">ЗВЁЗД</div><div class="val" id="r-stars">—</div></div>
+  </div>
+  <div id="route-list"></div>
+  <button class="btn btn-full" id="close-route" style="margin-top:6px;">СКРЫТЬ</button>
+  <button class="btn btn-red btn-full" id="stop-route" style="margin-top:4px;">⛔ ОСТАНОВИТЬ</button>
+</div>
+
+<!-- STAR SELECTION -->
+<div id="star-select" class="panel">
+  <h4>ВЫБОР ЗВЁЗД ДЛЯ МАРШРУТА</h4>
+  <div style="margin:8px 0;">
+    <span class="sel-pt start">🟢 ПКМ = ВХОД</span>
+    <span class="sel-pt end">🔵 ПКМ = ВЫХОД</span>
+  </div>
+  <div id="sel-status">Выберите точку входа (ПКМ по звезде)</div>
+  <button class="btn btn-green" id="sel-calc" disabled>ПРОСЧИТАТЬ</button>
+  <button class="btn" id="sel-cancel">ОТМЕНА</button>
+</div>
+
+<!-- FUEL PANEL -->
+<div id="fuel-panel" class="panel">
+  <h4>⛽ ТОПЛИВО</h4>
+  <div class="fuel-row"><span class="lbl">Расстояние:</span><span class="val" id="f-dist">—</span></div>
+  <div class="fuel-row"><span class="lbl">Нужно:</span><span class="val" id="f-need">—</span></div>
+  <div class="fuel-row"><span class="lbl">Есть:</span><span class="val" id="f-have">—</span></div>
+  <div class="fuel-row"><span class="lbl">Статус:</span><span class="val" id="f-status">—</span></div>
+  <button class="btn btn-full" id="close-fuel" style="margin-top:6px;">ЗАКРЫТЬ</button>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <button id="ctx-rename">✏ Переименовать</button>
+  <button id="ctx-lock">🔒 Заблокировать</button>
+  <button id="ctx-unlock">🔓 Разблокировать</button>
+  <button id="ctx-delete">🗑 Удалить</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/renderers/CSS2DRenderer.js"></script>
 <script>
-// ======================== ГЛОБАЛЬНЫЕ ДАННЫЕ ========================
-const ECONOMY_TYPES = [ "Poor Agricultural", "Average Agricultural", "Rich Agricultural", "Poor Industrial", "Average Industrial", "Rich Industrial", "Poor Common", "Average Common" ];
-const GOVERNMENT_TYPES = [ "Anarchy", "Feudal", "Multi-government", "Dictatorship", "Confederacy", "Democracy", "Corporate State", "Satori", "Communist" ];
-const PLANET_TYPES = [ "rocky", "gas_giant", "ice", "jungle", "desert", "ocean", "dead", "artificial", "ruins", "fungal", "insectoid", "cyber", "magic" ];
-const FACTION_IDS = ["empire", "corps", "pirates", "natives", "demigods"];
-const GOODS = [ { id:0, name:"Food", basePrice:13, unit:4, illegal:false, category:"common" }, { id:1, name:"Textiles", basePrice:27, unit:4, illegal:false, category:"common" }, { id:2, name:"Radioactives", basePrice:1600, unit:1, illegal:false, category:"industrial" }, { id:3, name:"Slaves", basePrice:180, unit:4, illegal:true, category:"illicit" }, { id:4, name:"Liquor/Wines", basePrice:55, unit:4, illegal:false, category:"luxury" }, { id:5, name:"Luxuries", basePrice:150, unit:1, illegal:false, category:"luxury" }, { id:6, name:"Narcotics", basePrice:1000, unit:1, illegal:true, category:"illicit" }, { id:7, name:"Computers", basePrice:500, unit:1, illegal:false, category:"tech" }, { id:8, name:"Machinery", basePrice:400, unit:2, illegal:false, category:"industrial" }, { id:9, name:"Alloys", basePrice:170, unit:4, illegal:false, category:"industrial" }, { id:10, name:"Firearms", basePrice:290, unit:2, illegal:true, category:"illicit" }, { id:11, name:"Furs", basePrice:220, unit:2, illegal:false, category:"luxury" }, { id:12, name:"Minerals", basePrice:53, unit:4, illegal:false, category:"common" }, { id:13, name:"Gold", basePrice:660, unit:1, illegal:false, category:"precious" }, { id:14, name:"Platinum", basePrice:550, unit:1, illegal:false, category:"precious" }, { id:15, name:"Gem-Stones", basePrice:2500, unit:1, illegal:false, category:"precious" }, { id:16, name:"Alien Items", basePrice:192, unit:1, illegal:false, category:"alien" }, { id:17, name:"Мозговой песок", basePrice:50000, unit:1, illegal:false, category:"special", condition:"dead" }, { id:18, name:"Державные яйца", basePrice:8000, unit:1, illegal:false, category:"special", condition:"industrial" }, { id:19, name:"Хитин", basePrice:200, unit:4, illegal:false, category:"special", condition:"jungle,insectoid" }, { id:20, name:"Феромоны грибов", basePrice:1500, unit:1, illegal:true, category:"special", condition:"fungal" }, { id:21, name:"Артефакты демиургов", basePrice:100000, unit:1, illegal:true, category:"special", condition:"magic" } ];
+// ═══════════════════════════════════════════════════
+//  GAME DATA
+// ═══════════════════════════════════════════════════
+const ECON = ["Poor Agri","Avg Agri","Rich Agri","Poor Ind","Avg Ind","Rich Ind","Poor Common","Avg Common"];
+const GOV  = ["Anarchy","Feudal","Multi-gov","Dictatorship","Confederacy","Democracy","Corporate","Satori","Communist"];
+const PTYPES = ["rocky","gas_giant","ice","jungle","desert","ocean","dead","artificial","ruins","fungal","insectoid","cyber","magic"];
+const GOODS = [
+  {id:0,name:"Food",base:13,unit:4},{id:1,name:"Textiles",base:27,unit:4},
+  {id:2,name:"Radioactives",base:1600,unit:1},{id:3,name:"Slaves",base:180,unit:4,illegal:true},
+  {id:4,name:"Liquor",base:55,unit:4},{id:5,name:"Luxuries",base:150,unit:1},
+  {id:6,name:"Narcotics",base:1000,unit:1,illegal:true},{id:7,name:"Computers",base:500,unit:1},
+  {id:8,name:"Machinery",base:400,unit:2},{id:9,name:"Alloys",base:170,unit:4},
+  {id:10,name:"Firearms",base:290,unit:2,illegal:true},{id:11,name:"Furs",base:220,unit:2},
+  {id:12,name:"Minerals",base:53,unit:4},{id:13,name:"Gold",base:660,unit:1},
+  {id:14,name:"Platinum",base:550,unit:1},{id:15,name:"Gem-Stones",base:2500,unit:1},
+  {id:16,name:"Alien Items",base:192,unit:1}
+];
 const EQUIPMENT = [
-{ id:1, name:"Extra Pulse Lasers", cost:4000, effect:"улучшает лазеры", equipped:false },
-{ id:2, name:"Extra Beam Lasers", cost:10000, effect:"лучевые лазеры", equipped:false },
-{ id:3, name:"E.C.M. System", cost:6000, effect:"защита от ракет", equipped:false },
-{ id:4, name:"Fuel Scoops", cost:5250, effect:"сбор топлива из звёзд", equipped:false },
-{ id:5, name:"Escape Pod", cost:10000, effect:"спасение при смерти", equipped:false },
-{ id:6, name:"Energy Bomb", cost:9000, effect:"уничтожает всё вокруг", equipped:false },
-{ id:7, name:"Energy Unit", cost:15000, effect:"ускоренная регенерация", equipped:false },
-{ id:8, name:"Docking Computer", cost:10000, effect:"автостыковка", equipped:false },
-{ id:9, name:"Galactic Hyperdrive", cost:50000, effect:"межгалактический прыжок", equipped:false },
-{ id:10, name:"Биологический апдейт", cost:20000, effect:"снижает квантовый психоз", equipped:false }
+  {id:1,name:"Pulse Lasers",cost:4000,effect:"улучшенные лазеры"},
+  {id:2,name:"Beam Lasers",cost:10000,effect:"лучевые лазеры"},
+  {id:3,name:"E.C.M.",cost:6000,effect:"защита от ракет"},
+  {id:4,name:"Fuel Scoops",cost:5250,effect:"сбор топлива"},
+  {id:5,name:"Escape Pod",cost:10000,effect:"спасение"},
+  {id:6,name:"Energy Bomb",cost:9000,effect:"энергобомба"},
+  {id:7,name:"Energy Unit",cost:15000,effect:"регенерация"},
+  {id:8,name:"Dock Computer",cost:10000,effect:"автостыковка"},
+  {id:9,name:"Galactic Drive",cost:50000,effect:"межгалактический прыжок"},
+  {id:10,name:"Bio Update",cost:20000,effect:"снижает психоз"}
 ];
-const DIARY_ENTRIES = [ { name:"Фортуна 72", desc:"Планета вечных дождей, джунгли, станция на сваях.", x:50, y:-120, z:300, type:"jungle" }, { name:"Кассиопея 13", desc:"Останки гигантских червей, станция в черепе Белой Вдовы.", x:-200, y:450, z:800, type:"dead" }, { name:"Фаберже-9", desc:"Шахта наземного базирования, русская колония.", x:900, y:-300, z:-500, type:"industrial" } ];
-let player = {
-credits: 10000, fuel: 7.0, maxFuel: 7.0,
-cargo: new Array(GOODS.length).fill(0), cargoCapacity: 22,
-kills: 0, ratingLevel: "Harmless",
-position: new THREE.Vector3(0, 0, 0),
-currentSystem: null, docked: false,
-psychosis: 0, morale: 100,
-reputation: [0,0,0,0,0],
-equipment: EQUIPMENT.map(e => ({...e, equipped:false})),
-equippedSlots: new Array(5).fill(null),
-activeMissions: [],
-flightCount: 0,
-playerName: "Командор"
+
+const NEWS = [
+  {title:'AXIOM захватила Delta-7',text:'Корпорация AXIOM заняла сектор Delta-7. Залежи He-3 обеспечат флот на 200 лет.',sys:'Delta-7'},
+  {title:'Забастовка шахтёров',text:'Альянс Независимых Шахтёров остановил 40% рудников в секторе Barnard.',sys:'Barnard'},
+  {title:'[ФАКТ] 2 трлн галактик',text:'По данным Conselice et al. (2016), во Вселенной ≈2 трлн галактик.',sys:'Вселенная'},
+  {title:'Алмазная планета 55 Cancri e',text:'Масса 8.6 Земель, 40 св.лет. Предполагается алмазная мантия.',sys:'55 Cancri'},
+  {title:'[ФАКТ] 5700+ экзопланет',text:'NASA подтвердило 5700+ экзопланет (2024). TRAPPIST-1: 7 планет размером с Землю.',sys:'TRAPPIST-1'},
+  {title:'Пираты у Wolf 359',text:'«Тёмный Коготь» атаковал конвой. Wolf 359 — красный карлик, 7.86 св.лет.',sys:'Wolf 359'},
+  {title:'[ФАКТ] Млечный Путь',text:'Спиральная галактика, Ø ~100 000 св.лет, 100–400 млрд звёзд, ~1 трлн планет.',sys:'Milky Way'},
+  {title:'Kepler-442b: 18 месторождений',text:'Спутник «Зоркий-14» завершил картографию. 18 месторождений редкоземов.',sys:'Kepler-442'},
+  {title:'[ФАКТ] Нейтронные звёзды',text:'Плотность 10¹⁷ кг/м³. Чайная ложка ~6 млрд тонн. Ø ~20 км.',sys:'Pulsar'},
+  {title:'Подлёдный океан Европы-9',text:'Роверы «Кирилл» обнаружили океан. Реальная Европа: до 100 км льда.',sys:'Europa-9'},
+];
+
+// ═══════════════════════════════════════════════════
+//  PLAYER STATE
+// ═══════════════════════════════════════════════════
+const player = {
+  credits:10000, fuel:7, maxFuel:7,
+  cargo: new Array(GOODS.length).fill(0), cargoMax:22,
+  kills:0, rank:'Harmless', psychosis:0, morale:100,
+  equipment: EQUIPMENT.map(e=>({...e,equipped:false})),
+  slots: new Array(5).fill(null),
+  currentSystem:null, docked:false, flights:0,
+  position: null
 };
+
+// ═══════════════════════════════════════════════════
+//  THREE.JS GLOBALS
+// ═══════════════════════════════════════════════════
 let scene, camera, renderer, labelRenderer, controls;
-let starsMesh, starsMaterial;
-let starData = [];
+let starsMesh, starsMat, starData = [];
 let clock = new THREE.Clock();
-let hoverInfoDiv = document.getElementById('hover-info');
-let travelMessageDiv = document.getElementById('travel-message');
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
+let solarGroup, planets = [], sunMesh;
+let massiveStars = [], massiveRings = [], massiveLines = null, showMassive = false;
+let tradeVisible = false, tradeLines = [], tradeCurves = [], dynPoints = null, dynData = [], shipLabels = [];
 let speed = 200;
-let isTraveling = false;
-let travelTarget = null, travelStartPos = null, travelProgress = 0;
-const TRAVEL_DURATION = 1.0;
-let solarSystemGroup, planets = [], sunSphere, sunRing;
-let massiveStars = [], massiveRings = [], massiveLines = null, showMassiveLines = false;
-let newsData = [];
-let currentCategory = 'all';
-let waypointCount = 0;
-let waypoints = [];
-// ===== МАРШРУТИЗАЦИЯ =====
-let routeSelectionActive = false;
-let routeStartStar = null;
-let routeEndStar = null;
-let routeCalculationInProgress = false;
-let routeVisualizationLines = [];
-let routeBestPath = null;
-let selectionRings = [];
-let starNameLabels = [];
-let allCalculatedRoutes = [];
-let isCalculationStopped = false;
-const MAX_PATHS = 25; // Увеличено до 25 для более интересной визуализации
-
-// ======================== СОХРАНЕНИЕ/ЗАГРУЗКА ========================
-function savePlayerProgress() {
-const saveData = {
-player: {
-credits: player.credits,
-fuel: player.fuel,
-cargo: player.cargo,
-kills: player.kills,
-ratingLevel: player.ratingLevel,
-psychosis: player.psychosis,
-morale: player.morale,
-reputation: player.reputation,
-equipment: player.equipment,
-equippedSlots: player.equippedSlots,
-activeMissions: player.activeMissions,
-flightCount: player.flightCount,
-playerName: player.playerName
-},
-waypoints: waypoints,
-waypointCount: waypointCount
-};
-localStorage.setItem('elite_progress', JSON.stringify(saveData));
-showTravelMessage('Прогресс сохранён!', false, 2000);
-}
-function loadPlayerProgress() {
-const saved = localStorage.getItem('elite_progress');
-if (saved) {
-try {
-const data = JSON.parse(saved);
-if (data.player) {
-player.credits = data.player.credits;
-player.fuel = data.player.fuel;
-player.cargo = data.player.cargo;
-player.kills = data.player.kills;
-player.ratingLevel = data.player.ratingLevel;
-player.psychosis = data.player.psychosis;
-player.morale = data.player.morale;
-player.reputation = data.player.reputation;
-player.equipment = data.player.equipment;
-player.equippedSlots = data.player.equippedSlots;
-player.activeMissions = data.player.activeMissions;
-player.flightCount = data.player.flightCount || 0;
-player.playerName = data.player.playerName || "Командор";
-}
-if (data.waypoints) {
-waypoints = data.waypoints;
-waypointCount = data.waypointCount || waypoints.length;
-waypoints.forEach(wp => {
-if (!wp.locked) wp.locked = false;
-addWaypointButton(wp);
-});
-}
-updateHUD();
-showTravelMessage('Прогресс загружен!', false, 2000);
-} catch (e) {
-console.error('Ошибка загрузки прогресса:', e);
-showTravelMessage('Ошибка загрузки прогресса', true, 2000);
-}
-} else {
-showTravelMessage('Нет сохранённого прогресса', false, 2000);
-}
-}
-// ======================== РЕЖИМ СОЛНЦА ========================
+let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
+let traveling=false, travelTo=null, travelFrom=null, travelT=0;
 let solarMode = true;
-let solarRadius = 150;
-let solarTheta = 0;
-let solarPhi = Math.PI / 4;
-const sunPosition = new THREE.Vector3(0, 0, 0);
-let mouseSensitivity = 0.002;
-function enterSolarMode() {
-solarMode = true;
-document.getElementById('solar-system-btn').classList.add('active');
-if (solarSystemGroup) solarSystemGroup.visible = true;
-controls.target.copy(sunPosition);
-speed = 10;
-document.getElementById('speed-slider').value = speed;
-document.getElementById('speed-value').innerText = speed;
-}
-function exitSolarMode() {
-solarMode = false;
-document.getElementById('solar-system-btn').classList.remove('active');
-if (solarSystemGroup) solarSystemGroup.visible = false;
-}
-function updateSolarCamera() {
-// OrbitControls handles this automatically via controls.target
-}
-function toggleSolarMode() {
-if (solarMode) { exitSolarMode(); } else { enterSolarMode(); }
-}
-function initSolarView() {
-solarMode = true;
-document.getElementById('solar-system-btn').classList.add('active');
-camera.position.set(100, 80, 100);
-controls.target.set(0, 0, 0);
-controls.update();
-if (solarSystemGroup) solarSystemGroup.visible = false;
-}
-// ======================== ТОРГОВЫЕ МАРШРУТЫ ========================
-let tradeRoutesVisible = false;
-let tradeCurves = [];
-let tradeLines = [];
-let dynamicPoints = null;
-let dynamicParticleData = [];
-let staticShips = [];
-const SHIP_COLORS = [
-new THREE.Color(1.0, 1.0, 1.0),
-new THREE.Color(1.0, 0.9, 0.5),
-new THREE.Color(1.0, 0.5, 0.5),
-new THREE.Color(0.5, 0.8, 1.0),
-new THREE.Color(1.0, 0.7, 0.3),
-];
-function createPointTexture() {
-const canvas = document.createElement('canvas');
-canvas.width = 8; canvas.height = 8;
-const ctx = canvas.getContext('2d');
-ctx.beginPath(); ctx.arc(4, 4, 3, 0, 2 * Math.PI);
-ctx.fillStyle = 'white'; ctx.fill();
-ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 1; ctx.stroke();
-return new THREE.CanvasTexture(canvas);
-}
-const pointTexture = createPointTexture();
-function createCurvedLine(p1, p2, offsetScale = 0.3) {
-const dir = new THREE.Vector3().subVectors(p2, p1);
-const length = dir.length();
-const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-const perp = new THREE.Vector3(-dir.y, dir.x, dir.z).normalize();
-if (perp.length() < 0.1) perp.set(0, 0, 1);
-const offset = perp.multiplyScalar(length * offsetScale * (Math.random() * 0.5 + 0.5));
-const cp1 = new THREE.Vector3().lerpVectors(p1, mid, 0.3).add(offset);
-const cp2 = new THREE.Vector3().lerpVectors(p2, mid, 0.3).add(offset);
-return new THREE.CubicBezierCurve3(p1, cp1, cp2, p2);
-}
-function generateTradeRoutes() {
-if (tradeLines.length) {
-tradeLines.forEach(line => scene.remove(line));
-if (dynamicPoints) scene.remove(dynamicPoints);
-staticShips.forEach(s => scene.remove(s));
-tradeLines = []; dynamicParticleData = []; staticShips = []; tradeCurves = [];
-}
-if (!massiveStars.length) return;
-const sunPos = new THREE.Vector3(0, 0, 0);
-massiveStars.forEach(star => {
-const curve = createCurvedLine(sunPos, star.position, 0.4);
-tradeCurves.push(curve);
-});
-for (let i = 0; i < massiveStars.length - 1; i++) {
-const curve = createCurvedLine(massiveStars[i].position, massiveStars[i+1].position, 0.3);
-tradeCurves.push(curve);
-}
-tradeCurves.forEach(curve => {
-const color = SHIP_COLORS[Math.floor(Math.random() * SHIP_COLORS.length)].clone();
-const material = new THREE.LineBasicMaterial({ color: color, opacity: 0.25, transparent: true, linewidth: 2 });
-const points = curve.getPoints(50);
-const geometry = new THREE.BufferGeometry().setFromPoints(points);
-const line = new THREE.Line(geometry, material);
-line.visible = tradeRoutesVisible;
-scene.add(line);
-tradeLines.push(line);
-});
-const numDynamics = 1500;
-const positions = new Float32Array(numDynamics * 3);
-const colors = new Float32Array(numDynamics * 3);
-for (let i = 0; i < numDynamics; i++) {
-const curveIdx = Math.floor(Math.random() * tradeCurves.length);
-const curve = tradeCurves[curveIdx];
-const t = Math.random();
-const spd = (0.03 + Math.random() * 0.05) * 0.001;
-const color = SHIP_COLORS[Math.floor(Math.random() * SHIP_COLORS.length)];
-const pos = curve.getPoint(t);
-positions[i*3] = pos.x; positions[i*3+1] = pos.y; positions[i*3+2] = pos.z;
-colors[i*3] = color.r; colors[i*3+1] = color.g; colors[i*3+2] = color.b;
-dynamicParticleData.push({ curve, t, speed: spd });
-}
-const pointGeometry = new THREE.BufferGeometry();
-pointGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-pointGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-const pointMaterial = new THREE.PointsMaterial({
-size: 2, map: pointTexture, vertexColors: true,
-transparent: true, blending: THREE.AdditiveBlending,
-depthWrite: false, sizeAttenuation: true
-});
-dynamicPoints = new THREE.Points(pointGeometry, pointMaterial);
-dynamicPoints.visible = tradeRoutesVisible;
-scene.add(dynamicPoints);
-massiveStars.forEach(star => {
-const count = 5 + Math.floor(Math.random() * 15);
-for (let j = 0; j < count; j++) {
-const offset = new THREE.Vector3((Math.random()-0.5)*80, (Math.random()-0.5)*80, (Math.random()-0.5)*80);
-const pos = star.position.clone().add(offset);
-const color = SHIP_COLORS[Math.floor(Math.random() * SHIP_COLORS.length)];
-const shipNum = Math.floor(Math.random() * 9000 + 1000);
-const div = document.createElement('div');
-div.className = 'static-ship';
-div.textContent = `⛴️ ${shipNum}`;
-div.style.color = '#' + color.getHexString();
-const label = new THREE.CSS2DObject(div);
-label.position.copy(pos);
-label.visible = tradeRoutesVisible;
-scene.add(label);
-staticShips.push(label);
-}
-});
-}
-function toggleTradeRoutes() {
-tradeRoutesVisible = !tradeRoutesVisible;
-tradeLines.forEach(line => line.visible = tradeRoutesVisible);
-if (dynamicPoints) dynamicPoints.visible = tradeRoutesVisible;
-staticShips.forEach(s => s.visible = tradeRoutesVisible);
-}
-function updateStaticShipsVisibility(cameraPos) {
-if (!tradeRoutesVisible) return;
-const maxDist = 800;
-staticShips.forEach(ship => {
-const dx = ship.position.x - cameraPos.x;
-const dy = ship.position.y - cameraPos.y;
-const dz = ship.position.z - cameraPos.z;
-ship.visible = tradeRoutesVisible && (dx*dx + dy*dy + dz*dz < maxDist * maxDist);
-});
-}
-// ======================== НОВОСТИ ========================
-const STARMAP_NEWS = [
-  { id:1, title:'AXIOM захватила Delta-7', content:'Корпорация AXIOM заняла сектор Delta-7. Залежи He-3 обеспечат флот на 200 лет. Акции +340%.', category:'market', system:'Delta-7' },
-  { id:2, title:'Забастовка шахтёров', content:'Альянс Независимых Шахтёров остановил 40% рудников в секторе Barnard. Цены на руду растут.', category:'incident', system:'Barnard' },
-  { id:3, title:'Kepler-442b: 18 месторождений', content:'Спутник «Зоркий-14» завершил картографию Kepler-442b. Обнаружено 18 месторождений редкоземов.', category:'science', system:'Kepler-442' },
-  { id:4, title:'[ФАКТ] 2 трлн галактик', content:'По данным Conselice et al. (2016), во Вселенной ≈2 трлн галактик. Наблюдаемая Вселенная: 93 млрд св.лет в диаметре.', category:'science', system:'Вселенная' },
-  { id:5, title:'Алмазная планета 55 Cancri e', content:'Реальная экзопланета: масса 8.6 Земель, 40 св.лет от нас. Предполагается алмазная мантия. PRISMA начала экспедицию.', category:'science', system:'55 Cancri' },
-  { id:6, title:'Вулканический кризис Io-7', content:'3 станции уничтожены, 1200 человек эвакуированы. Убытки 2.4 млрд CR. Реальная Ио — самое вулканически активное тело Сол. системы.', category:'incident', system:'Io-7' },
-  { id:7, title:'[ФАКТ] 5700+ экзопланет', content:'NASA подтвердило открытие 5700+ экзопланет (2024). TRAPPIST-1 имеет 7 планет размером с Землю в 40 св.лет от нас.', category:'science', system:'TRAPPIST-1' },
-  { id:8, title:'Рекорд перевозки', content:'Транспортник «ЛЕВИАФАН» доставил 450 000 тонн руды на Proxima Hub. Proxima Центавра — ближайшая звезда (4.24 св.лет).', category:'market', system:'Proxima' },
-  { id:9, title:'Иридий: 89 000 CR/тонна', content:'Война AXIOM и PRISMA за месторождения на Цереста-9. Астероид Психея (16 Psyche) содержит металлов на $10 квинтиллионов.', category:'market', system:'Ceresta-9' },
-  { id:10, title:'[ФАКТ] Нейтронные звёзды', content:'Плотность 10¹⁷ кг/м³. Чайная ложка весит ~6 млрд тонн. Диаметр ~20 км при массе 1.4–2 Солнца.', category:'science', system:'Pulsar' },
-  { id:11, title:'Подлёдный океан Европы-9', content:'Роверы «Кирилл» обнаружили океан. На реальной Европе — до 100 км льда над океаном. Возможна жизнь.', category:'science', system:'Europa-9' },
-  { id:12, title:'Терраформинг Марса: этап 3/7', content:'Атмосферное давление достигло 0.12 атм. Реальный Марс: T -87°C, давление 0.6% земного, Олимп — 21.9 км.', category:'science', system:'Mars' },
-  { id:13, title:'Gliese 667Cc — Терра-2', content:'200 колонистов прибыли. Реальная суперземля в обитаемой зоне, 23.6 св.лет, масса 3.8 Земель.', category:'culture', system:'Gliese 667C' },
-  { id:14, title:'Пираты у Wolf 359', content:'«Тёмный Коготь» атаковал конвой. Wolf 359 — реальная звезда, красный карлик М6.5, 7.86 св.лет от Солнца.', category:'incident', system:'Wolf 359' },
-  { id:15, title:'[ФАКТ] Млечный Путь', content:'Спиральная галактика, Ø ~100 000 св.лет, 100–400 млрд звёзд, ~1 трлн планет. Солнце — в 27 000 св.лет от центра.', category:'science', system:'Milky Way' },
-];
-async function loadNews() {
-newsData = STARMAP_NEWS.map(n => ({ ...n, timestamp: new Date(Date.now() - Math.random()*86400000*30).toISOString() }));
-try {
-  const today = new Date().toISOString().slice(0,10);
-  const r = await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date='+today+'&end_date='+today+'&api_key=DEMO_KEY');
-  if (r.ok) {
-    const d = await r.json();
-    const neos = d.near_earth_objects[today] || [];
-    neos.slice(0,5).forEach((n, i) => {
-      const diam = n.estimated_diameter.meters;
-      const size = ((diam.estimated_diameter_min + diam.estimated_diameter_max)/2).toFixed(0);
-      const km = n.close_approach_data[0] ? parseFloat(n.close_approach_data[0].miss_distance.kilometers).toLocaleString('ru-RU',{maximumFractionDigits:0}) : '?';
-      const danger = n.is_potentially_hazardous_asteroid;
-      newsData.unshift({
-        id: 100+i,
-        title: '☄️ [NASA LIVE] ' + n.name.replace(/[()]/g,''),
-        content: 'Реальный околоземный объект! Ø ' + size + ' м, пролетает в ' + km + ' км от Земли.' + (danger ? ' ⚠️ ПОТЕНЦИАЛЬНО ОПАСНЫЙ!' : ' Безопасен.') + ' Данные: NASA NEO API.',
-        category: 'science',
-        system: 'Земля',
-        timestamp: new Date().toISOString()
-      });
-    });
-  }
-} catch(e) { console.warn('NASA NEO unavailable'); }
-try {
-  const r2 = await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
-  if (r2.ok) {
-    const apod = await r2.json();
-    newsData.unshift({
-      id: 200,
-      title: '🔭 [NASA] ' + (apod.title||'Фото дня'),
-      content: (apod.explanation||'').slice(0,250) + '…',
-      category: 'science',
-      system: 'NASA APOD',
-      timestamp: apod.date || new Date().toISOString()
-    });
-  }
-} catch(e) { console.warn('NASA APOD unavailable'); }
-renderNewsWidget();
-renderNewsList();
-}
-function renderNewsWidget() {
-const ticker = document.getElementById('news-ticker');
-const last5 = newsData.slice(-5).reverse();
-ticker.innerHTML = last5.map((news) => `
-<div class="news-ticker-item" onclick="toggleNewsModal()">
-<div class="news-icon">${news.category==='science'?'🔬':news.category==='market'?'📊':news.category==='incident'?'⚠️':'🌍'}</div>
-<div class="title">${news.title}</div>
-<div class="system">${news.system}</div>
-</div>
-`).join('');
-}
-function renderNewsList(cat) {
-const list = document.getElementById('news-list');
-const filtered = (!cat || cat==='all') ? newsData : newsData.filter(n=>n.category===cat);
-list.innerHTML = filtered.map(n => `
-<div class="news-item">
-<div class="news-icon">${n.category==='science'?'🔬':n.category==='market'?'📊':n.category==='incident'?'⚠️':'🌍'}</div>
-<div class="news-content">
-<div class="news-title">${n.title}</div>
-<div class="news-meta"><span>📍 ${n.system}</span><span>🕐 ${new Date(n.timestamp).toLocaleDateString('ru')}</span></div>
-<div class="news-body">${n.content}</div>
-</div>
-</div>`).join('');
-}
-window.toggleNewsModal = function() {
-const modal = document.getElementById('news-modal');
-modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
-if(modal.style.display==='block') renderNewsList(currentCategory);
-};
-document.getElementById('close-news').addEventListener('click', toggleNewsModal);
-document.getElementById('news-filter').addEventListener('click', (e) => {
-if(e.target.dataset.category) {
-currentCategory = e.target.dataset.category;
-document.querySelectorAll('#news-filter button').forEach(b=>b.classList.remove('active'));
-e.target.classList.add('active');
-renderNewsList(currentCategory);
-}
-});
-// ======================== ЗАГРУЗКА ЗВЁЗД ========================
+let waypoints = [], wpCount = 0;
+
+// Route calculation
+const MAX_PATHS = 10;
+let routeActive=false, routeStart=null, routeEnd=null, routeCalcing=false, routeStopped=false;
+let routeLines=[], routeBest=null, routeAll=[], selRings=[], nameLabels=[];
+
+// DOM refs
+const $hover = document.getElementById('hover-info');
+const $travelMsg = document.getElementById('travel-msg');
+
+// ═══════════════════════════════════════════════════
+//  STAR LOADING
+// ═══════════════════════════════════════════════════
 async function loadStars() {
-try {
-const response = await fetch('../stars.json');
-if (!response.ok) throw new Error('HTTP ' + response.status);
-const json = await response.json();
-console.log('Загружено звёзд из файла:', json.length);
-document.getElementById('star-count').innerText = `Звёзд: ${json.length}`;
-return json;
-} catch (e) {
-console.warn('stars.json не загружен, генерирую синтетические:', e.message);
-const stars = generateSyntheticStars(5000);
-document.getElementById('star-count').innerText = `Звёзд: ${stars.length} (синтетика)`;
-return stars;
+  try {
+    const r = await fetch('../stars.json');
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch(e) {
+    console.warn('stars.json не найден, генерирую:', e.message);
+    return genSynth(5000);
+  }
 }
+
+function genSynth(n) {
+  const out = [];
+  for (let i=0;i<n;i++) {
+    const r=5000*Math.cbrt(Math.random()), th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+    out.push({x:r*Math.sin(ph)*Math.cos(th), y:r*Math.sin(ph)*Math.sin(th), z:r*Math.cos(ph), mag:Math.random()*10-2, bv:Math.random()*1.5-.3, hip:i+1});
+  }
+  return out;
 }
-function generateSyntheticStars(count) {
-const stars = [];
-for (let i = 0; i < count; i++) {
-const r = 5000 * Math.cbrt(Math.random());
-const theta = Math.random() * Math.PI * 2;
-const phi = Math.acos(2 * Math.random() - 1);
-stars.push({
-x: r * Math.sin(phi) * Math.cos(theta),
-y: r * Math.sin(phi) * Math.sin(theta),
-z: r * Math.cos(phi),
-mag: Math.random() * 10 - 2,
-bv: Math.random() * 1.5 - 0.3,
-hip: i + 1
-});
+
+function starColor(bv, mag) {
+  if (bv===undefined||isNaN(bv)) {
+    const bf = Math.max(.1, 1-(mag+5)/25);
+    return new THREE.Color().setHSL(.6-bf*.3,.8,bf*.8);
+  }
+  const t=Math.max(-.4,Math.min(2,bv));
+  let r,g,b;
+  if (t<0){r=.8+t*.5;g=.9+t*.3;b=1;}
+  else if(t<.6){r=1;g=1-t*.3;b=.9-t*.5;}
+  else{r=1;g=.7-(t-.6)*.5;b=Math.max(0,.4-(t-.6)*.3);}
+  const br=Math.max(.3,1-(mag+5)/20);
+  return new THREE.Color(r*br,g*br,b*br);
 }
-return stars;
+
+function systemProps(star, i) {
+  let s=i*75+74;
+  s=(s*75+74)%65536; const econ=Math.floor(s/8192)%8;
+  s=(s*75+74)%65536; const gov=Math.floor(s/7281)%9;
+  s=(s*75+74)%65536; const tech=Math.min(14,Math.floor(s/4681)+(econ<3?2:4));
+  s=(s*75+74)%65536; const pt=PTYPES[Math.floor(s/5041)%PTYPES.length];
+  const prices=GOODS.map(g=>{
+    let p=g.base+(tech-7)*5;
+    if(econ>=3&&econ<=5) p=Math.floor(p*.9);
+    return Math.max(1,p);
+  });
+  return {economy:econ, econName:ECON[econ], govName:GOV[gov], tech, planetType:pt, prices};
 }
-function generateSystemProperties(star, index) {
-let seed = index * 75 + 74;
-seed = (seed * 75 + 74) % 65536; const economy = Math.floor(seed / 8192) % 8;
-seed = (seed * 75 + 74) % 65536; const government = Math.floor(seed / 7281) % 9;
-seed = (seed * 75 + 74) % 65536; const techLevel = Math.min(14, Math.floor(seed / 4681) + (economy < 3 ? 2 : 4));
-seed = (seed * 75 + 74) % 65536; const planetTypeIndex = Math.floor(seed / 5041) % PLANET_TYPES.length;
-const planetType = PLANET_TYPES[planetTypeIndex];
-const prices = GOODS.map(g => {
-let price = g.basePrice;
-price += (techLevel - 7) * 5;
-if (g.category === 'industrial' && economy >=3 && economy<=5) price = Math.floor(price*0.9);
-if (g.category === 'luxury' && economy <=2) price = Math.floor(price*1.3);
-if (g.illegal && government===0) price = Math.floor(price*2.0);
-return Math.max(1, price);
-});
-return {
-economy, economyName: ECONOMY_TYPES[economy],
-government: GOVERNMENT_TYPES[government],
-techLevel, planetType, prices
-};
+
+function starName(idx) {
+  const s=starData[idx];
+  return s.hip?`HIP ${s.hip}`:`Звезда ${idx}`;
 }
-function getStarColor(bv, mag) {
-if (bv !== undefined && !isNaN(bv)) {
-let t = Math.max(-0.4, Math.min(2.0, bv));
-let r, g, b;
-if (t < 0.0) { r = 0.8 + t*0.5; g = 0.9 + t*0.3; b = 1.0; }
-else if (t < 0.6) { r = 1.0; g = 1.0 - t*0.3; b = 0.9 - t*0.5; }
-else { r = 1.0; g = 0.7 - (t-0.6)*0.5; b = 0.4 - (t-0.6)*0.3; }
-const brightness = Math.max(0.3, 1.0 - (mag+5)/20);
-return new THREE.Color(r*brightness, g*brightness, b*brightness);
-} else {
-const brightnessFactor = Math.max(0.1, 1.0 - (mag+5)/25);
-return new THREE.Color().setHSL(0.6 - brightnessFactor*0.3, 0.8, brightnessFactor*0.8);
+
+// ═══════════════════════════════════════════════════
+//  SPRITE TEXTURE
+// ═══════════════════════════════════════════════════
+function makeSprite() {
+  const c=document.createElement('canvas'); c.width=64; c.height=64;
+  const x=c.getContext('2d');
+  const g=x.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(.4,'rgba(255,255,200,.9)');
+  g.addColorStop(.7,'rgba(200,200,100,.5)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=g; x.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
 }
-}
-function createSprite() {
-const canvas = document.createElement('canvas');
-canvas.width = 64; canvas.height = 64;
-const ctx = canvas.getContext('2d');
-const gradient = ctx.createRadialGradient(32,32,0,32,32,32);
-gradient.addColorStop(0,'rgba(255,255,255,1)');
-gradient.addColorStop(0.4,'rgba(255,255,200,0.9)');
-gradient.addColorStop(0.7,'rgba(200,200,100,0.5)');
-gradient.addColorStop(1,'rgba(255,255,255,0)');
-ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64);
-return new THREE.CanvasTexture(canvas);
-}
+
+// ═══════════════════════════════════════════════════
+//  HUD UPDATE
+// ═══════════════════════════════════════════════════
 function updateHUD() {
-document.getElementById('credits').innerText = player.credits;
-document.getElementById('fuel').innerText = player.fuel.toFixed(1);
-const used = player.cargo.reduce((a,b)=>a+b,0);
-document.getElementById('cargo-used').innerText = used;
-document.getElementById('cargo-max').innerText = player.cargoCapacity;
-let grid = '';
-for (let i=0; i<player.cargo.length; i++) {
-grid += `<div class="cargo-slot">${player.cargo[i] > 0 ? GOODS[i].name+': '+player.cargo[i] : '—'}</div>`;
+  document.getElementById('h-cred').textContent = player.credits;
+  document.getElementById('h-fuel').textContent = player.fuel.toFixed(1);
+  const used = player.cargo.reduce((a,b)=>a+b,0);
+  document.getElementById('h-cargo').textContent = used;
+  document.getElementById('h-cmax').textContent = player.cargoMax;
+  document.getElementById('h-flights').textContent = player.flights;
+  document.getElementById('h-rank').textContent = player.rank;
+  document.getElementById('h-morale').textContent = player.morale>80?'ВЫСОКИЙ':player.morale<30?'НИЗКИЙ':'НОРМА';
+  if (player.currentSystem!==null && starData[player.currentSystem]) {
+    const s=starData[player.currentSystem];
+    document.getElementById('h-sys').textContent = s.hip?`HIP ${s.hip}`:'SYN';
+    document.getElementById('h-planet').textContent = s.planetType||'—';
+    document.getElementById('h-econ').textContent = s.econName||'—';
+    document.getElementById('cur-sys').textContent = s.hip?`HIP ${s.hip}`:'SYN';
+  }
 }
-document.getElementById('cargo-grid').innerHTML = grid;
-document.getElementById('psychosis-value').innerText = player.psychosis + '%';
-document.getElementById('psychosis-fill').style.width = player.psychosis + '%';
-let moraleText = 'НОРМА';
-if (player.morale > 80) moraleText = 'ВЫСОКИЙ';
-else if (player.morale < 30) moraleText = 'НИЗКИЙ';
-document.getElementById('morale').innerText = moraleText;
-document.getElementById('rating').innerText = player.ratingLevel;
-document.getElementById('flight-count').innerText = player.flightCount;
-document.getElementById('player-name').innerText = player.playerName;
-if (player.currentSystem !== null && starData[player.currentSystem]) {
-const s = starData[player.currentSystem];
-document.getElementById('system-name').innerText = s.hip ? `HIP ${s.hip}` : 'SYNTH';
-document.getElementById('planet-type').innerText = s.planetType || '—';
-document.getElementById('economy-type').innerText = s.economyName || '—';
-document.getElementById('government-type').innerText = s.government || '—';
-document.getElementById('current-system').innerText = s.hip ? `HIP ${s.hip}` : 'SYNTH';
+
+// ═══════════════════════════════════════════════════
+//  SAVE / LOAD
+// ═══════════════════════════════════════════════════
+function saveProgress() {
+  const d={player:{credits:player.credits,fuel:player.fuel,cargo:player.cargo,rank:player.rank,
+    psychosis:player.psychosis,morale:player.morale,flights:player.flights},waypoints,wpCount};
+  localStorage.setItem('elite_progress',JSON.stringify(d));
+  showMsg('Прогресс сохранён!');
 }
+function loadProgress() {
+  const raw=localStorage.getItem('elite_progress');
+  if(!raw){showMsg('Нет сохранений');return;}
+  try {
+    const d=JSON.parse(raw);
+    if(d.player){Object.assign(player,d.player);}
+    if(d.waypoints){waypoints=d.waypoints;wpCount=d.wpCount||0;waypoints.forEach(addWPButton);}
+    updateHUD();showMsg('Загружено!');
+  }catch(e){showMsg('Ошибка загрузки',true);}
 }
-function flyTo(targetPos, offset = 50) {
-if (isTraveling) return;
-const camPos = camera.position.clone();
-const dir = new THREE.Vector3().subVectors(targetPos, camPos).normalize();
-const dest = offset > 0 ? targetPos.clone().sub(dir.multiplyScalar(offset)) : targetPos.clone();
-travelStartPos = camPos;
-travelTarget = dest;
-travelProgress = 0;
-isTraveling = true;
-player.flightCount++;
-updateHUD();
+
+// ═══════════════════════════════════════════════════
+//  TRAVEL & MESSAGES
+// ═══════════════════════════════════════════════════
+function flyTo(pos, offset=50) {
+  if(traveling) return;
+  const dir=new THREE.Vector3().subVectors(pos,camera.position).normalize();
+  travelFrom=camera.position.clone();
+  travelTo=offset>0?pos.clone().sub(dir.multiplyScalar(offset)):pos.clone();
+  travelT=0; traveling=true; player.flights++; updateHUD();
 }
-function showTravelMessage(msg, isWarning = false, duration = 4000) {
-travelMessageDiv.style.opacity = '1';
-travelMessageDiv.style.color = isWarning ? '#ff6666' : '#ffaa00';
-travelMessageDiv.innerHTML = msg;
-setTimeout(() => { travelMessageDiv.style.opacity = '0'; }, duration);
+
+function showMsg(txt, warn=false, ms=3000) {
+  $travelMsg.style.opacity='1';
+  $travelMsg.style.color=warn?'#ff6666':'#ffaa00';
+  $travelMsg.textContent=txt;
+  setTimeout(()=>{$travelMsg.style.opacity='0';},ms);
 }
-// ======================== ДВОЙНОЙ КЛИК ========================
-function onDoubleClick(e) {
-if (player.docked) { alert('Сначала выйдите из режима торговли'); return; }
-if (routeSelectionActive) return;
-const mouse = new THREE.Vector2(
-(e.clientX / window.innerWidth) * 2 - 1,
--(e.clientY / window.innerHeight) * 2 + 1
-);
-const thresholdPx = 30;
-let bestDist = Infinity;
-let bestIdx = -1;
-for (let i = 0; i < starData.length; i++) {
-const star = starData[i];
-const vector = star.position.clone().project(camera);
-if (vector.z > 1) continue;
-const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
-const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-const dx = screenX - e.clientX;
-const dy = screenY - e.clientY;
-const dist = Math.sqrt(dx*dx + dy*dy);
-if (dist < thresholdPx && dist < bestDist) {
-bestDist = dist;
-bestIdx = i;
-}
-}
-if (bestIdx !== -1) {
-flyTo(starData[bestIdx].position, 50);
-}
-}
-// ======================== БЫСТРЫЙ ПЕРЕЛЁТ (ЗВЁЗДЫ) ========================
-function initQuickTravel() {
-const container = document.getElementById('travel-buttons');
-container.innerHTML = '';
-const sunPos = new THREE.Vector3(0, 0, 0);
-const sortedStars = [...starData].sort((a, b) => {
-const distA = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
-const distB = Math.sqrt(b.x*b.x + b.y*b.y + b.z*b.z);
-return distA - distB;
-});
-const nearestStars = sortedStars.slice(0, 8);
-nearestStars.forEach((star, idx) => {
-const btn = document.createElement('button');
-btn.className = 'travel-button';
-btn.textContent = star.hip ? `HIP ${star.hip}` : `Звезда ${idx+1}`;
-btn.addEventListener('click', () => flyTo(star.position, 50));
-btn.addEventListener('contextmenu', (e) => {
-e.preventDefault();
-showWaypointContextMenu(e, { type: 'star', starIdx: starData.indexOf(star) });
-});
-container.appendChild(btn);
-});
-loadWaypoints();
-}
-// ======================== МЕТОКИ (WAYPOINTS) ========================
-function saveWaypoints() {
-localStorage.setItem('elite_waypoints', JSON.stringify(waypoints));
-}
-function loadWaypoints() {
-const saved = localStorage.getItem('elite_waypoints');
-if (saved) {
-waypoints = JSON.parse(saved);
-waypoints.forEach(wp => {
-if (!wp.locked) wp.locked = false;
-addWaypointButton(wp);
-});
-}
-}
-function addWaypointButton(waypoint) {
-const container = document.getElementById('travel-buttons');
-const btn = document.createElement('button');
-btn.className = 'travel-button' + (waypoint.locked ? ' locked' : '');
-btn.textContent = (waypoint.locked ? '🔒 ' : '') + waypoint.name;
-btn.dataset.waypointId = waypoint.id;
-btn.addEventListener('click', () => flyTo(new THREE.Vector3(waypoint.position.x, waypoint.position.y, waypoint.position.z), 0));
-btn.addEventListener('contextmenu', (e) => {
-e.preventDefault();
-showWaypointContextMenu(e, { type: 'waypoint', waypointId: waypoint.id });
-});
-container.appendChild(btn);
-}
-function addWaypoint() {
-waypointCount++;
-const pos = camera.position.clone();
-const waypoint = {
-id: Date.now(),
-name: `Метка ${waypointCount}`,
-position: { x: pos.x, y: pos.y, z: pos.z },
-locked: false
-};
-waypoints.push(waypoint);
-saveWaypoints();
-addWaypointButton(waypoint);
-showTravelMessage(`Метка "${waypoint.name}" сохранена`, false, 2000);
-}
-let contextMenuTarget = null;
-function showWaypointContextMenu(e, target) {
-contextMenuTarget = target;
-const menu = document.getElementById('waypoint-context-menu');
-menu.style.display = 'block';
-menu.style.left = e.clientX + 'px';
-menu.style.top = e.clientY + 'px';
-const wp = target.type === 'waypoint' ? waypoints.find(w => w.id === target.waypointId) : null;
-document.getElementById('wp-lock').style.display = wp && !wp.locked ? 'block' : 'none';
-document.getElementById('wp-unlock').style.display = wp && wp.locked ? 'block' : 'none';
-document.getElementById('wp-delete').disabled = wp && wp.locked;
-}
-function hideWaypointContextMenu() {
-document.getElementById('waypoint-context-menu').style.display = 'none';
-contextMenuTarget = null;
-}
-document.getElementById('wp-rename').addEventListener('click', () => {
-if (contextMenuTarget && contextMenuTarget.type === 'waypoint') {
-const wp = waypoints.find(w => w.id === contextMenuTarget.waypointId);
-if (wp) {
-const newName = prompt('Новое название:', wp.name);
-if (newName) {
-wp.name = newName;
-saveWaypoints();
-const btn = document.querySelector(`.travel-button[data-waypoint-id="${wp.id}"]`);
-if (btn) btn.textContent = (wp.locked ? '🔒 ' : '') + wp.name;
-}
-}
-}
-hideWaypointContextMenu();
-});
-document.getElementById('wp-lock').addEventListener('click', () => {
-if (contextMenuTarget && contextMenuTarget.type === 'waypoint') {
-const wp = waypoints.find(w => w.id === contextMenuTarget.waypointId);
-if (wp) {
-wp.locked = true;
-saveWaypoints();
-const btn = document.querySelector(`.travel-button[data-waypoint-id="${wp.id}"]`);
-if (btn) {
-btn.classList.add('locked');
-btn.textContent = '🔒 ' + wp.name;
-}
-}
-}
-hideWaypointContextMenu();
-});
-document.getElementById('wp-unlock').addEventListener('click', () => {
-if (contextMenuTarget && contextMenuTarget.type === 'waypoint') {
-const wp = waypoints.find(w => w.id === contextMenuTarget.waypointId);
-if (wp) {
-wp.locked = false;
-saveWaypoints();
-const btn = document.querySelector(`.travel-button[data-waypoint-id="${wp.id}"]`);
-if (btn) {
-btn.classList.remove('locked');
-btn.textContent = wp.name;
-}
-}
-}
-hideWaypointContextMenu();
-});
-document.getElementById('wp-delete').addEventListener('click', () => {
-if (contextMenuTarget && contextMenuTarget.type === 'waypoint') {
-const wp = waypoints.find(w => w.id === contextMenuTarget.waypointId);
-if (wp && !wp.locked) {
-waypoints = waypoints.filter(w => w.id !== contextMenuTarget.waypointId);
-saveWaypoints();
-const btn = document.querySelector(`.travel-button[data-waypoint-id="${contextMenuTarget.waypointId}"]`);
-if (btn) btn.remove();
-showTravelMessage('Метка удалена', false, 2000);
-}
-}
-hideWaypointContextMenu();
-});
-document.addEventListener('click', (e) => {
-if (!e.target.closest('#waypoint-context-menu')) {
-hideWaypointContextMenu();
-}
-});
-// ======================== ТОРГОВЛЯ, СНАРЯЖЕНИЕ, МИССИИ ========================
-function openTradeStation(starIdx) {
-if (player.docked) return; player.docked = true;
-const star = starData[starIdx];
-document.getElementById('station-name').innerText = star.hip ? `HIP ${star.hip}` : 'Станция';
-let html = '';
-GOODS.forEach((good, i) => {
-if (star.prices[i] < 0) return;
-const price = star.prices[i]; const playerHas = player.cargo[i];
-const illegal = good.illegal && star.government !== 'Anarchy';
-html += `<div style="margin:5px 0;"><span>${good.name} — ${price} Cr</span>
-<button onclick="buyItem(${i},${price})">Купить</button>
-<button onclick="sellItem(${i},${price})">Продать</button>
-<span>У вас: ${playerHas}</span></div>`;
-});
-document.getElementById('trade-items').innerHTML = html;
-document.getElementById('trade-panel').style.display = 'block';
-}
-window.buyItem = function(id, price) {
-const good = GOODS[id];
-const used = player.cargo.reduce((a,b)=>a+b,0);
-if (used + good.unit > player.cargoCapacity) { alert('Нет места'); return; }
-if (player.credits < price) { alert('Недостаточно кредитов'); return; }
-player.credits -= price;
-player.cargo[id] += 1;
-updateHUD();
-openTradeStation(player.currentSystem);
-};
-window.sellItem = function(id, price) {
-if (player.cargo[id] <= 0) return;
-player.credits += price;
-player.cargo[id] -= 1;
-updateHUD();
-openTradeStation(player.currentSystem);
-};
-function openEquipmentShop() {
-let slotsHtml = '<div class="equipment-grid">';
-for (let i = 0; i < 5; i++) {
-const equipId = player.equippedSlots[i];
-const item = player.equipment.find(e => e.id === equipId);
-slotsHtml += `<div class="equipment-slot ${item ? '' : 'empty'}" data-slot="${i}">${item ? item.name : '—'}</div>`;
-}
-slotsHtml += '</div>';
-document.getElementById('equipment-slots').innerHTML = slotsHtml;
-document.getElementById('equipment-panel').style.display = 'block';
-}
-function openMissionsPanel(starIdx) {
-document.getElementById('missions-panel').style.display = 'block';
-}
-// ======================== СОЛНЕЧНАЯ СИСТЕМА ========================
-function createSunAndSolarSystem() {
-sunSphere = new THREE.Mesh(new THREE.SphereGeometry(2,32,32), new THREE.MeshStandardMaterial({ color:0xffaa00, emissive:0x442200 }));
-sunSphere.position.set(0,0,0); scene.add(sunSphere);
-const points = []; for (let i=0;i<=128;i++) { const a=(i/128)*Math.PI*2; points.push(new THREE.Vector3(8*Math.cos(a),8*Math.sin(a),0)); }
-const geoRing = new THREE.BufferGeometry().setFromPoints(points);
-sunRing = new THREE.LineLoop(geoRing, new THREE.LineBasicMaterial({ color:0xffaa00 }));
-sunRing.position.set(0,0,0); scene.add(sunRing);
-solarSystemGroup = new THREE.Group();
-const planetsData = [
-{ name:'Меркурий', radius:5, size:0.4, color:0x8c8c8c, speed:0.04 },
-{ name:'Венера', radius:7, size:0.6, color:0xe6b800, speed:0.015 },
-{ name:'Земля', radius:9, size:0.65, color:0x2288ff, speed:0.01 },
-{ name:'Марс', radius:11, size:0.5, color:0xff6600, speed:0.008 },
-{ name:'Юпитер', radius:15, size:1.4, color:0xd2b48c, speed:0.002 },
-{ name:'Сатурн', radius:19, size:1.2, color:0xf0d58c, speed:0.0009, hasRing:true },
-{ name:'Уран', radius:23, size:1.0, color:0x4fd0e7, speed:0.0004 },
-{ name:'Нептун', radius:27, size:1.0, color:0x4169e1, speed:0.0002 }
+
+// ═══════════════════════════════════════════════════
+//  SOLAR SYSTEM
+// ═══════════════════════════════════════════════════
+const PLANETS_DATA = [
+  {name:'Меркурий',r:5,sz:.4,col:0x8c8c8c,spd:.04,
+   desc:'☿ Ø 4879 км. T: -173/+427°C. Нет атмосферы.'},
+  {name:'Венера',r:7,sz:.6,col:0xe6b800,spd:.015,
+   desc:'♀ Ø 12104 км. Давление 92 атм. T: +462°C.'},
+  {name:'Земля',r:9,sz:.65,col:0x2288ff,spd:.01,
+   desc:'♁ Ø 12742 км. 71% вода. 8 млрд чел.'},
+  {name:'Марс',r:11,sz:.5,col:0xff6600,spd:.008,
+   desc:'♂ Ø 6779 км. T: -87°C. Олимп 21.9 км.'},
+  {name:'Юпитер',r:15,sz:1.4,col:0xd2b48c,spd:.002,
+   desc:'♃ Ø 139820 км. 318 масс Земли. 95 спутников.'},
+  {name:'Сатурн',r:19,sz:1.2,col:0xf0d58c,spd:.0009,ring:true,
+   desc:'♄ Ø 116460 км. Кольца: 99.9% лёд. Плотность < воды.'},
+  {name:'Уран',r:23,sz:1,col:0x4fd0e7,spd:.0004,
+   desc:'⛢ Ø 50724 км. Наклон оси 98°.'},
+  {name:'Нептун',r:27,sz:1,col:0x4169e1,spd:.0002,
+   desc:'♆ Ø 49244 км. Ветры до 2100 км/ч.'}
 ];
-planetsData.forEach(data => {
-const orbitPoints = []; for (let i=0;i<=128;i++) { const a=(i/128)*Math.PI*2; orbitPoints.push(new THREE.Vector3(data.radius*Math.cos(a),0,data.radius*Math.sin(a))); }
-const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-const orbitLine = new THREE.LineLoop(orbitGeo, new THREE.LineBasicMaterial({ color:0xffaa00, opacity:0.3, transparent:true }));
-solarSystemGroup.add(orbitLine);
-const geometry = new THREE.SphereGeometry(data.size, 16, 16);
-const material = new THREE.MeshStandardMaterial({ color: data.color });
-const planet = new THREE.Mesh(geometry, material);
-planet.userData = { name:data.name, radius:data.radius, speed:data.speed, angle:Math.random()*Math.PI*2, size:data.size };
-solarSystemGroup.add(planet);
-planets.push(planet);
-if (data.hasRing) {
-const ringPoints = [];
-for (let i=0;i<=64;i++) { const a=(i/64)*Math.PI*2; ringPoints.push(new THREE.Vector3((data.size*1.8)*Math.cos(a),0,(data.size*1.8)*Math.sin(a))); }
-const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
-const ringLine = new THREE.LineLoop(ringGeo, new THREE.LineBasicMaterial({ color:0xffaa00 }));
-planet.add(ringLine);
-}
-});
-solarSystemGroup.visible = false;
-scene.add(solarSystemGroup);
-}
-function createRing(radius, color) {
-const points = []; for (let i=0;i<=64;i++) { const a=(i/64)*Math.PI*2; points.push(new THREE.Vector3(radius*Math.cos(a),0,radius*Math.sin(a))); }
-const geo = new THREE.BufferGeometry().setFromPoints(points);
-return new THREE.LineLoop(geo, new THREE.LineBasicMaterial({ color }));
-}
-function highlightMassiveStars() {
-if (!starData.length) return;
-const sorted = [...starData].sort((a,b) => (a.mag||0) - (b.mag||0));
-massiveStars = sorted.slice(0,100);
-massiveRings.forEach(r => scene.remove(r)); massiveRings = [];
-massiveStars.forEach(star => { const ring = createRing(30,0xffaa00); ring.position.copy(star.position); scene.add(ring); massiveRings.push(ring); });
-}
-function toggleMassiveLines() {
-showMassiveLines = !showMassiveLines;
-if (showMassiveLines) {
-if (massiveLines) scene.remove(massiveLines);
-const positions = [];
-for (let i = 0; i < massiveStars.length - 1; i++) {
-const p1 = massiveStars[i].position;
-const p2 = massiveStars[i+1].position;
-positions.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
-}
-const geo = new THREE.BufferGeometry();
-geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
-massiveLines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color:0xffaa00, opacity:0.5, transparent:true, linewidth: 2 }));
-scene.add(massiveLines);
-} else {
-if (massiveLines) scene.remove(massiveLines);
-massiveLines = null;
-}
-}
-// ======================== УПРАВЛЕНИЕ ========================
-function onKeyDown(e) {
-if (solarMode) {
-switch(e.code) {
-case 'KeyW': solarRadius = Math.max(20, solarRadius - 10); e.preventDefault(); break;
-case 'KeyS': solarRadius = Math.min(1000, solarRadius + 10); e.preventDefault(); break;
-}
-} else {
-switch(e.code) {
-case 'KeyW': moveForward = true; e.preventDefault(); break;
-case 'KeyS': moveBackward = true; e.preventDefault(); break;
-case 'KeyA': moveLeft = true; e.preventDefault(); break;
-case 'KeyD': moveRight = true; e.preventDefault(); break;
-case 'KeyQ': moveUp = true; e.preventDefault(); break;
-case 'KeyE': moveDown = true; e.preventDefault(); break;
-case 'ShiftLeft': speed *= 3; e.preventDefault(); break;
-}
-}
-}
-function onKeyUp(e) {
-if (solarMode) { } else {
-switch(e.code) {
-case 'KeyW': moveForward = false; e.preventDefault(); break;
-case 'KeyS': moveBackward = false; e.preventDefault(); break;
-case 'KeyA': moveLeft = false; e.preventDefault(); break;
-case 'KeyD': moveRight = false; e.preventDefault(); break;
-case 'KeyQ': moveUp = false; e.preventDefault(); break;
-case 'KeyE': moveDown = false; e.preventDefault(); break;
-case 'ShiftLeft': speed /= 3; e.preventDefault(); break;
-}
-}
-}
-function onMouseDown(e) {
-if (e.target.closest('.no-pointerlock')) return;
-// OrbitControls handles mouse natively
-}
-// ======================== ВЫБОР ЗВЁЗД ДЛЯ МАРШРУТА ========================
-function onRightClick(e) {
-if (!routeSelectionActive) return;
-if (e.target.closest('.no-pointerlock')) return;
-e.preventDefault();
-const mouse = new THREE.Vector2(
-(e.clientX / window.innerWidth) * 2 - 1,
--(e.clientY / window.innerHeight) * 2 + 1
-);
-const thresholdPx = 30;
-let bestDist = Infinity;
-let bestIdx = -1;
-for (let i = 0; i < starData.length; i++) {
-const star = starData[i];
-const vector = star.position.clone().project(camera);
-if (vector.z > 1) continue;
-const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
-const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-const dx = screenX - e.clientX;
-const dy = screenY - e.clientY;
-const dist = Math.sqrt(dx*dx + dy*dy);
-if (dist < thresholdPx && dist < bestDist) {
-bestDist = dist;
-bestIdx = i;
-}
-}
-if (bestIdx !== -1) {
-if (!routeStartStar) {
-routeStartStar = bestIdx;
-document.getElementById('route-start-star').innerText = getStarName(bestIdx);
-document.getElementById('selection-status').innerText = 'Выберите точку выхода (ПКМ по звезде)';
-document.getElementById('selection-status').style.color = '#4488cc';
-createStarSelectionRing(starData[bestIdx].position, 0x88cc44);
-} else if (!routeEndStar) {
-routeEndStar = bestIdx;
-document.getElementById('route-end-star').innerText = getStarName(bestIdx);
-document.getElementById('selection-status').innerText = 'Готово к просчёту!';
-document.getElementById('selection-status').style.color = '#88cc44';
-document.getElementById('start-calculation').disabled = false;
-createStarSelectionRing(starData[bestIdx].position, 0x4488cc);
-}
-}
-}
-function getStarName(idx) {
-    const star = starData[idx];
-    return star.hip ? `HIP ${star.hip}` : `Звезда ${idx}`;
-}
-function createStarSelectionRing(position, color) {
-const ringGeometry = new THREE.RingGeometry(25, 30, 64);
-const ringMaterial = new THREE.MeshBasicMaterial({
-color: color, side: THREE.DoubleSide,
-transparent: true, opacity: 0.6
-});
-const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-ring.position.copy(position);
-ring.userData = { isSelectionRing: true, color: color };
-scene.add(ring);
-selectionRings.push(ring);
-}
-function clearSelectionRings() {
-selectionRings.forEach(ring => scene.remove(ring));
-selectionRings = [];
-}
-function clearStarNameLabels() {
-starNameLabels.forEach(label => {
-scene.remove(label);
-});
-starNameLabels = [];
-}
-function startRouteSelection() {
-routeSelectionActive = true;
-routeStartStar = null;
-routeEndStar = null;
-document.getElementById('star-selection-panel').style.display = 'block';
-document.getElementById('selection-status').innerText = 'Выберите точку входа (ПКМ по звезде)';
-document.getElementById('selection-status').style.color = '#88cc44';
-document.getElementById('start-calculation').disabled = true;
-document.getElementById('route-start-star').innerText = 'Не выбрана';
-document.getElementById('route-end-star').innerText = 'Не выбрана';
-clearSelectionRings();
-clearStarNameLabels();
-showTravelMessage('Режим выбора звёзд активирован. ПКМ по звезде для выбора.', false, 3000);
-}
-function cancelRouteSelection() {
-routeSelectionActive = false;
-routeStartStar = null;
-routeEndStar = null;
-document.getElementById('star-selection-panel').style.display = 'none';
-clearSelectionRings();
-clearStarNameLabels();
-}
-function startRouteCalculation() {
-if (!routeStartStar || !routeEndStar) return;
-routeCalculationInProgress = true;
-isCalculationStopped = false;
-allCalculatedRoutes = [];
-document.getElementById('star-selection-panel').style.display = 'none';
-document.getElementById('route-panel').style.display = 'block';
-document.getElementById('route-progress-fill').style.width = '0%';
-document.getElementById('route-paths-count').innerText = `0/${MAX_PATHS}`;
-document.getElementById('route-best-path').innerText = '—';
-document.getElementById('route-best-distance').innerText = '—';
-document.getElementById('route-star-count').innerText = '—';
-document.getElementById('route-list').innerHTML = '';
-routeVisualizationLines.forEach(line => scene.remove(line));
-routeVisualizationLines = [];
-clearStarNameLabels();
-calculateRoutePaths(0);
-}
-function stopRouteCalculation() {
-    isCalculationStopped = true;
-    routeCalculationInProgress = false;
-    document.getElementById('route-progress-fill').style.width = '100%';
-    showTravelMessage('Поиск маршрута остановлен.', true, 5000);
-    logResultsToConsole();
-    if (routeBestPath) {
-        visualizeAllRoutes();
-        showFuelRequirement(routeBestPath);
-    }
-}
-function logResultsToConsole() {
-    console.group("🚀 РЕЗУЛЬТАТЫ ПРОСЧЁТА МАРШРУТА");
-    console.log(`Всего путей найдено: ${allCalculatedRoutes.length}`);
-    console.log(`Лучший путь: ${routeBestPath ? routeBestPath.totalDistance.toFixed(2) + ' св. лет' : 'Не найден'}`);
-    console.table(allCalculatedRoutes.map((r, i) => ({
-        "№": i + 1,
-        "Расстояние": r.totalDistance.toFixed(2),
-        "Звёзд": r.path.length,
-        "Цвет": r.color,
-        "Маршрут": r.path.map(idx => getStarName(idx)).join(' -> ')
-    })));
-    console.groupEnd();
-}
-function calculateRoutePaths(pathIndex) {
-if (isCalculationStopped || pathIndex >= MAX_PATHS) {
-    routeCalculationInProgress = false;
-    document.getElementById('route-progress-fill').style.width = '100%';
-    if (!isCalculationStopped) {
-        showTravelMessage('Просчёт завершён! Оптимальный путь найден.', false, 5000);
-        logResultsToConsole();
-    }
-    if (routeBestPath) {
-        visualizeAllRoutes();
-        showFuelRequirement(routeBestPath);
-    }
-    return;
-}
-const pathData = calculateConvergingPath(routeStartStar, routeEndStar, pathIndex);
-// Генерируем уникальный цвет для маршрута
-const hue = (pathIndex * 360 / MAX_PATHS) % 360;
-const color = `hsl(${hue}, 70%, 50%)`;
-pathData.color = color;
-allCalculatedRoutes.push(pathData);
 
-animatePathBuilding(pathData, pathIndex, () => {
-document.getElementById('route-paths-count').innerText = `${pathIndex + 1}/${MAX_PATHS}`;
-if (!routeBestPath || pathData.totalDistance < routeBestPath.totalDistance) {
-routeBestPath = pathData;
-document.getElementById('route-best-path').innerText = `Путь #${pathIndex + 1}`;
-document.getElementById('route-best-distance').innerText = `${pathData.totalDistance.toFixed(1)} св. лет`;
-document.getElementById('route-star-count').innerText = pathData.path.length;
-}
-renderRouteList();
-setTimeout(() => calculateRoutePaths(pathIndex + 1), 80);
-});
-}
-function renderRouteList() {
-    const listContainer = document.getElementById('route-list');
-    listContainer.innerHTML = '';
-    
-    allCalculatedRoutes.forEach((route, idx) => {
-        const item = document.createElement('div');
-        item.className = 'route-item';
-        const starNames = route.path.map(i => getStarName(i)).join(' → ');
-        item.innerHTML = `
-            <div class="route-color-indicator" style="background:${route.color}"></div>
-            <div class="route-details">
-                <div class="route-stats-mini">
-                    <span>Путь #${idx + 1}</span>
-                    <span>${route.totalDistance.toFixed(1)} св. лет</span>
-                    <span>${route.path.length} звёзд</span>
-                </div>
-                <div class="route-stars" title="${starNames}">${starNames}</div>
-            </div>
-        `;
-        item.addEventListener('click', () => {
-            visualizeSingleRoute(route);
-        });
-        listContainer.appendChild(item);
-    });
-}
-function visualizeSingleRoute(routeData) {
-    routeVisualizationLines.forEach(line => scene.remove(line));
-    routeVisualizationLines = [];
-    
-    const path = routeData.path;
-    for (let i = 0; i < path.length - 1; i++) {
-        const startStar = starData[path[i]];
-        const endStar = starData[path[i + 1]];
-        const lineGeometry = new THREE.BufferGeometry().setFromPoints([startStar.position, endStar.position]);
-        const lineMaterial = new THREE.LineBasicMaterial({
-            color: new THREE.Color(routeData.color),
-            transparent: true,
-            opacity: 1.0,
-            linewidth: 4
-        });
-        const line = new THREE.Line(lineGeometry, lineMaterial);
-        scene.add(line);
-        routeVisualizationLines.push(line);
-    }
-    showTravelMessage(`Маршрут #${allCalculatedRoutes.indexOf(routeData) + 1} выбран`, false, 3000);
-}
-// УЛУЧШЕННЫЙ АЛГОРИТМ: пути стремятся друг к другу и к цели
-function calculateConvergingPath(startIdx, endIdx, variation) {
-const path = [startIdx];
-let currentIdx = startIdx;
-const visited = new Set([startIdx]);
-const maxSteps = 50;
-let steps = 0;
-let totalDistance = 0;
-const startPos = starData[startIdx].position;
-const endPos = starData[endIdx].position;
-const directDistance = startPos.distanceTo(endPos);
-
-while (currentIdx !== endIdx && steps < maxSteps) {
-const currentPos = starData[currentIdx].position;
-const neighbors = [];
-
-for (let i = 0; i < starData.length; i++) {
-if (visited.has(i)) continue;
-const dist = currentPos.distanceTo(starData[i].position);
-const distToEnd = starData[i].position.distanceTo(endPos);
-const progressTowardsEnd = distToEnd / directDistance;
-
-// Взвешиваем расстояние с учётом прогресса к цели
-// Чем ближе к цели, тем лучше (меньше weight)
-const weight = dist * (0.5 + progressTowardsEnd * 0.5) * (1 + (Math.random() - 0.5) * 0.2 * variation);
-
-neighbors.push({ idx: i, weight, realDist: dist, distToEnd });
-}
-
-// Сортируем по весу (лучшие варианты первыми)
-neighbors.sort((a, b) => a.weight - b.weight);
-
-// Выбираем из топ-5 для разнообразия, но с тенденцией к лучшим
-const selectFrom = Math.min(5, neighbors.length);
-const selectIdx = Math.floor(Math.random() * selectFrom);
-const next = neighbors[selectIdx];
-
-if (next) {
-path.push(next.idx);
-totalDistance += next.realDist;
-visited.add(next.idx);
-currentIdx = next.idx;
-} else { break; }
-steps++;
-}
-
-// Если не достигли цели, добавляем прямой прыжок
-if (currentIdx !== endIdx) {
-const lastDist = starData[currentIdx].position.distanceTo(endPos);
-totalDistance += lastDist;
-path.push(endIdx);
-}
-
-return { path, totalDistance, variation };
-}
-function animatePathBuilding(pathData, pathIndex, callback) {
-const path = pathData.path;
-let segmentIndex = 0;
-function buildNextSegment() {
-if (segmentIndex >= path.length - 1) { callback(); return; }
-const startStar = starData[path[segmentIndex]];
-const endStar = starData[path[segmentIndex + 1]];
-const lineGeometry = new THREE.BufferGeometry().setFromPoints([startStar.position, endStar.position]);
-const lineMaterial = new THREE.LineBasicMaterial({
-color: new THREE.Color(pathData.color),
-transparent: true,
-opacity: 0.4,
-linewidth: 2
-});
-const line = new THREE.Line(lineGeometry, lineMaterial);
-line.userData = { isRouteVisualization: true, pathIndex: pathIndex, starIndices: [path[segmentIndex], path[segmentIndex + 1]] };
-scene.add(line);
-routeVisualizationLines.push(line);
-segmentIndex++;
-setTimeout(buildNextSegment, 40);
-}
-buildNextSegment();
-}
-function createStarNameLabel(position, name) {
-const div = document.createElement('div');
-div.className = 'star-name-label';
-div.textContent = name;
-div.dataset.starName = name;
-const label = new THREE.CSS2DObject(div);
-label.position.copy(position);
-label.position.y += 20;
-scene.add(label);
-starNameLabels.push(label);
-return label;
-}
-function visualizeAllRoutes() {
-// Показываем все линии, лучший путь ярче
-routeVisualizationLines.forEach((line) => {
-    line.material.opacity = 0.25;
-    line.material.linewidth = 2;
-});
-
-// Подсвечиваем лучший путь
-if (routeBestPath) {
-    routeVisualizationLines.forEach(line => {
-        if (line.material.color.getHexString() === new THREE.Color(routeBestPath.color).getHexString()) {
-            line.material.opacity = 1.0;
-            line.material.linewidth = 4;
-        }
-    });
-    
-    // Добавляем labels только для лучшего пути
-    const path = routeBestPath.path;
-    createStarNameLabel(starData[path[0]].position, getStarName(path[0]));
-    createStarNameLabel(starData[path[path.length - 1]].position, getStarName(path[path.length - 1]));
-}
-
-showTravelMessage(`Оптимальный путь: ${routeBestPath.path.length} звёзд, ${routeBestPath.totalDistance.toFixed(1)} св. лет`, false, 8000);
-}
-function showFuelRequirement(pathData) {
-const distanceLy = pathData.totalDistance * 3.26156;
-const fuelNeeded = 0.5 * distanceLy * distanceLy;
-const fuelAvailable = player.fuel;
-const status = fuelNeeded <= fuelAvailable ? '✅ ДОСТУПНО' : '❌ НЕДОСТАТОЧНО';
-const statusColor = fuelNeeded <= fuelAvailable ? '#00ff88' : '#ff4444';
-document.getElementById('fuel-distance').innerText = `${distanceLy.toFixed(1)} св. лет`;
-document.getElementById('fuel-needed').innerText = `${fuelNeeded.toFixed(2)} т`;
-document.getElementById('fuel-available').innerText = `${fuelAvailable.toFixed(1)} т`;
-document.getElementById('fuel-status').innerText = status;
-document.getElementById('fuel-status').style.color = statusColor;
-document.getElementById('fuel-requirement-panel').style.display = 'block';
-}
-// ======================== ИНИЦИАЛИЗАЦИЯ ========================
-async function init() {
-scene = new THREE.Scene(); scene.background = new THREE.Color(0x050510);
-camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1e7);
-camera.position.set(0, 500, 2000);
-renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-document.body.appendChild(renderer.domElement);
-labelRenderer = new THREE.CSS2DRenderer();
-labelRenderer.setSize(window.innerWidth, window.innerHeight);
-labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.top = '0px';
-labelRenderer.domElement.style.left = '0px';
-labelRenderer.domElement.style.pointerEvents = 'none';
-labelRenderer.domElement.style.zIndex = '500';
-document.body.appendChild(labelRenderer.domElement);
-const stars = await loadStars();
-starData = stars.map((s, index) => {
-const pos = new THREE.Vector3(s.x, s.y, s.z);
-const color = getStarColor(s.bv, s.mag);
-const size = Math.max(0.5, 2.5 - (s.mag + 5) / 5);
-const props = generateSystemProperties(s, index);
-return { ...s, position: pos, color, size, ...props };
-});
-const geometry = new THREE.BufferGeometry();
-const positions = new Float32Array(starData.length * 3);
-const colors = new Float32Array(starData.length * 3);
-const sizes = new Float32Array(starData.length);
-starData.forEach((star, i) => {
-positions[i*3]=star.x; positions[i*3+1]=star.y; positions[i*3+2]=star.z;
-colors[i*3]=star.color.r; colors[i*3+1]=star.color.g; colors[i*3+2]=star.color.b;
-sizes[i]=star.size;
-});
-geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
-geometry.setAttribute('color', new THREE.BufferAttribute(colors,3));
-geometry.setAttribute('size', new THREE.BufferAttribute(sizes,1));
-starsMaterial = new THREE.PointsMaterial({
-size:13, vertexColors:true, map:createSprite(),
-transparent:true, blending:THREE.AdditiveBlending,
-depthWrite:false, sizeAttenuation:true
-});
-starsMesh = new THREE.Points(geometry, starsMaterial);
-scene.add(starsMesh);
-createSunAndSolarSystem();
-highlightMassiveStars();
-controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.screenSpacePanning = true;
-controls.minDistance = 5;
-controls.maxDistance = 50000;
-controls.target.set(0, 0, 0);
-controls.zoomSpeed = 2.0;
-controls.rotateSpeed = 0.6;
-player.position.copy(camera.position);
-document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', onKeyUp);
-renderer.domElement.addEventListener('dblclick', onDoubleClick);
-renderer.domElement.addEventListener('contextmenu', onRightClick);
-
-// Planet click handler
-renderer.domElement.addEventListener('click', function(e) {
-  if (!solarSystemGroup || !solarSystemGroup.visible) return;
-  const mouse = new THREE.Vector2(
-    (e.clientX / window.innerWidth) * 2 - 1,
-    -(e.clientY / window.innerHeight) * 2 + 1
+function createSolarSystem() {
+  sunMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(2,32,32),
+    new THREE.MeshBasicMaterial({color:0xffcc44})
   );
-  const rc = new THREE.Raycaster();
-  rc.setFromCamera(mouse, camera);
-  const hits = rc.intersectObjects(planets);
-  if (hits.length > 0) {
-    const pl = hits[0].object;
-    const name = pl.userData.name || 'Unknown';
-    const planetDescs = {
-      'Меркурий': '☿ Ø 4879 км. Орбита: 0.39 а.е. T: -173°C/+427°C. Нет атмосферы. Ядро ~85% радиуса. В игре: Fe, Ni, Si.',
-      'Венера': '♀ Ø 12104 км. Давление 92 атм. T: +462°C (CO₂). Сутки=243 земных. В игре: S, Pb, Zn, кислоты.',
-      'Земля': '♁ Ø 12742 км. 1 а.е. от Солнца. 71% вода. 8 млрд чел. Единственная с подтверждённой жизнью.',
-      'Марс': '♂ Ø 6779 км. T: -87°C. Олимп Монс — 21.9 км (высочайшая гора Сол. сист.). Есть водяной лёд. В игре: Fe, Ti, колония.',
-      'Юпитер': '♃ Ø 139820 км. Масса = 318 Земель. 95 известных спутников. Большое красное пятно > Земли. Европа: подлёдный океан.',
-      'Сатурн': '♄ Ø 116460 км. Кольца: 99.9% лёд. Плотность < воды (0.687 г/см³). Титан: моря метана, плотная атмосфера.',
-      'Уран': '⛢ Ø 50724 км. Наклон оси 98° (вращается «на боку»). T: -224°C. 27 спутников. В игре: дейтерий, He-3.',
-      'Нептун': '♆ Ø 49244 км. Ветры до 2100 км/ч (рекорд). 30 а.е. от Солнца. Тритон: гейзеры азота. В игре: He-3, D₂O.'
-    };
-    const desc = planetDescs[name] || 'Данные загружаются...';
-    document.getElementById('planet-type').innerText = name;
-    showTravelMessage('🪐 ' + name + ': ' + desc, false, 5000);
-    controls.target.copy(pl.position);
-    if (window.hubMsg) {
-      window.hubMsg({type:'status_msg', text: '🪐 ' + name + ': ' + desc});
-      window.hubMsg({type:'location_update', system: 'Sol', body: name});
+  scene.add(sunMesh);
+
+  solarGroup = new THREE.Group();
+  PLANETS_DATA.forEach(d => {
+    // orbit line
+    const pts=[];
+    for(let i=0;i<=128;i++){const a=i/128*Math.PI*2;pts.push(new THREE.Vector3(d.r*Math.cos(a),0,d.r*Math.sin(a)));}
+    solarGroup.add(new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:0xffaa00,opacity:.3,transparent:true})
+    ));
+    // planet
+    const mesh=new THREE.Mesh(
+      new THREE.SphereGeometry(d.sz,16,16),
+      new THREE.MeshBasicMaterial({color:d.col})
+    );
+    mesh.userData={name:d.name,radius:d.r,speed:d.spd,angle:Math.random()*6.28,desc:d.desc};
+    solarGroup.add(mesh); planets.push(mesh);
+    // ring
+    if(d.ring){
+      const rp=[];
+      for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;rp.push(new THREE.Vector3(d.sz*1.8*Math.cos(a),0,d.sz*1.8*Math.sin(a)));}
+      mesh.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(rp),new THREE.LineBasicMaterial({color:0xffaa00})));
     }
+  });
+  solarGroup.visible=false;
+  scene.add(solarGroup);
+}
+
+function enterSolar(){solarMode=true;document.getElementById('btn-solar').classList.add('active');solarGroup.visible=true;controls.target.set(0,0,0);speed=10;document.getElementById('sl-speed').value=10;document.getElementById('v-speed').textContent='10';}
+function exitSolar(){solarMode=false;document.getElementById('btn-solar').classList.remove('active');solarGroup.visible=false;}
+
+// ═══════════════════════════════════════════════════
+//  MASSIVE STARS & TRADE ROUTES
+// ═══════════════════════════════════════════════════
+function makeRing(r,col){
+  const p=[];for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;p.push(new THREE.Vector3(r*Math.cos(a),0,r*Math.sin(a)));}
+  return new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:col}));
+}
+
+function highlightMassive() {
+  if(!starData.length)return;
+  massiveStars=[...starData].sort((a,b)=>(a.mag||0)-(b.mag||0)).slice(0,100);
+  massiveRings.forEach(r=>scene.remove(r));massiveRings=[];
+  massiveStars.forEach(s=>{const ring=makeRing(30,0xffaa00);ring.position.copy(s.position);scene.add(ring);massiveRings.push(ring);});
+}
+
+function toggleMassiveLines(){
+  showMassive=!showMassive;
+  if(showMassive){
+    if(massiveLines)scene.remove(massiveLines);
+    const pos=[];
+    for(let i=0;i<massiveStars.length-1;i++){
+      const a=massiveStars[i].position,b=massiveStars[i+1].position;
+      pos.push(a.x,a.y,a.z,b.x,b.y,b.z);
+    }
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    massiveLines=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xffaa00,opacity:.5,transparent:true}));
+    scene.add(massiveLines);
+  } else { if(massiveLines){scene.remove(massiveLines);massiveLines=null;} }
+}
+
+function bezier(p1,p2,off=.3){
+  const dir=new THREE.Vector3().subVectors(p2,p1),len=dir.length();
+  const mid=new THREE.Vector3().addVectors(p1,p2).multiplyScalar(.5);
+  const perp=new THREE.Vector3(-dir.y,dir.x,dir.z).normalize();
+  if(perp.length()<.1)perp.set(0,0,1);
+  const ofs=perp.multiplyScalar(len*off*(Math.random()*.5+.5));
+  return new THREE.CubicBezierCurve3(p1,new THREE.Vector3().lerpVectors(p1,mid,.3).add(ofs),new THREE.Vector3().lerpVectors(p2,mid,.3).add(ofs),p2);
+}
+
+function buildTradeRoutes(){
+  tradeLines.forEach(l=>scene.remove(l));if(dynPoints)scene.remove(dynPoints);
+  shipLabels.forEach(s=>scene.remove(s));
+  tradeLines=[];tradeCurves=[];dynData=[];shipLabels=[];
+  if(!massiveStars.length)return;
+  const sun=new THREE.Vector3(0,0,0);
+  massiveStars.forEach(s=>tradeCurves.push(bezier(sun,s.position,.4)));
+  for(let i=0;i<massiveStars.length-1;i++) tradeCurves.push(bezier(massiveStars[i].position,massiveStars[i+1].position,.3));
+
+  const COLORS=[new THREE.Color(1,1,1),new THREE.Color(1,.9,.5),new THREE.Color(1,.5,.5),new THREE.Color(.5,.8,1)];
+  tradeCurves.forEach(c=>{
+    const col=COLORS[Math.floor(Math.random()*COLORS.length)];
+    const pts=c.getPoints(50);
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:col,opacity:.25,transparent:true}));
+    line.visible=tradeVisible;scene.add(line);tradeLines.push(line);
+  });
+
+  const N=800;
+  const pos=new Float32Array(N*3),cols=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const ci=Math.floor(Math.random()*tradeCurves.length),t=Math.random();
+    const col=COLORS[Math.floor(Math.random()*COLORS.length)];
+    const p=tradeCurves[ci].getPoint(t);
+    pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;
+    cols[i*3]=col.r;cols[i*3+1]=col.g;cols[i*3+2]=col.b;
+    dynData.push({curve:tradeCurves[ci],t,speed:(.03+Math.random()*.05)*.001});
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+  dynPoints=new THREE.Points(geo,new THREE.PointsMaterial({size:2,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+  dynPoints.visible=tradeVisible;scene.add(dynPoints);
+
+  massiveStars.forEach(star=>{
+    const cnt=3+Math.floor(Math.random()*8);
+    for(let j=0;j<cnt;j++){
+      const off=new THREE.Vector3((Math.random()-.5)*80,(Math.random()-.5)*80,(Math.random()-.5)*80);
+      const div=document.createElement('div');div.className='ship-tag';
+      div.textContent=`⛴ ${Math.floor(Math.random()*9000+1000)}`;
+      const lbl=new THREE.CSS2DObject(div);lbl.position.copy(star.position).add(off);
+      lbl.visible=tradeVisible;scene.add(lbl);shipLabels.push(lbl);
+    }
+  });
+}
+
+function toggleTrade(){
+  tradeVisible=!tradeVisible;
+  tradeLines.forEach(l=>l.visible=tradeVisible);
+  if(dynPoints)dynPoints.visible=tradeVisible;
+  shipLabels.forEach(s=>s.visible=tradeVisible);
+}
+
+// ═══════════════════════════════════════════════════
+//  QUICK TRAVEL & WAYPOINTS
+// ═══════════════════════════════════════════════════
+function initQuickTravel(){
+  const box=document.getElementById('wp-list');box.innerHTML='';
+  const sorted=[...starData].sort((a,b)=>a.position.length()-b.position.length());
+  sorted.slice(0,8).forEach((s,i)=>{
+    const btn=document.createElement('button');btn.className='wp-btn';
+    btn.textContent=s.hip?`HIP ${s.hip}`:`Star ${i+1}`;
+    btn.onclick=()=>flyTo(s.position,50);
+    box.appendChild(btn);
+  });
+  const saved=localStorage.getItem('elite_waypoints');
+  if(saved){waypoints=JSON.parse(saved);wpCount=waypoints.length;waypoints.forEach(addWPButton);}
+}
+
+function addWPButton(wp){
+  const box=document.getElementById('wp-list');
+  const btn=document.createElement('button');
+  btn.className='wp-btn'+(wp.locked?' locked':'');
+  btn.textContent=(wp.locked?'🔒 ':'')+wp.name;
+  btn.dataset.wpId=wp.id;
+  btn.onclick=()=>flyTo(new THREE.Vector3(wp.position.x,wp.position.y,wp.position.z),0);
+  btn.oncontextmenu=e=>{e.preventDefault();showCtx(e,wp.id);};
+  box.appendChild(btn);
+}
+
+function addWaypoint(){
+  wpCount++;
+  const p=camera.position;
+  const wp={id:Date.now(),name:`Метка ${wpCount}`,position:{x:p.x,y:p.y,z:p.z},locked:false};
+  waypoints.push(wp);localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
+  addWPButton(wp);showMsg(`Метка "${wp.name}" сохранена`);
+}
+
+let ctxWP=null;
+function showCtx(e,wpId){
+  ctxWP=wpId;const m=document.getElementById('ctx-menu');
+  m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';
+  const wp=waypoints.find(w=>w.id===wpId);
+  document.getElementById('ctx-lock').style.display=wp&&!wp.locked?'block':'none';
+  document.getElementById('ctx-unlock').style.display=wp&&wp.locked?'block':'none';
+}
+function hideCtx(){document.getElementById('ctx-menu').style.display='none';ctxWP=null;}
+document.addEventListener('click',e=>{if(!e.target.closest('#ctx-menu'))hideCtx();});
+document.getElementById('ctx-rename').onclick=()=>{
+  const wp=waypoints.find(w=>w.id===ctxWP);if(!wp)return hideCtx();
+  const n=prompt('Новое имя:',wp.name);if(n){wp.name=n;localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
+  const b=document.querySelector(`[data-wp-id="${wp.id}"]`);if(b)b.textContent=(wp.locked?'🔒 ':'')+wp.name;}hideCtx();
+};
+document.getElementById('ctx-lock').onclick=()=>{
+  const wp=waypoints.find(w=>w.id===ctxWP);if(wp){wp.locked=true;localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
+  const b=document.querySelector(`[data-wp-id="${wp.id}"]`);if(b){b.classList.add('locked');b.textContent='🔒 '+wp.name;}}hideCtx();
+};
+document.getElementById('ctx-unlock').onclick=()=>{
+  const wp=waypoints.find(w=>w.id===ctxWP);if(wp){wp.locked=false;localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
+  const b=document.querySelector(`[data-wp-id="${wp.id}"]`);if(b){b.classList.remove('locked');b.textContent=wp.name;}}hideCtx();
+};
+document.getElementById('ctx-delete').onclick=()=>{
+  const wp=waypoints.find(w=>w.id===ctxWP);if(wp&&!wp.locked){waypoints=waypoints.filter(w=>w.id!==ctxWP);
+  localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
+  const b=document.querySelector(`[data-wp-id="${ctxWP}"]`);if(b)b.remove();showMsg('Метка удалена');}hideCtx();
+};
+
+// ═══════════════════════════════════════════════════
+//  TRADING
+// ═══════════════════════════════════════════════════
+function openTrade(idx){
+  if(player.docked)return;player.docked=true;
+  const s=starData[idx];
+  document.getElementById('st-name').textContent=s.hip?`HIP ${s.hip}`:'Станция';
+  let h='';GOODS.forEach((g,i)=>{
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #332200;">
+    <span>${g.name} — ${s.prices[i]} Cr</span>
+    <span><button class="btn" onclick="buyG(${i},${s.prices[i]})">Купить</button>
+    <button class="btn" onclick="sellG(${i},${s.prices[i]})">Продать</button>
+    <span class="val">[${player.cargo[i]}]</span></span></div>`;
+  });
+  document.getElementById('trade-items').innerHTML=h;
+  document.getElementById('trade-panel').style.display='block';
+}
+window.buyG=function(id,price){
+  if(player.cargo.reduce((a,b)=>a+b,0)+GOODS[id].unit>player.cargoMax){showMsg('Нет места',true);return;}
+  if(player.credits<price){showMsg('Нет денег',true);return;}
+  player.credits-=price;player.cargo[id]++;updateHUD();openTrade(player.currentSystem);
+};
+window.sellG=function(id,price){
+  if(player.cargo[id]<=0)return;
+  player.credits+=price;player.cargo[id]--;updateHUD();openTrade(player.currentSystem);
+};
+
+function openEquip(){
+  let h='';
+  for(let i=0;i<5;i++){
+    const eq=player.slots[i]?player.equipment.find(e=>e.id===player.slots[i]):null;
+    h+=`<div style="background:#111;border:2px solid ${eq?'#ffaa00':'#442200'};padding:8px;text-align:center;font-size:12px;min-height:50px;display:flex;align-items:center;justify-content:center;">${eq?eq.name:'—'}</div>`;
+  }
+  document.getElementById('equip-slots').innerHTML=h;
+  document.getElementById('equip-panel').style.display='block';
+}
+
+// ═══════════════════════════════════════════════════
+//  NEWS
+// ═══════════════════════════════════════════════════
+function initNews(){
+  const tick=document.getElementById('news-tick');
+  tick.innerHTML=NEWS.slice(0,5).map(n=>`<div class="news-item-sm">📍${n.sys}: ${n.title}</div>`).join('');
+  document.getElementById('news-toggle').onclick=()=>{
+    const m=document.getElementById('news-modal');m.style.display=m.style.display==='block'?'none':'block';
+    if(m.style.display==='block'){
+      document.getElementById('news-full').innerHTML=NEWS.map(n=>
+        `<div style="border-bottom:1px solid #553311;padding:8px 0;"><div style="color:#ffff88;font-weight:bold;">${n.title}</div><div style="font-size:11px;color:#886622;">📍 ${n.sys}</div><div style="font-size:13px;margin-top:4px;">${n.text}</div></div>`
+      ).join('');
+    }
+  };
+  document.getElementById('news-close').onclick=()=>{document.getElementById('news-modal').style.display='none';};
+}
+
+// ═══════════════════════════════════════════════════
+//  ROUTE CALCULATION
+// ═══════════════════════════════════════════════════
+function startRouteSelect(){
+  routeActive=true;routeStart=null;routeEnd=null;
+  document.getElementById('star-select').style.display='block';
+  document.getElementById('sel-status').textContent='Выберите точку входа (ПКМ по звезде)';
+  document.getElementById('sel-calc').disabled=true;
+  document.getElementById('r-start').textContent='—';
+  document.getElementById('r-end').textContent='—';
+  clearSelRings();clearNameLabels();
+  showMsg('ПКМ по звезде для выбора точек маршрута');
+}
+function cancelRouteSelect(){
+  routeActive=false;routeStart=null;routeEnd=null;
+  document.getElementById('star-select').style.display='none';
+  clearSelRings();clearNameLabels();
+}
+function clearSelRings(){selRings.forEach(r=>scene.remove(r));selRings=[];}
+function clearNameLabels(){nameLabels.forEach(l=>scene.remove(l));nameLabels=[];}
+
+function addSelRing(pos,col){
+  const ring=new THREE.Mesh(
+    new THREE.RingGeometry(25,30,64),
+    new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:.6})
+  );
+  ring.position.copy(pos);scene.add(ring);selRings.push(ring);
+}
+function addNameLabel(pos,name){
+  const div=document.createElement('div');div.className='star-label';div.textContent=name;
+  const lbl=new THREE.CSS2DObject(div);lbl.position.copy(pos);lbl.position.y+=20;
+  scene.add(lbl);nameLabels.push(lbl);
+}
+
+function startCalc(){
+  if(routeStart===null||routeEnd===null)return;
+  routeCalcing=true;routeStopped=false;routeAll=[];routeBest=null;
+  document.getElementById('star-select').style.display='none';
+  document.getElementById('route-panel').style.display='block';
+  document.getElementById('r-fill').style.width='0%';
+  document.getElementById('r-count').textContent=`0/${MAX_PATHS}`;
+  document.getElementById('r-best').textContent='—';
+  document.getElementById('r-dist').textContent='—';
+  document.getElementById('r-stars').textContent='—';
+  document.getElementById('route-list').innerHTML='';
+  routeLines.forEach(l=>scene.remove(l));routeLines=[];
+  clearNameLabels();
+  calcNext(0);
+}
+
+function stopCalc(){
+  routeStopped=true;routeCalcing=false;
+  document.getElementById('r-fill').style.width='100%';
+  showMsg('Поиск остановлен',true);
+  if(routeBest)finalizeRoutes();
+}
+
+function calcNext(idx){
+  if(routeStopped||idx>=MAX_PATHS){
+    routeCalcing=false;
+    document.getElementById('r-fill').style.width='100%';
+    if(!routeStopped)showMsg('Просчёт завершён!');
+    if(routeBest)finalizeRoutes();
+    return;
+  }
+  const path=findPath(routeStart,routeEnd,idx);
+  const hue=(idx*360/MAX_PATHS)%360;
+  path.color=`hsl(${hue},70%,50%)`;
+  routeAll.push(path);
+
+  // animate path building quickly
+  let seg=0;
+  function drawSeg(){
+    if(seg>=path.path.length-1){
+      document.getElementById('r-count').textContent=`${idx+1}/${MAX_PATHS}`;
+      document.getElementById('r-fill').style.width=((idx+1)/MAX_PATHS*100)+'%';
+      if(!routeBest||path.totalDist<routeBest.totalDist){
+        routeBest=path;
+        document.getElementById('r-best').textContent=`#${idx+1}`;
+        document.getElementById('r-dist').textContent=path.totalDist.toFixed(1)+' ед.';
+        document.getElementById('r-stars').textContent=path.path.length;
+      }
+      renderRouteList();
+      setTimeout(()=>calcNext(idx+1),50);
+      return;
+    }
+    const a=starData[path.path[seg]].position,b=starData[path.path[seg+1]].position;
+    const line=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a,b]),
+      new THREE.LineBasicMaterial({color:new THREE.Color(path.color),transparent:true,opacity:.4})
+    );
+    scene.add(line);routeLines.push(line);
+    seg++;
+    setTimeout(drawSeg,20);
+  }
+  drawSeg();
+}
+
+function findPath(startIdx,endIdx,variation){
+  const path=[startIdx];let cur=startIdx;
+  const visited=new Set([startIdx]);
+  let dist=0;
+  const endPos=starData[endIdx].position;
+  const directDist=starData[startIdx].position.distanceTo(endPos);
+
+  for(let step=0;step<50&&cur!==endIdx;step++){
+    const curPos=starData[cur].position;
+    let best=null,bestW=Infinity;
+    const candidates=[];
+    for(let i=0;i<starData.length;i++){
+      if(visited.has(i))continue;
+      const d=curPos.distanceTo(starData[i].position);
+      const toEnd=starData[i].position.distanceTo(endPos);
+      const w=d*(.5+toEnd/directDist*.5)*(1+(Math.random()-.5)*.2*variation);
+      candidates.push({idx:i,w,d});
+    }
+    candidates.sort((a,b)=>a.w-b.w);
+    const pick=candidates[Math.min(Math.floor(Math.random()*5),candidates.length-1)];
+    if(!pick)break;
+    path.push(pick.idx);dist+=pick.d;visited.add(pick.idx);cur=pick.idx;
+  }
+  if(cur!==endIdx){dist+=starData[cur].position.distanceTo(endPos);path.push(endIdx);}
+  return {path,totalDist:dist,variation};
+}
+
+function renderRouteList(){
+  const box=document.getElementById('route-list');box.innerHTML='';
+  routeAll.forEach((r,i)=>{
+    const div=document.createElement('div');div.className='route-item';
+    const names=r.path.map(j=>starName(j)).join(' → ');
+    div.innerHTML=`<div class="route-dot" style="background:${r.color}"></div>
+      <div style="flex:1;"><div style="font-size:11px;color:#cc8800;">#${i+1} · ${r.totalDist.toFixed(1)} ед. · ${r.path.length} звёзд</div>
+      <div style="font-size:10px;color:#886622;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${names}">${names}</div></div>`;
+    div.onclick=()=>{
+      routeLines.forEach(l=>scene.remove(l));routeLines=[];
+      for(let s=0;s<r.path.length-1;s++){
+        const a=starData[r.path[s]].position,b=starData[r.path[s+1]].position;
+        const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),
+          new THREE.LineBasicMaterial({color:new THREE.Color(r.color),transparent:true,opacity:1}));
+        scene.add(line);routeLines.push(line);
+      }
+      showMsg(`Маршрут #${i+1} выбран`);
+    };
+    box.appendChild(div);
+  });
+}
+
+function finalizeRoutes(){
+  routeLines.forEach(l=>{l.material.opacity=.2;});
+  if(routeBest){
+    addNameLabel(starData[routeBest.path[0]].position,starName(routeBest.path[0]));
+    addNameLabel(starData[routeBest.path[routeBest.path.length-1]].position,starName(routeBest.path[routeBest.path.length-1]));
+    showMsg(`Лучший: ${routeBest.path.length} звёзд, ${routeBest.totalDist.toFixed(1)} ед.`,false,6000);
+    // fuel panel
+    const ly=routeBest.totalDist*3.26;
+    const need=.5*ly*ly;
+    document.getElementById('f-dist').textContent=ly.toFixed(1)+' св.лет';
+    document.getElementById('f-need').textContent=need.toFixed(2)+' т';
+    document.getElementById('f-have').textContent=player.fuel.toFixed(1)+' т';
+    const ok=need<=player.fuel;
+    document.getElementById('f-status').textContent=ok?'✅ ДОСТУПНО':'❌ МАЛО';
+    document.getElementById('f-status').style.color=ok?'#00ff88':'#ff4444';
+    document.getElementById('fuel-panel').style.display='block';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  STAR PICKING (double-click & right-click)
+// ═══════════════════════════════════════════════════
+function pickStar(ex,ey,threshold=30){
+  let best=Infinity,bestI=-1;
+  for(let i=0;i<starData.length;i++){
+    const v=starData[i].position.clone().project(camera);
+    if(v.z>1)continue;
+    const sx=(v.x*.5+.5)*window.innerWidth, sy=(-v.y*.5+.5)*window.innerHeight;
+    const d=Math.hypot(sx-ex,sy-ey);
+    if(d<threshold&&d<best){best=d;bestI=i;}
+  }
+  return bestI;
+}
+
+function onDblClick(e){
+  if(player.docked||routeActive)return;
+  const idx=pickStar(e.clientX,e.clientY);
+  if(idx!==-1){
+    flyTo(starData[idx].position,50);
+    player.currentSystem=idx;updateHUD();
+    if(window.hubMsg)window.hubMsg({type:'location_update',system:starName(idx)});
+  }
+}
+
+function onRightClick(e){
+  if(!routeActive||e.target.closest('.panel,.modal-panel'))return;
+  e.preventDefault();
+  const idx=pickStar(e.clientX,e.clientY);
+  if(idx===-1)return;
+  if(routeStart===null){
+    routeStart=idx;
+    document.getElementById('r-start').textContent=starName(idx);
+    document.getElementById('sel-status').textContent='Выберите точку выхода (ПКМ)';
+    addSelRing(starData[idx].position,0x88cc44);
+  } else if(routeEnd===null){
+    routeEnd=idx;
+    document.getElementById('r-end').textContent=starName(idx);
+    document.getElementById('sel-status').textContent='Готово!';
+    document.getElementById('sel-calc').disabled=false;
+    addSelRing(starData[idx].position,0x4488cc);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  HOVER INFO
+// ═══════════════════════════════════════════════════
+let hoverTimer=null;
+document.addEventListener('mousemove',e=>{
+  if(hoverTimer)clearTimeout(hoverTimer);
+  $hover.style.display='none';
+  hoverTimer=setTimeout(()=>{
+    if(!starData.length||!camera)return;
+    const idx=pickStar(e.clientX,e.clientY,25);
+    if(idx===-1)return;
+    const s=starData[idx];
+    const name=s.hip?'HIP '+s.hip:(s.proper||'Звезда '+idx);
+    const sp=s.spect||'—';
+    const distPc=s.dist?s.dist.toFixed(1)+' пк':'—';
+    const distLy=s.dist?(s.dist*3.2616).toFixed(1)+' св.лет':'—';
+    const mag=s.mag!==undefined?s.mag.toFixed(2):'—';
+    let spInfo='';
+    const c=(sp||'')[0];
+    if(c==='O')spInfo='Горячий голубой гигант (>30000K)';
+    else if(c==='B')spInfo='Бело-голубая (10000-30000K)';
+    else if(c==='A')spInfo='Белая (7500-10000K)';
+    else if(c==='F')spInfo='Жёлто-белая (6000-7500K)';
+    else if(c==='G')spInfo='Жёлтый карлик (5200-6000K)';
+    else if(c==='K')spInfo='Оранжевая (3700-5200K)';
+    else if(c==='M')spInfo='Красный карлик (<3700K)';
+    $hover.innerHTML=`<div style="color:#ffff88;font-weight:bold;">${name}</div>`+
+      `<div>Спектр: <span style="color:#ffff88">${sp}</span></div>`+
+      (spInfo?`<div style="color:#88ccff;font-size:12px;">${spInfo}</div>`:'')+
+      `<div>Расст.: ${distPc} (${distLy})</div>`+
+      `<div>Зв. вел.: ${mag}</div>`;
+    $hover.style.display='block';$hover.style.left=e.clientX+'px';$hover.style.top=(e.clientY-10)+'px';
+  },350);
+});
+
+// ═══════════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(solarMode){
+    if(e.code==='KeyW'){camera.position.lerp(controls.target,.05);e.preventDefault();}
+    if(e.code==='KeyS'){camera.position.sub(new THREE.Vector3().subVectors(controls.target,camera.position).multiplyScalar(.05));e.preventDefault();}
+    return;
+  }
+  switch(e.code){
+    case'KeyW':moveF=true;e.preventDefault();break;case'KeyS':moveB=true;e.preventDefault();break;
+    case'KeyA':moveL=true;e.preventDefault();break;case'KeyD':moveR=true;e.preventDefault();break;
+    case'KeyQ':moveU=true;e.preventDefault();break;case'KeyE':moveD=true;e.preventDefault();break;
+    case'ShiftLeft':speed*=3;e.preventDefault();break;
   }
 });
-document.getElementById('star-size').addEventListener('input', (e) => {
-starsMaterial.size = parseFloat(e.target.value);
-document.getElementById('size-value').innerText = e.target.value;
-});
-document.getElementById('speed-slider').addEventListener('input', (e) => {
-speed = parseFloat(e.target.value);
-document.getElementById('speed-value').innerText = speed;
-});
-document.getElementById('star-brightness').addEventListener('input', (e) => {
-starsMaterial.opacity = parseFloat(e.target.value);
-document.getElementById('brightness-value').innerText = e.target.value;
-});
-document.getElementById('sun-btn').addEventListener('click', () => {
-if (solarMode) exitSolarMode();
-flyTo(new THREE.Vector3(0,0,0), 50);
-});
-document.getElementById('solar-system-btn').addEventListener('click', toggleSolarMode);
-document.getElementById('toggle-massive-lines').addEventListener('click', () => {
-if (solarMode) exitSolarMode();
-toggleMassiveLines();
-});
-document.getElementById('toggle-trade-routes').addEventListener('click', () => {
-if (solarMode) exitSolarMode();
-toggleTradeRoutes();
-});
-document.getElementById('route-calculate-btn').addEventListener('click', () => {
-if (solarMode) exitSolarMode();
-startRouteSelection();
-});
-document.getElementById('save-progress-btn').addEventListener('click', savePlayerProgress);
-document.getElementById('load-progress-btn').addEventListener('click', loadPlayerProgress);
-document.getElementById('start-calculation').addEventListener('click', startRouteCalculation);
-document.getElementById('close-selection').addEventListener('click', cancelRouteSelection);
-document.getElementById('close-route').addEventListener('click', () => {
-document.getElementById('route-panel').style.display = 'none';
-});
-document.getElementById('stop-calculation-btn').addEventListener('click', stopRouteCalculation);
-document.getElementById('close-fuel-panel').addEventListener('click', () => {
-document.getElementById('fuel-requirement-panel').style.display = 'none';
-});
-document.getElementById('equipment-btn').addEventListener('click', () => {
-if (solarMode) exitSolarMode();
-openEquipmentShop();
-});
-document.getElementById('missions-btn').addEventListener('click', () => {
-if (solarMode) exitSolarMode();
-if (player.currentSystem !== null) openMissionsPanel(player.currentSystem);
-else alert('Сначала прибудьте в систему');
-});
-initQuickTravel();
-document.getElementById('add-waypoint').addEventListener('click', addWaypoint);
-document.getElementById('close-trade').onclick = () => {
-document.getElementById('trade-panel').style.display = 'none';
-player.docked = false;
-};
-document.getElementById('close-equipment').onclick = () => document.getElementById('equipment-panel').style.display = 'none';
-document.getElementById('close-missions').onclick = () => document.getElementById('missions-panel').style.display = 'none';
-generateTradeRoutes();
-initSolarView();
-updateHUD();
-animate();
-}
-function animate() {
-requestAnimationFrame(animate);
-const delta = Math.min(clock.getDelta(), 0.1);
-if (isTraveling && travelTarget && travelStartPos) {
-travelProgress += delta / TRAVEL_DURATION;
-let t = travelProgress;
-t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const cur = new THREE.Vector3().lerpVectors(travelStartPos, travelTarget, t);
-controls.target.copy(cur);
-camera.position.copy(cur.clone().add(new THREE.Vector3(0, 30, 60)));
-if (travelProgress >= 1.0) { isTraveling = false; }
-} else if (solarMode) {
-controls.target.copy(sunPosition);
-} else {
-const forward = new THREE.Vector3();
-camera.getWorldDirection(forward);
-const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-const up = new THREE.Vector3(0,1,0);
-const moveVec = new THREE.Vector3();
-if (moveForward) moveVec.addScaledVector(forward, speed * delta);
-if (moveBackward) moveVec.addScaledVector(forward, -speed * delta);
-if (moveRight) moveVec.addScaledVector(right, speed * delta);
-if (moveLeft) moveVec.addScaledVector(right, -speed * delta);
-if (moveUp) moveVec.addScaledVector(up, speed * delta);
-if (moveDown) moveVec.addScaledVector(up, -speed * delta);
-camera.position.add(moveVec);
-controls.target.add(moveVec);
-}
-controls.update();
-player.position.copy(camera.position);
-if (tradeRoutesVisible && dynamicPoints) {
-const positionAttr = dynamicPoints.geometry.attributes.position;
-const array = positionAttr.array;
-for (let i = 0; i < dynamicParticleData.length; i++) {
-const data = dynamicParticleData[i];
-data.t += data.speed * delta;
-if (data.t > 1.0) data.t = 0.0;
-const pos = data.curve.getPoint(data.t);
-array[i*3] = pos.x; array[i*3+1] = pos.y; array[i*3+2] = pos.z;
-}
-positionAttr.needsUpdate = true;
-updateStaticShipsVisibility(camera.position);
-}
-if (solarSystemGroup.visible) {
-planets.forEach(planet => {
-planet.userData.angle += planet.userData.speed * delta;
-planet.position.x = Math.cos(planet.userData.angle) * planet.userData.radius;
-planet.position.z = Math.sin(planet.userData.angle) * planet.userData.radius;
-});
-}
-if (sunRing) sunRing.quaternion.copy(camera.quaternion);
-massiveRings.forEach(r => r.quaternion.copy(camera.quaternion));
-selectionRings.forEach(ring => ring.quaternion.copy(camera.quaternion));
-if (!player.docked && player.currentSystem !== null) {
-const star = starData[player.currentSystem];
-if (star && player.position.distanceTo(star.position) < 60) openTradeStation(player.currentSystem);
-}
-renderer.render(scene, camera);
-labelRenderer.render(scene, camera);
-}
-window.addEventListener('resize', () => {
-camera.aspect = window.innerWidth / window.innerHeight;
-camera.updateProjectionMatrix();
-renderer.setSize(window.innerWidth, window.innerHeight);
-labelRenderer.setSize(window.innerWidth, window.innerHeight);
-});
-// Help overlay dismiss
-document.getElementById('help-overlay').addEventListener('click', function() {
-    this.style.display = 'none';
+document.addEventListener('keyup',e=>{
+  if(solarMode)return;
+  switch(e.code){
+    case'KeyW':moveF=false;break;case'KeyS':moveB=false;break;
+    case'KeyA':moveL=false;break;case'KeyD':moveR=false;break;
+    case'KeyQ':moveU=false;break;case'KeyE':moveD=false;break;
+    case'ShiftLeft':speed/=3;break;
+  }
 });
 
-// Star hover info on mousemove
-let hoverTimeout = null;
-document.addEventListener('mousemove', function(e) {
-    if (hoverTimeout) clearTimeout(hoverTimeout);
-    hoverInfoDiv.style.display = 'none';
-    hoverTimeout = setTimeout(function() {
-        if (!starData.length || !camera) return;
-        const mouse = new THREE.Vector2(
-            (e.clientX / window.innerWidth) * 2 - 1,
-            -(e.clientY / window.innerHeight) * 2 + 1
-        );
-        let bestDist = Infinity, bestIdx = -1;
-        for (let i = 0; i < starData.length; i++) {
-            const star = starData[i];
-            if (!star.position) continue;
-            const vector = star.position.clone().project(camera);
-            if (vector.z > 1) continue;
-            const sx = (vector.x * 0.5 + 0.5) * window.innerWidth;
-            const sy = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-            const dx = sx - e.clientX, dy = sy - e.clientY;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 25 && dist < bestDist) { bestDist = dist; bestIdx = i; }
-        }
-        if (bestIdx !== -1) {
-            const s = starData[bestIdx];
-            const name = s.hip ? 'HIP ' + s.hip : (s.proper || 'Звезда ' + bestIdx);
-            const spec = s.spect || '—';
-            const dist = s.dist ? s.dist.toFixed(1) + ' пк' : '—';
-            const mag = s.mag !== undefined ? s.mag.toFixed(2) : '—';
-            const absmag = s.absmag !== undefined ? s.absmag.toFixed(2) : '—';
-            const distLy = s.dist ? (s.dist * 3.2616).toFixed(1) + ' св.лет' : '—';
-            let spectInfo = '';
-            const sp0 = (spec||'')[0];
-            if(sp0==='O') spectInfo = 'Горячий голубой гигант (>30000K)';
-            else if(sp0==='B') spectInfo = 'Бело-голубая (10000-30000K)';
-            else if(sp0==='A') spectInfo = 'Белая (7500-10000K), пр.: Сириус, Вега';
-            else if(sp0==='F') spectInfo = 'Жёлто-белая (6000-7500K)';
-            else if(sp0==='G') spectInfo = 'Жёлтый карлик (5200-6000K), как Солнце';
-            else if(sp0==='K') spectInfo = 'Оранжевая (3700-5200K)';
-            else if(sp0==='M') spectInfo = 'Красный карлик (<3700K), 75% всех звёзд';
-            hoverInfoDiv.innerHTML = '<div class="hover-info-title">' + name + '</div>' +
-                '<div>Спектр: <span style="color:#ffff88">' + spec + '</span></div>' +
-                (spectInfo ? '<div style="color:#88ccff;font-size:13px;">' + spectInfo + '</div>' : '') +
-                '<div>Расст.: <span style="color:#ffff88">' + dist + '</span> (' + distLy + ')</div>' +
-                '<div>Зв. вел.: <span style="color:#ffff88">' + mag + '</span> (видимая)</div>' +
-                '<div>Абс. вел.: <span style="color:#ffff88">' + absmag + '</span></div>' +
-                '<div style="color:#886644;font-size:12px;margin-top:4px;">1 парсек = 3.26 св.лет = 3.086×10¹³ км</div>';
-            hoverInfoDiv.style.display = 'block';
-            hoverInfoDiv.style.left = e.clientX + 'px';
-            hoverInfoDiv.style.top = (e.clientY - 10) + 'px';
-        }
-    }, 400);
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+async function init(){
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x050510);
+  camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1e7);
+  camera.position.set(0,500,2000);
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  document.body.appendChild(renderer.domElement);
+
+  labelRenderer=new THREE.CSS2DRenderer();
+  labelRenderer.setSize(window.innerWidth,window.innerHeight);
+  labelRenderer.domElement.style.position='absolute';
+  labelRenderer.domElement.style.top='0';
+  labelRenderer.domElement.style.left='0';
+  labelRenderer.domElement.style.pointerEvents='none';
+  labelRenderer.domElement.style.zIndex='500';
+  document.body.appendChild(labelRenderer.domElement);
+
+  // Load stars
+  const raw=await loadStars();
+  document.getElementById('star-count').textContent=`Звёзд: ${raw.length}`;
+  starData=raw.map((s,i)=>{
+    const pos=new THREE.Vector3(s.x,s.y,s.z);
+    const col=starColor(s.bv,s.mag);
+    const sz=Math.max(.5,2.5-(s.mag+5)/5);
+    const props=systemProps(s,i);
+    return {...s,position:pos,color:col,size:sz,...props};
+  });
+
+  // Points mesh
+  const positions=new Float32Array(starData.length*3);
+  const colors=new Float32Array(starData.length*3);
+  const sizes=new Float32Array(starData.length);
+  starData.forEach((s,i)=>{
+    positions[i*3]=s.x;positions[i*3+1]=s.y;positions[i*3+2]=s.z;
+    colors[i*3]=s.color.r;colors[i*3+1]=s.color.g;colors[i*3+2]=s.color.b;
+    sizes[i]=s.size;
+  });
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  geo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
+  starsMat=new THREE.PointsMaterial({size:13,vertexColors:true,map:makeSprite(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+  starsMesh=new THREE.Points(geo,starsMat);
+  scene.add(starsMesh);
+
+  // Solar system & massive stars
+  createSolarSystem();
+  highlightMassive();
+
+  // Controls
+  controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;controls.dampingFactor=.08;
+  controls.screenSpacePanning=true;controls.minDistance=5;controls.maxDistance=50000;
+  controls.zoomSpeed=2;controls.rotateSpeed=.6;controls.target.set(0,0,0);
+
+  player.position=camera.position.clone();
+
+  // Events
+  renderer.domElement.addEventListener('dblclick',onDblClick);
+  renderer.domElement.addEventListener('contextmenu',onRightClick);
+
+  // Planet click
+  renderer.domElement.addEventListener('click',e=>{
+    if(!solarGroup||!solarGroup.visible)return;
+    const mouse=new THREE.Vector2((e.clientX/window.innerWidth)*2-1,-(e.clientY/window.innerHeight)*2+1);
+    const rc=new THREE.Raycaster();rc.setFromCamera(mouse,camera);
+    const hits=rc.intersectObjects(planets);
+    if(hits.length){
+      const pl=hits[0].object,nm=pl.userData.name||'?';
+      document.getElementById('h-planet').textContent=nm;
+      showMsg('🪐 '+nm+': '+pl.userData.desc,false,5000);
+      controls.target.copy(pl.position);
+      if(window.hubMsg){window.hubMsg({type:'location_update',system:'Sol',body:nm});window.hubMsg({type:'status_msg',text:'🪐 '+nm});}
+    }
+  });
+
+  // UI bindings
+  document.getElementById('sl-size').oninput=e=>{starsMat.size=+e.target.value;document.getElementById('v-size').textContent=e.target.value;};
+  document.getElementById('sl-speed').oninput=e=>{speed=+e.target.value;document.getElementById('v-speed').textContent=e.target.value;};
+  document.getElementById('sl-bright').oninput=e=>{starsMat.opacity=+e.target.value;document.getElementById('v-bright').textContent=e.target.value;};
+  document.getElementById('btn-sun').onclick=()=>{if(solarMode)exitSolar();flyTo(new THREE.Vector3(0,0,0),50);};
+  document.getElementById('btn-solar').onclick=()=>{solarMode?exitSolar():enterSolar();};
+  document.getElementById('btn-lines').onclick=()=>{if(solarMode)exitSolar();toggleMassiveLines();};
+  document.getElementById('btn-trade').onclick=()=>{if(solarMode)exitSolar();toggleTrade();};
+  document.getElementById('btn-route').onclick=()=>{if(solarMode)exitSolar();startRouteSelect();};
+  document.getElementById('btn-save').onclick=saveProgress;
+  document.getElementById('btn-load').onclick=loadProgress;
+  document.getElementById('btn-equip').onclick=()=>{if(solarMode)exitSolar();openEquip();};
+  document.getElementById('btn-missions').onclick=()=>{if(solarMode)exitSolar();document.getElementById('missions-panel').style.display='block';};
+  document.getElementById('btn-addwp').onclick=addWaypoint;
+  document.getElementById('sel-calc').onclick=startCalc;
+  document.getElementById('sel-cancel').onclick=cancelRouteSelect;
+  document.getElementById('close-route').onclick=()=>{document.getElementById('route-panel').style.display='none';};
+  document.getElementById('stop-route').onclick=stopCalc;
+  document.getElementById('close-fuel').onclick=()=>{document.getElementById('fuel-panel').style.display='none';};
+  document.getElementById('close-trade').onclick=()=>{document.getElementById('trade-panel').style.display='none';player.docked=false;};
+  document.getElementById('close-equip').onclick=()=>{document.getElementById('equip-panel').style.display='none';};
+  document.getElementById('close-missions').onclick=()=>{document.getElementById('missions-panel').style.display='none';};
+
+  // Start
+  initQuickTravel();
+  buildTradeRoutes();
+  initNews();
+  camera.position.set(100,80,100);controls.target.set(0,0,0);controls.update();
+  updateHUD();
+  animate();
+}
+
+// ═══════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════════════
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),.1);
+
+  if(traveling&&travelTo&&travelFrom){
+    travelT+=dt/1.0;
+    let t=travelT;t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    const cur=new THREE.Vector3().lerpVectors(travelFrom,travelTo,t);
+    controls.target.copy(cur);camera.position.copy(cur.clone().add(new THREE.Vector3(0,30,60)));
+    if(travelT>=1)traveling=false;
+  } else if(solarMode){
+    controls.target.set(0,0,0);
+  } else {
+    const fwd=new THREE.Vector3();camera.getWorldDirection(fwd);
+    const right=new THREE.Vector3().crossVectors(fwd,camera.up).normalize();
+    const mv=new THREE.Vector3();
+    if(moveF)mv.addScaledVector(fwd,speed*dt);
+    if(moveB)mv.addScaledVector(fwd,-speed*dt);
+    if(moveR)mv.addScaledVector(right,speed*dt);
+    if(moveL)mv.addScaledVector(right,-speed*dt);
+    if(moveU)mv.y+=speed*dt;
+    if(moveD)mv.y-=speed*dt;
+    camera.position.add(mv);controls.target.add(mv);
+  }
+  controls.update();
+
+  // Trade route particles
+  if(tradeVisible&&dynPoints){
+    const arr=dynPoints.geometry.attributes.position.array;
+    for(let i=0;i<dynData.length;i++){
+      dynData[i].t+=dynData[i].speed*dt;if(dynData[i].t>1)dynData[i].t=0;
+      const p=dynData[i].curve.getPoint(dynData[i].t);
+      arr[i*3]=p.x;arr[i*3+1]=p.y;arr[i*3+2]=p.z;
+    }
+    dynPoints.geometry.attributes.position.needsUpdate=true;
+    // cull distant ship labels
+    const cp=camera.position;
+    shipLabels.forEach(s=>{const dx=s.position.x-cp.x,dy=s.position.y-cp.y,dz=s.position.z-cp.z;s.visible=tradeVisible&&(dx*dx+dy*dy+dz*dz<640000);});
+  }
+
+  // Planets orbit
+  if(solarGroup&&solarGroup.visible){
+    planets.forEach(p=>{p.userData.angle+=p.userData.speed*dt;p.position.x=Math.cos(p.userData.angle)*p.userData.radius;p.position.z=Math.sin(p.userData.angle)*p.userData.radius;});
+  }
+
+  // Billboard rings
+  massiveRings.forEach(r=>r.quaternion.copy(camera.quaternion));
+  selRings.forEach(r=>r.quaternion.copy(camera.quaternion));
+
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+// Resize
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  labelRenderer.setSize(window.innerWidth,window.innerHeight);
 });
 
-Promise.all([loadNews(), init()]).catch(console.error);
+// Help overlay
+document.getElementById('help').addEventListener('click',function(){this.style.display='none';});
+
+// Launch
+init().catch(console.error);
 </script>
+
+<!-- Parent frame communication -->
 <script>
-window._gs = null;
-window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
-if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
-window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+window._gs=null;
+window.addEventListener('message',e=>{if(e.data&&e.data.type==='game_state')window._gs=e.data.state;});
+if(window.parent!==window)window.parent.postMessage({type:'get_state'},'*');
+window.hubMsg=function(msg){if(window.parent!==window)window.parent.postMessage(msg,'*');};
 </script>
 </body>
 </html>

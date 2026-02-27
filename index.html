@@ -374,6 +374,7 @@ body {
   <button class="nav-btn" data-module="modules/rover.html">РОВЕР</button>
   <button class="nav-btn" data-module="modules/terraforming.html">СКАНЕР</button>
   <button class="nav-btn" data-module="modules/market.html">РЫНОК</button>
+  <button class="nav-btn" data-module="modules/changelog.html">ЖУРНАЛ</button>
   <div id="hud-bar">
     <div class="hud-item"><span class="hud-label">CR:</span><span class="hud-val" id="hud-credits">50,000</span></div>
     <div class="hud-item"><span class="hud-label">FUEL:</span><span class="hud-val" id="hud-fuel">7.0</span></div>
@@ -446,6 +447,11 @@ body {
         <div class="icon">📈</div>
         <div class="name">РЫНОК</div>
         <div class="desc">5 секторов, CoinGecko API, спарклайны, корпорации</div>
+      </div>
+      <div class="welcome-card" data-module="modules/changelog.html">
+        <div class="icon">📋</div>
+        <div class="name">ЖУРНАЛ</div>
+        <div class="desc">Бортовой журнал разработки — все обновления, патчи, hot news</div>
       </div>
       <div class="welcome-card" id="card-profile">
         <div class="icon">👨‍🚀</div>
@@ -668,7 +674,8 @@ function navigateTo(module) {
     'modules/planetarium.html': 'ПЛАНЕТАРИЙ',
     'modules/rover.html': 'РОВЕР',
     'modules/terraforming.html': 'СКАНЕР',
-    'modules/market.html': 'РЫНОК'
+    'modules/market.html': 'РЫНОК',
+    'modules/changelog.html': 'ЖУРНАЛ'
   };
   document.getElementById('status-msg').textContent = `Модуль: ${names[module] || module}`;
 }
@@ -897,7 +904,8 @@ const TIPS = {
   'modules/planetarium.html': 'Планетарий: 8 типов планет (внизу). Каждая с атмосферой, кольцами, уникальными ресурсами. Генерация процедурная. Добыча ресурсов привязана к экономике.',
   'modules/rover.html': 'Ровер на процедурной планете. WASD — движение. ➕ — новый ровер, ➖ — удалить, 🚀 — запуск ресурсов на орбиту, 🎲 — новый мир. Ресурсы появляются при движении.',
   'modules/terraforming.html': 'Спутниковый сканер: тянуть мышью — прокрутка карты, колесо — зум. 🎲 — новый скан планеты. ⛏ — разведка (добыть ресурс в трюм). 8 биомов.',
-  'modules/market.html': 'Биржа: 5 секторов (добыча, энергия, био, хайтек, роскошь). Спарклайны — динамика цен. Покупай/продавай акции. Цены обновляются. Связано с добычей.'
+  'modules/market.html': 'Биржа: 5 секторов (добыча, энергия, био, хайтек, роскошь). Спарклайны — динамика цен. Покупай/продавай акции. Цены обновляются. Связано с добычей.',
+  'modules/changelog.html': 'Бортовой журнал разработки. Все обновления, патчи и новые фичи в стиле hot news. Фильтры по категориям, таймлайн версий.'
 };
 
 document.querySelectorAll('.nav-btn[data-module], .welcome-card[data-module]').forEach(el => {
