@@ -713,7 +713,7 @@
     let apiError = false;
     let nextUpdateTime = Date.now() + 10 * 60 * 1000;
     let autosaveTimer = null;
-    const STORAGE_KEY = 'elite_markets_config';
+    const STORAGE_KEY = 'elite_markets_v2';
 
     // ================== СОХРАНЕНИЕ/ЗАГРУЗКА ==================
     function saveToLocalStorage() {
@@ -757,7 +757,6 @@
         }
     }
 
-    // Инициализация ресурсов по умолчанию
     function initDefaultResources() {
         markets.mining.resources = buildMiningResources();
         markets.energy.resources = buildEnergyResources();
@@ -765,6 +764,15 @@
         markets.industry.resources = buildIndustryResources();
         markets.data.resources = buildDataResources();
         markets.crypto.resources = buildCryptoResources();
+    }
+
+    function ensureAllSectors() {
+        if (!markets.mining.resources.length) markets.mining.resources = buildMiningResources();
+        if (!markets.energy.resources.length) markets.energy.resources = buildEnergyResources();
+        if (!markets.bio.resources.length) markets.bio.resources = buildBioResources();
+        if (!markets.industry.resources.length) markets.industry.resources = buildIndustryResources();
+        if (!markets.data.resources.length) markets.data.resources = buildDataResources();
+        if (!markets.crypto.resources.length) markets.crypto.resources = buildCryptoResources();
     }
 
     // Применить цвета и сбросить временные данные
@@ -1263,6 +1271,7 @@
         if (!loaded) {
             initDefaultResources();
         }
+        ensureAllSectors();
         applyColorsAndReset();
         initPricesAndTrades();
         renderCorporations();
@@ -1280,53 +1289,51 @@
             updateCurrentMarket(true);
         });
 
-        // export/import removed — not needed for players
+        // Hub communication
+        window._gs = null;
+        window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
+        if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
+        window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+
+        function showTradeMsg(text) {
+            const d = document.createElement('div');
+            d.className = 'trade-msg';
+            d.textContent = text;
+            document.body.appendChild(d);
+            setTimeout(() => d.remove(), 3000);
+        }
+
+        window._buyResource = function(marketKey, idx) {
+            const m = markets[marketKey];
+            if (!m) return;
+            const r = m.resources[idx];
+            if (!r) return;
+            const price = m.currentPrices[r.name] || r.basePrice;
+            if (window.hubMsg) {
+                window.hubMsg({ type: 'credits_change', amount: -Math.round(price) });
+                window.hubMsg({ type: 'cargo_add', name: r.name, qty: 1, price: Math.round(price) });
+                window.hubMsg({ type: 'stat_increment', stat: 'trades' });
+                window.hubMsg({ type: 'status_msg', text: 'Куплено: ' + r.name + ' за ₡' + price.toFixed(0) });
+            }
+            showTradeMsg('🪙 Куплено: ' + r.name + ' — ₡' + price.toFixed(0));
+        };
+
+        window._sellResource = function(marketKey, idx) {
+            const m = markets[marketKey];
+            if (!m) return;
+            const r = m.resources[idx];
+            if (!r) return;
+            const price = m.currentPrices[r.name] || r.basePrice;
+            const sellPrice = Math.round(price * 0.85);
+            if (window.hubMsg) {
+                window.hubMsg({ type: 'credits_change', amount: sellPrice });
+                window.hubMsg({ type: 'stat_increment', stat: 'trades' });
+                window.hubMsg({ type: 'status_msg', text: 'Продано: ' + r.name + ' за ₡' + sellPrice });
+            }
+            showTradeMsg('💰 Продано: ' + r.name + ' — ₡' + sellPrice);
+        };
     });
 })();
-</script>
-<script>
-window._gs = null;
-window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
-if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
-window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
-
-function showTradeMsg(text) {
-    const d = document.createElement('div');
-    d.className = 'trade-msg';
-    d.textContent = text;
-    document.body.appendChild(d);
-    setTimeout(() => d.remove(), 3000);
-}
-
-window._buyResource = function(marketKey, idx) {
-    const m = markets[marketKey];
-    if (!m) return;
-    const r = m.resources[idx];
-    if (!r) return;
-    const price = m.currentPrices[r.name] || r.basePrice;
-    if (window.hubMsg) {
-        window.hubMsg({ type: 'credits_change', amount: -Math.round(price) });
-        window.hubMsg({ type: 'cargo_add', name: r.name, qty: 1, price: Math.round(price) });
-        window.hubMsg({ type: 'stat_increment', stat: 'trades' });
-        window.hubMsg({ type: 'status_msg', text: `Куплено: ${r.name} за ₡${price.toFixed(0)}` });
-    }
-    showTradeMsg(`🪙 Куплено: ${r.name} — ₡${price.toFixed(0)}`);
-};
-
-window._sellResource = function(marketKey, idx) {
-    const m = markets[marketKey];
-    if (!m) return;
-    const r = m.resources[idx];
-    if (!r) return;
-    const price = m.currentPrices[r.name] || r.basePrice;
-    const sellPrice = Math.round(price * 0.85);
-    if (window.hubMsg) {
-        window.hubMsg({ type: 'credits_change', amount: sellPrice });
-        window.hubMsg({ type: 'stat_increment', stat: 'trades' });
-        window.hubMsg({ type: 'status_msg', text: `Продано: ${r.name} за ₡${sellPrice}` });
-    }
-    showTradeMsg(`💰 Продано: ${r.name} — ₡${sellPrice}`);
-};
 </script>
 </body>
 </html>
