@@ -167,10 +167,12 @@ canvas { display:block; }
 
   #quicktravel { display:none; }
   #news-widget { display:none; }
+  #news-modal { width:95vw !important; max-height:70vh; padding:12px; }
   #hover-info { display:none !important; }
 
   .modal-panel { width:95vw; max-height:70vh; padding:12px; font-size:13px; }
   .modal-panel h3 { font-size:10px; }
+  #equip-slots { grid-template-columns:repeat(3,1fr) !important; }
 
   #route-panel { top:60px; left:6px; width:calc(100vw - 12px); max-height:60vh; padding:8px; }
   #star-select { top:60px; width:90vw; left:5vw; transform:none; padding:10px; }
@@ -807,7 +809,7 @@ document.getElementById('ctx-delete').onclick=()=>{
 //  TRADING
 // ═══════════════════════════════════════════════════
 function openTrade(idx){
-  if(player.docked)return;player.docked=true;
+  player.docked=true;
   const s=starData[idx];
   document.getElementById('st-name').textContent=s.hip?`HIP ${s.hip}`:'Станция';
   let h='';GOODS.forEach((g,i)=>{
