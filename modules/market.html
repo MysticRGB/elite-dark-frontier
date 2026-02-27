@@ -134,17 +134,7 @@
         button:active {
             background: #9f4f2e;
         }
-        .export-import {
-            display: flex;
-            gap: 12px;
-        }
-        .export-import button {
-            background: #6b4f3a;
-            border-color: #9b7b5a;
-        }
-        .export-import button:hover {
-            background: #7b5f4a;
-        }
+        
         .autosave-status {
             font-size: 0.8rem;
             color: #6b8e23;
@@ -318,7 +308,7 @@
     <h1>⚡ ЭЛИТА: ТЁМНЫЙ ФРОНТИР – ВЕРФИ ПРОМЫШЛЕННОСТИ</h1>
     <div class="subtitle">биржевые площадки сектора "Охристая туманность"</div>
 
-    <div id="api-error" class="api-error">⚠️ СЕРВЕР НЕ ДОСТУПЕН ⚠️</div>
+    <div id="api-error" class="api-error" style="display:none;">⚠️ Привязка к CoinGecko временно недоступна — используются игровые цены ⚠️</div>
 
     <!-- Вкладки -->
     <div class="tabs" id="marketTabs">
@@ -351,10 +341,6 @@
                     <span>🕒 обновление: <span id="last-update-time">—</span></span>
                     <span class="badge" id="next-update">10:00</span>
                     <button id="manual-update">⟳ Обновить сейчас</button>
-                    <div class="export-import">
-                        <button id="export-json">📤 Экспорт JSON</button>
-                        <button id="import-json">📥 Импорт JSON</button>
-                    </div>
                     <span id="autosave-status" class="autosave-status">✅ автосохранение</span>
                 </div>
             </div>
@@ -920,11 +906,14 @@
             console.warn('Ошибка API', e);
             apiError = true;
             document.getElementById('api-error').style.display = 'block';
+            const FALLBACK = {
+                'bitcoin':65000,'ethereum':3500,'solana':145,'dogecoin':0.15,'chainlink':18,
+                'matic-network':0.85,'litecoin':85,'ripple':0.62,'cardano':0.55,'binancecoin':580,
+                'polkadot':7.5,'avalanche-2':35,'stellar':0.12,'cosmos':9.5,'uniswap':11,'polygon':0.85
+            };
             const fallback = {};
             uniqueIds.forEach(id => {
-                fallback[id] = prevCryptoPrices[id] || 
-                    (id === 'bitcoin' ? 65000 : 
-                     id === 'ethereum' ? 3500 : 100);
+                fallback[id] = prevCryptoPrices[id] || FALLBACK[id] || (50 + Math.random() * 200);
             });
             return fallback;
         }
@@ -1174,7 +1163,7 @@
         renderPrices(market);
     }
 
-    // ================== ЭКСПОРТ/ИМПОРТ ==================
+    // ================== (экспорт/импорт удалены — не нужны игроку) ==================
     function exportConfig() {
         const config = {};
         for (let key in markets) {
@@ -1291,16 +1280,7 @@
             updateCurrentMarket(true);
         });
 
-        document.getElementById('export-json').addEventListener('click', exportConfig);
-
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.json,application/json';
-        fileInput.style.display = 'none';
-        fileInput.id = 'import-file-input';
-        document.body.appendChild(fileInput);
-        fileInput.addEventListener('change', importConfig);
-        document.getElementById('import-json').addEventListener('click', () => fileInput.click());
+        // export/import removed — not needed for players
     });
 })();
 </script>
@@ -1326,8 +1306,8 @@ window._buyResource = function(marketKey, idx) {
     const price = m.currentPrices[r.name] || r.basePrice;
     if (window.hubMsg) {
         window.hubMsg({ type: 'credits_change', amount: -Math.round(price) });
-        window.hubMsg({ type: 'cargo_add', resource: r.name, amount: 1 });
-        window.hubMsg({ type: 'stat_increment', stat: 'traded' });
+        window.hubMsg({ type: 'cargo_add', name: r.name, qty: 1, price: Math.round(price) });
+        window.hubMsg({ type: 'stat_increment', stat: 'trades' });
         window.hubMsg({ type: 'status_msg', text: `Куплено: ${r.name} за ₡${price.toFixed(0)}` });
     }
     showTradeMsg(`🪙 Куплено: ${r.name} — ₡${price.toFixed(0)}`);
@@ -1342,7 +1322,7 @@ window._sellResource = function(marketKey, idx) {
     const sellPrice = Math.round(price * 0.85);
     if (window.hubMsg) {
         window.hubMsg({ type: 'credits_change', amount: sellPrice });
-        window.hubMsg({ type: 'stat_increment', stat: 'traded' });
+        window.hubMsg({ type: 'stat_increment', stat: 'trades' });
         window.hubMsg({ type: 'status_msg', text: `Продано: ${r.name} за ₡${sellPrice}` });
     }
     showTradeMsg(`💰 Продано: ${r.name} — ₡${sellPrice}`);
