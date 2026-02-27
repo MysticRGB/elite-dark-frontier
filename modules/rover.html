@@ -20,8 +20,8 @@
         }
         #main-container {
             position: relative;
-            width: 1024px;
-            height: 768px;
+            width: 100%;
+            height: 100vh;
             pointer-events: all;
             z-index: 2000;
         }
@@ -330,7 +330,7 @@
     <div id="main-container">
         <div class="constructor-frame">
             <div class="constructor-header">
-                <span class="constructor-title" id="terrain-title">⚙️ 6x6 · VISIBLE DEPTH · CARGO SYMBOLS</span>
+                <span class="constructor-title" id="terrain-title">⚙️ РОВЕР · РАЗВЕДКА ПЛАНЕТЫ · [?]</span>
                 <div class="button-group">
                     <button class="btn-small" id="randomize-btn">🎲</button>
                     <button class="btn-small spawn" id="spawn-btn">➕</button>
@@ -367,7 +367,7 @@
             </div>
         </div>
     </div>
-    <div class="tooltip" id="tooltip">🎲 NEW WORLD • WASD • SHIFT • +/- • DOUBLE-CLICK TO FOCUS • RIGHT-CLICK NODE TO LAUNCH • Ctrl+S to overwrite • Ctrl+click on world to delete</div>
+    <div class="tooltip" id="tooltip">🎲 НОВЫЙ МИР • WASD — управление • SHIFT — ускорение • +/- — масштаб • ДВ.КЛИК — фокус на ровере • ПКМ по ресурсу — запуск на орбиту • Ctrl+S — сохранить мир • ➕ — добавить ровер</div>
     <div id="context-menu"></div>
     <button id="order-btn">🔬 Заказать моделирование</button>
     <div class="marker-tooltip" id="marker-tooltip">Обнаружены залежи</div>
@@ -1282,9 +1282,9 @@
         selectedRover = rovers[0];
         updateSelectedName();
 
-        const startTarget = selectedRover.group.position.clone().add(new THREE.Vector3(0, 2, 0));
+        const startTarget = selectedRover.group.position.clone().add(new THREE.Vector3(0, 1, 0));
         controls.target.copy(startTarget);
-        camera.position.copy(selectedRover.group.position.clone().add(new THREE.Vector3(0, 4, 12)));
+        camera.position.copy(selectedRover.group.position.clone().add(new THREE.Vector3(0, 3, 8)));
         controls.update();
 
         function updateTimecode() {

@@ -651,6 +651,13 @@
                 });
                 document.getElementById('ship-add-module-btn').addEventListener('click', addNextModule);
                 document.getElementById('ship-reset-btn').addEventListener('click', resetShip);
+                (function shipAnimate() {
+                    requestAnimationFrame(shipAnimate);
+                    if (!isDragging) {
+                        shipGroup.rotation.y += 0.003;
+                    }
+                    renderer.render(scene, camera);
+                })();
             }
             window.addEventListener('load', init);
         })();
@@ -1133,6 +1140,13 @@
                 });
                 document.getElementById('transporter-add-module-btn').addEventListener('click', addVersion);
                 document.getElementById('transporter-reset-btn').addEventListener('click', resetShip);
+                (function transportAnimate() {
+                    requestAnimationFrame(transportAnimate);
+                    if (!isDragging) {
+                        shipGroup.rotation.y += 0.002;
+                    }
+                    renderer.render(scene, camera);
+                })();
             }
             window.addEventListener('load', init);
         })();
@@ -1521,6 +1535,13 @@
                 });
                 document.getElementById('station-add-module-btn').addEventListener('click', addNextModule);
                 document.getElementById('station-reset-btn').addEventListener('click', resetStation);
+                (function stationAnimate() {
+                    requestAnimationFrame(stationAnimate);
+                    if (!isDragging) {
+                        stationGroup.rotation.y += 0.0015;
+                    }
+                    renderer.render(scene, camera);
+                })();
             }
             window.addEventListener('load', init);
         })();

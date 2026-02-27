@@ -5,35 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>10 градиентов · 7 стадий · мягкая кисть 150px</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        body { margin: 0; overflow: hidden; font-family: 'VT323', monospace; touch-action: none; color: #ffaa00; }
         #info {
             position: absolute; bottom: 20px; left: 20px;
-            background: rgba(20,20,20,0.85); color: #eee;
-            padding: 12px 24px; border-radius: 40px;
-            backdrop-filter: blur(5px); border: 1px solid #444;
-            font-size: 14px; pointer-events: none; z-index: 10;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.9); color: #ffdd88;
+            padding: 12px 24px; border: 2px solid #ffaa00;
+            font-size: 16px; pointer-events: none; z-index: 10;
+            box-shadow: 0 0 15px rgba(255,170,0,0.3);
         }
-        #info span { color: #ffaa66; font-weight: bold; }
+        #info span { color: #ffff88; font-weight: bold; }
         #status {
             position: absolute; top: 20px; right: 20px;
-            background: rgba(10,10,10,0.8); color: #ddd;
-            padding: 8px 18px; border-radius: 30px;
-            font-size: 14px; border: 1px solid #333;
-            backdrop-filter: blur(4px); z-index: 30;
-            cursor: pointer; user-select: none; transition: background 0.2s;
+            background: rgba(0,0,0,0.9); color: #ffdd88;
+            padding: 10px 20px; border: 2px solid #ffaa00;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(255,170,0,0.3);
+            z-index: 30; cursor: pointer; user-select: none; transition: all 0.2s;
         }
-        #status:hover { background: rgba(30,30,40,0.9); border-color: #88ccff; }
-        #progressPercent { color: #ffaa66; font-weight: 600; }
-        #levelDisplay { color: #88ccff; font-weight: 600; text-decoration: underline dotted; }
+        #status:hover { border-color: #ffff88; box-shadow: 0 0 25px rgba(255,170,0,0.5); }
+        #progressPercent { color: #ffff88; font-weight: bold; }
+        #levelDisplay { color: #88ff88; font-weight: bold; text-decoration: underline dotted; }
         #gradient-panel {
             position: absolute; top: 80px; right: 20px;
-            background: rgba(10,10,10,0.8); backdrop-filter: blur(5px);
-            border: 1px solid #444; border-radius: 20px;
-            padding: 15px; color: #ddd; width: 260px; z-index: 40;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.9); border: 2px solid #ffaa00;
+            padding: 15px; color: #ffdd88; width: 260px; z-index: 40;
+            box-shadow: 0 0 15px rgba(255,170,0,0.3);
+            max-height: calc(100vh - 120px); overflow-y: auto;
         }
-        #gradient-panel h3 { margin: 0 0 12px 0; font-size: 16px; text-align: center; color: #ffaa66; }
+        #gradient-panel h3 { margin: 0 0 12px 0; font-size: 18px; text-align: center; color: #ffff88; }
         .gradient-option { margin-bottom: 8px; display: flex; align-items: center; }
         .gradient-option input[type="radio"] { margin-right: 10px; accent-color: #88ccff; transform: scale(1.1); cursor: pointer; }
         .gradient-option label { cursor: pointer; font-size: 13px; }
@@ -102,10 +102,11 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         // ==================== НАСТРОЙКИ ====================
-        const STAGES = 7;                    // сколько кликов нужно для полного «исцеления»
-        const BRUSH_RADIUS_PX = 150;         // радиус кисти в пикселях
-        const BASE_STEP = 1 / STAGES;        // базовый шаг прогресса за один «полный» клик
-        const FALLOFF_EXP = 2;               // степень затухания: 1=линейно, 2=квадратично (мягче)
+        const STAGES = 7;
+        const BRUSH_RADIUS_PX = 150;
+        const BASE_STEP = 1 / STAGES;
+        const FALLOFF_EXP = 2;
+        const START_LEVEL = 4; // начинаем с 4 — чтобы были видны цвета сразу
 
         // ==================== СЦЕНА ====================
         const scene = new THREE.Scene();
@@ -370,6 +371,14 @@
             if (affected > 0) {
                 updatePositionsAndColors();
                 updateDisplay();
+                // Частицы
+                const hitPoint = intersects[0].point;
+                const hitColor = getColorByPosition(hitPoint.x, hitPoint.y, hitPoint.z);
+                for (let j = 0; j < 8; j++) spawnSculptParticle(hitPoint.clone().add(new THREE.Vector3((Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3)), hitColor);
+                // Экономика
+                if (window.hubMsg) {
+                    window.hubMsg({type:'stat_increment', stat:'sculpted', amount:1});
+                }
             }
         }
 
@@ -423,12 +432,49 @@
             gradientList.appendChild(div);
         });
 
+        // ==================== ЧАСТИЦЫ ПРИ СКУЛЬПТИНГЕ ====================
+        const sculptParticles = [];
+        function spawnSculptParticle(pos, color) {
+            const geo = new THREE.SphereGeometry(0.03, 4, 4);
+            const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.9 });
+            const p = new THREE.Mesh(geo, mat);
+            p.position.copy(pos);
+            const dir = pos.clone().normalize();
+            p.userData.vel = dir.multiplyScalar(0.05 + Math.random() * 0.1);
+            p.userData.life = 1.0;
+            scene.add(p);
+            sculptParticles.push(p);
+        }
+
+        // Хук: при скульпте — отправляем прогресс в экономику
+        const origApply = applySculptAtMouse;
+
         // ==================== ЗАПУСК ====================
-        createAsteroid(1);
+        createAsteroid(START_LEVEL);
 
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
+            
+            // Авто-вращение
+            if (asteroidMesh && !controls.enableRotate) {
+                asteroidMesh.rotation.y += 0.003;
+                wireframeMesh.rotation.y += 0.003;
+            }
+            
+            // Обновляем частицы
+            for (let i = sculptParticles.length - 1; i >= 0; i--) {
+                const p = sculptParticles[i];
+                p.position.add(p.userData.vel);
+                p.userData.life -= 0.02;
+                p.material.opacity = p.userData.life;
+                p.scale.multiplyScalar(0.97);
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    sculptParticles.splice(i, 1);
+                }
+            }
+            
             renderer.render(scene, camera);
         }
         animate();

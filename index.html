@@ -149,6 +149,70 @@ body {
 }
 .welcome-card .desc { font-size: 14px; color: #cc8800; }
 
+/* --- TOOLTIPS --- */
+.game-tooltip {
+  position: fixed; z-index: 99000; pointer-events: none;
+  background: rgba(0,0,0,0.95); border: 2px solid #ffaa00;
+  color: #ffdd88; padding: 8px 14px; font-size: 15px;
+  max-width: 280px; opacity: 0; transition: opacity .2s;
+  box-shadow: 0 0 15px rgba(255,170,0,0.3);
+  font-family: 'VT323', monospace;
+}
+.game-tooltip.visible { opacity: 1; }
+
+/* --- ANIMATIONS --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(255,170,0,0.2); }
+  50% { box-shadow: 0 0 20px rgba(255,170,0,0.5); }
+}
+@keyframes scanline-move {
+  from { background-position: 0 0; }
+  to { background-position: 0 4px; }
+}
+.welcome-card { animation: fadeInUp 0.4s ease both; }
+.welcome-card:nth-child(1) { animation-delay: 0.05s; }
+.welcome-card:nth-child(2) { animation-delay: 0.1s; }
+.welcome-card:nth-child(3) { animation-delay: 0.15s; }
+.welcome-card:nth-child(4) { animation-delay: 0.2s; }
+.welcome-card:nth-child(5) { animation-delay: 0.25s; }
+.welcome-card:nth-child(6) { animation-delay: 0.3s; }
+.welcome-card:nth-child(7) { animation-delay: 0.35s; }
+.welcome-card:nth-child(8) { animation-delay: 0.4s; }
+.welcome-card:nth-child(9) { animation-delay: 0.45s; }
+.nav-btn { transition: all .15s, box-shadow .3s; }
+.nav-btn:active { transform: scale(0.95); }
+.nav-btn.active { animation: pulse-glow 2s ease-in-out infinite; }
+.hud-val { transition: color .3s; }
+
+/* --- LEVEL BADGES --- */
+.level-badge {
+  display: inline-block; padding: 2px 8px;
+  border: 1px solid #ffaa00; background: rgba(255,170,0,0.1);
+  font-family: 'Press Start 2P', cursive; font-size: 8px;
+  color: #ffff88; margin-left: 6px;
+}
+.skill-tree { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.skill-item {
+  border: 1px solid #443311; padding: 8px; text-align: center;
+  transition: all .2s; cursor: default;
+}
+.skill-item.unlocked { border-color: #ffaa00; background: rgba(255,170,0,0.1); }
+.skill-item .skill-name { font-size: 12px; color: #cc8800; }
+.skill-item .skill-level { font-size: 18px; color: #ffff88; font-weight: bold; }
+.skill-item .skill-bar { height: 4px; background: #221100; margin-top: 4px; }
+.skill-item .skill-fill { height: 100%; background: #ffaa00; transition: width .3s; }
+
+/* HUD flash effect */
+@keyframes hud-flash {
+  0% { color: #88ff88; text-shadow: 0 0 10px #88ff88; }
+  100% { color: #ffff88; text-shadow: none; }
+}
+.hud-val.flash { animation: hud-flash 0.6s ease; }
+
 /* --- NEWS TICKER on welcome --- */
 .news-ticker-wrap {
   width: 100%; max-width: 900px;
@@ -234,8 +298,13 @@ body {
   z-index: 10000;
   gap: 20px;
 }
-#status-msg { flex: 1; }
+#status-msg { flex: 1; transition: color .3s; }
 #status-loc { color: #cc8800; }
+@keyframes status-flash {
+  0% { color: #88ff88; text-shadow: 0 0 8px #88ff88; }
+  100% { color: #886622; text-shadow: none; }
+}
+#status-msg.flash { animation: status-flash 1s ease; }
 </style>
 </head>
 <body>
@@ -334,6 +403,9 @@ body {
   <h2>КАБИНЕТ КОМАНДОРА</h2>
   <div id="profile-content"></div>
 </div>
+
+<!-- TOOLTIP -->
+<div class="game-tooltip" id="game-tooltip"></div>
 
 <!-- STATUS BAR -->
 <div id="status-bar">
@@ -491,21 +563,55 @@ document.getElementById('card-profile').addEventListener('click', () => {
   renderProfile();
 });
 
+function calcSkills(s) {
+  const skills = {
+    navigation: { name: 'Навигация', icon: '🧭', xp: s.stats.jumps * 10 + s.stats.distanceLY * 2 },
+    trade: { name: 'Торговля', icon: '💰', xp: s.stats.trades * 15 + s.stats.stockTrades * 10 },
+    mining: { name: 'Добыча', icon: '⛏️', xp: s.stats.mined * 12 + (s.stats.sculpted || 0) * 5 },
+    exploration: { name: 'Разведка', icon: '🔭', xp: s.stats.planetsScanned * 20 + s.stats.roversDeployed * 15 },
+    engineering: { name: 'Инженерия', icon: '🔧', xp: Math.floor(s.credits / 1000) + s.cargo.length * 5 },
+    combat: { name: 'Боевые', icon: '⚔️', xp: s.stats.mined * 3 + s.stats.jumps * 2 },
+  };
+  Object.values(skills).forEach(sk => {
+    sk.level = Math.min(50, Math.floor(Math.sqrt(sk.xp / 10)));
+    sk.nextXP = Math.pow(sk.level + 1, 2) * 10;
+    sk.pct = sk.nextXP > 0 ? Math.min(100, (sk.xp / sk.nextXP) * 100) : 100;
+  });
+  return skills;
+}
+
 function renderProfile() {
   const s = gameState;
   const cargoWeight = s.cargo.reduce((sum, c) => sum + (c.qty || 1), 0);
   const ranks = ['Новобранец','Пилот','Навигатор','Капитан','Коммандер','Адмирал','Элита'];
-  const xp = s.stats.jumps + s.stats.trades * 2 + s.stats.mined * 3 + s.stats.planetsScanned * 5;
-  const rankIdx = Math.min(ranks.length - 1, Math.floor(xp / 50));
+  const skills = calcSkills(s);
+  const totalLevel = Object.values(skills).reduce((sum, sk) => sum + sk.level, 0);
+  const rankIdx = Math.min(ranks.length - 1, Math.floor(totalLevel / 10));
   s.pilot.rank = ranks[rankIdx];
-  const nextRankXP = (rankIdx + 1) * 50;
+  const xp = Object.values(skills).reduce((sum, sk) => sum + sk.xp, 0);
+  const nextRankXP = (rankIdx + 1) * 600;
   const pct = Math.min(100, (xp / nextRankXP) * 100);
 
   let html = `
     <div class="prof-row"><span class="prof-label">ИМЯ:</span><span class="prof-val">${s.pilot.name}</span></div>
-    <div class="prof-row"><span class="prof-label">РАНГ:</span><span class="prof-val">${s.pilot.rank}</span></div>
+    <div class="prof-row"><span class="prof-label">РАНГ:</span><span class="prof-val">${s.pilot.rank} <span class="level-badge">LV ${totalLevel}</span></span></div>
     <div class="prof-row"><span class="prof-label">ФРАКЦИЯ:</span><span class="prof-val">${s.pilot.faction}</span></div>
     <div class="prof-bar-wrap"><span class="prof-label" style="width:60px">XP:</span><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${pct}%"></div></div><span class="prof-val">${xp}/${nextRankXP}</span></div>
+
+    <div class="prof-section">
+      <div class="prof-section-title">НАВЫКИ</div>
+      <div class="skill-tree">
+        ${Object.entries(skills).map(([k, sk]) => `
+          <div class="skill-item ${sk.level > 0 ? 'unlocked' : ''}">
+            <div style="font-size:20px;">${sk.icon}</div>
+            <div class="skill-name">${sk.name}</div>
+            <div class="skill-level">LV ${sk.level}</div>
+            <div class="skill-bar"><div class="skill-fill" style="width:${sk.pct}%"></div></div>
+            <div style="font-size:11px;color:#886622;">${sk.xp}/${sk.nextXP} XP</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
 
     <div class="prof-section">
       <div class="prof-section-title">ФИНАНСЫ</div>
@@ -537,9 +643,9 @@ function renderProfile() {
       <div class="prof-section-title">РЕПУТАЦИЯ</div>
       ${Object.entries(s.reputation).map(([k, v]) => {
         const names = { traders:'Торговцы', miners:'Шахтёры', explorers:'Исследователи', military:'Военные' };
-        const pct = Math.min(100, Math.max(0, v));
+        const rpct = Math.min(100, Math.max(0, v));
         return `<div class="prof-row"><span class="prof-label">${names[k]||k}:</span><span class="prof-val">${v}</span></div>
-        <div class="prof-bar-wrap"><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${pct}%"></div></div></div>`;
+        <div class="prof-bar-wrap"><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${rpct}%"></div></div></div>`;
       }).join('')}
     </div>
 
@@ -564,15 +670,18 @@ window.addEventListener('message', (e) => {
       gameState.credits += msg.amount;
       if (msg.amount > 0) gameState.stats.totalProfit += msg.amount;
       updateHUD(); saveGameState();
+      flashHUD('hud-credits');
       break;
     case 'fuel_change':
       gameState.fuel = Math.max(0, Math.min(gameState.maxFuel, gameState.fuel + msg.amount));
       updateHUD(); saveGameState();
+      flashHUD('hud-fuel');
       break;
     case 'cargo_add':
       if (gameState.cargo.length < gameState.maxCargo) {
         gameState.cargo.push({ name: msg.name, qty: msg.qty || 1, price: msg.price || 0 });
         updateHUD(); saveGameState();
+        flashHUD('hud-cargo');
       }
       break;
     case 'cargo_sell':
@@ -608,7 +717,11 @@ window.addEventListener('message', (e) => {
       moduleFrame.contentWindow.postMessage({ type: 'game_state', state: gameState }, '*');
       break;
     case 'status_msg':
-      document.getElementById('status-msg').textContent = msg.text;
+      const smEl = document.getElementById('status-msg');
+      smEl.textContent = msg.text;
+      smEl.classList.remove('flash');
+      void smEl.offsetWidth;
+      smEl.classList.add('flash');
       break;
   }
 });
@@ -622,6 +735,48 @@ moduleFrame.addEventListener('load', () => {
       } catch(e) {}
     }, 500);
   }
+});
+
+// ============================================================
+// HUD FLASH
+// ============================================================
+function flashHUD(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 600);
+}
+
+// ============================================================
+// TOOLTIP SYSTEM
+// ============================================================
+const tooltipEl = document.getElementById('game-tooltip');
+const TIPS = {
+  'modules/starmap.html': 'Карта звёздного неба. Кликни, чтобы активировать камеру. WASD — полёт. Двойной клик по звезде — перелёт. ПКМ — маршрут.',
+  'modules/constructors.html': 'Верфь. Здесь можно осматривать и модифицировать корабли, транспорты и станции. Выбирай модели и вращай 3D-модели.',
+  'modules/mining.html': 'Добыча. Летай на корабле и стреляй по астероидам лазером. Собирай руду — она попадает в трюм.',
+  'modules/asteroid.html': 'Скульптинг астероида. Кликай по поверхности — 7 стадий обработки. Ctrl+мышь — мягкая кисть. Справа — выбор градиента.',
+  'modules/planetarium.html': 'Планетарий. Генерация процедурных планет с атмосферой и кольцами. Выбирай тип планеты внизу. Добывай ресурсы.',
+  'modules/rover.html': 'Ровер. WASD — управление, ➕ — новый ровер, 🚀 — запуск ресурсов на орбиту. ПКМ по ресурсу — отправить.',
+  'modules/terraforming.html': 'Сканер. Перетаскивай мышью карту. Колесо — зум. 🎲 — новый скан. ⛏ — разведка ресурсов.',
+  'modules/market.html': 'Рынок. 5 секторов экономики. Следи за ценами, покупай акции, торгуй. Спарклайны показывают динамику.'
+};
+
+document.querySelectorAll('.nav-btn[data-module], .welcome-card[data-module]').forEach(el => {
+  el.addEventListener('mouseenter', (e) => {
+    const mod = el.dataset.module;
+    if (!TIPS[mod]) return;
+    tooltipEl.textContent = TIPS[mod];
+    tooltipEl.classList.add('visible');
+    const rect = el.getBoundingClientRect();
+    tooltipEl.style.left = Math.min(rect.left, window.innerWidth - 290) + 'px';
+    tooltipEl.style.top = (rect.bottom + 8) + 'px';
+  });
+  el.addEventListener('mouseleave', () => {
+    tooltipEl.classList.remove('visible');
+  });
 });
 
 // ============================================================

@@ -458,6 +458,22 @@ pointer-events: none;
 </head>
 <body>
 <div id="screen-overlay"></div>
+<div id="help-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:20px;font-family:'VT323',monospace;">
+  <div style="font-family:'Press Start 2P',cursive;font-size:18px;color:#ffff88;text-shadow:0 0 20px #ffaa00;">КАРТА ЗВЁЗДНОГО НЕБА</div>
+  <div style="color:#ffdd88;font-size:22px;max-width:500px;text-align:center;line-height:1.6;">
+    <div style="margin-bottom:12px;border-bottom:1px dashed #ffaa00;padding-bottom:8px;">УПРАВЛЕНИЕ</div>
+    <div><span style="color:#88ff88;">КЛИК</span> — активировать управление камерой</div>
+    <div><span style="color:#88ff88;">WASD</span> — полёт по осям XZ</div>
+    <div><span style="color:#88ff88;">Q / E</span> — вверх / вниз</div>
+    <div><span style="color:#88ff88;">SHIFT</span> — ускорение x3</div>
+    <div><span style="color:#88ff88;">ДВОЙНОЙ КЛИК</span> — перелёт к звезде</div>
+    <div><span style="color:#88ff88;">ПКМ по звезде</span> — точка маршрута</div>
+    <div><span style="color:#88ff88;">ESC</span> — отпустить курсор</div>
+    <div style="margin-top:16px;color:#ffaa00;font-size:16px;">⚡ Панель управления справа · Новости внизу</div>
+  </div>
+  <div style="color:#886622;font-size:18px;animation:blink 1.2s infinite;">[ КЛИКНИТЕ ЧТОБЫ НАЧАТЬ ]</div>
+  <style>@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}</style>
+</div>
 <div id="info">
 <h2>✨ ELITE: DARK FRONTIER</h2>
 <div id="star-count">Загрузка...</div>
@@ -1922,6 +1938,53 @@ camera.updateProjectionMatrix();
 renderer.setSize(window.innerWidth, window.innerHeight);
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
 });
+// Help overlay dismiss
+document.getElementById('help-overlay').addEventListener('click', function() {
+    this.style.display = 'none';
+});
+
+// Star hover info on mousemove
+let hoverTimeout = null;
+document.addEventListener('mousemove', function(e) {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    hoverInfoDiv.style.display = 'none';
+    hoverTimeout = setTimeout(function() {
+        if (!starData.length || !camera) return;
+        const mouse = new THREE.Vector2(
+            (e.clientX / window.innerWidth) * 2 - 1,
+            -(e.clientY / window.innerHeight) * 2 + 1
+        );
+        let bestDist = Infinity, bestIdx = -1;
+        for (let i = 0; i < starData.length; i++) {
+            const star = starData[i];
+            if (!star.position) continue;
+            const vector = star.position.clone().project(camera);
+            if (vector.z > 1) continue;
+            const sx = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const sy = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+            const dx = sx - e.clientX, dy = sy - e.clientY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 25 && dist < bestDist) { bestDist = dist; bestIdx = i; }
+        }
+        if (bestIdx !== -1) {
+            const s = starData[bestIdx];
+            const name = s.hip ? 'HIP ' + s.hip : (s.proper || 'Звезда ' + bestIdx);
+            const spec = s.spect || '—';
+            const dist = s.dist ? s.dist.toFixed(1) + ' пк' : '—';
+            const mag = s.mag !== undefined ? s.mag.toFixed(2) : '—';
+            const absmag = s.absmag !== undefined ? s.absmag.toFixed(2) : '—';
+            hoverInfoDiv.innerHTML = '<div class="hover-info-title">' + name + '</div>' +
+                '<div>Спектр: <span style="color:#ffff88">' + spec + '</span></div>' +
+                '<div>Расст.: <span style="color:#ffff88">' + dist + '</span></div>' +
+                '<div>Зв. вел.: <span style="color:#ffff88">' + mag + '</span></div>' +
+                '<div>Абс. вел.: <span style="color:#ffff88">' + absmag + '</span></div>';
+            hoverInfoDiv.style.display = 'block';
+            hoverInfoDiv.style.left = e.clientX + 'px';
+            hoverInfoDiv.style.top = (e.clientY - 10) + 'px';
+        }
+    }, 400);
+});
+
 Promise.all([loadNews(), init()]).catch(console.error);
 </script>
 <script>
