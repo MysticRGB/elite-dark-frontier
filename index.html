@@ -232,7 +232,8 @@ body {
 .news-content {
   white-space: nowrap; color: #ffdd88; font-size: 15px;
   position: absolute; top: 50%; transform: translateY(-50%);
-  will-change: left;
+  left: 100%;
+  will-change: transform;
 }
 
 /* --- PROFILE PANEL (slide-in) --- */
@@ -499,18 +500,17 @@ const GAME_NEWS = [
 const newsEl = document.getElementById('welcome-news');
 if (newsEl) {
   newsEl.textContent = GAME_NEWS.join('   ●   ');
-  let newsX = 0;
   const newsScroll = newsEl.parentElement;
+  let newsOffset = newsScroll ? newsScroll.clientWidth || 900 : 900;
   function tickNews() {
-    if (!newsScroll || !newsEl) return;
-    const sw = newsScroll.clientWidth || 900;
-    const tw = newsEl.scrollWidth || 5000;
-    newsX -= 1;
-    if (newsX < -tw) newsX = sw;
-    newsEl.style.left = newsX + 'px';
+    const tw = newsEl.scrollWidth || 3000;
+    const sw = newsScroll ? newsScroll.clientWidth || 900 : 900;
+    newsOffset -= 1.2;
+    if (newsOffset < -tw) newsOffset = sw;
+    newsEl.style.left = 'auto';
+    newsEl.style.transform = 'translateY(-50%) translateX(' + newsOffset + 'px)';
     requestAnimationFrame(tickNews);
   }
-  newsX = newsScroll.clientWidth || 900;
   tickNews();
 }
 
