@@ -636,17 +636,33 @@
                 setTimeout(hideTooltip, 2000);
             });
 
+            function addSceneLights(s) {
+                s.add(new THREE.AmbientLight(0x404060, 0.6));
+                const dl = new THREE.DirectionalLight(0xffeedd, 1.0);
+                dl.position.set(10, 15, 10);
+                s.add(dl);
+                const pl = new THREE.PointLight(0xffaa44, 0.5);
+                pl.position.set(-10, -5, 10);
+                s.add(pl);
+                // Stars background
+                const sg = new THREE.BufferGeometry();
+                const sp = new Float32Array(600*3);
+                for(let i=0;i<600;i++){const r=200+Math.random()*100;const t=Math.random()*6.28;const p=Math.acos(2*Math.random()-1);sp[i*3]=r*Math.sin(p)*Math.cos(t);sp[i*3+1]=r*Math.sin(p)*Math.sin(t);sp[i*3+2]=r*Math.cos(p);}
+                sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+                s.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0x8899bb,size:0.4})));
+            }
             function init() {
                 const container = document.getElementById('ship-canvas');
                 const w = container.clientWidth || 400;
                 const h = container.clientHeight || 280;
                 scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x0a0500);
+                scene.background = new THREE.Color(0x030208);
                 camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 1000);
                 renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
                 renderer.setSize(w, h);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 container.appendChild(renderer.domElement);
+                addSceneLights(scene);
                 scene.add(shipGroup);
                 setupCameraControls(container);
                 addModule(MODULE_DATA[0], 0);
@@ -1127,17 +1143,27 @@
                 setTimeout(hideTooltip, 2000);
             });
 
+            function addSceneLights2(s) {
+                s.add(new THREE.AmbientLight(0x404060, 0.6));
+                const dl = new THREE.DirectionalLight(0xffeedd, 1.0);dl.position.set(10,15,10);s.add(dl);
+                const pl = new THREE.PointLight(0x4488ff, 0.4);pl.position.set(-10,-5,10);s.add(pl);
+                const sg = new THREE.BufferGeometry();const sp = new Float32Array(600*3);
+                for(let i=0;i<600;i++){const r=200+Math.random()*100;const t=Math.random()*6.28;const p=Math.acos(2*Math.random()-1);sp[i*3]=r*Math.sin(p)*Math.cos(t);sp[i*3+1]=r*Math.sin(p)*Math.sin(t);sp[i*3+2]=r*Math.cos(p);}
+                sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+                s.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x8899bb,size:0.4})));
+            }
             function init() {
                 const container = document.getElementById('transporter-canvas');
                 const w = container.clientWidth || 400;
                 const h = container.clientHeight || 280;
                 scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x050810);
+                scene.background = new THREE.Color(0x030210);
                 camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 1000);
                 renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
                 renderer.setSize(w, h);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 container.appendChild(renderer.domElement);
+                addSceneLights2(scene);
                 cycleGeometry = createCycleGeometry();
                 cycleMaterial = createCycleMaterial('#ffdd44');
                 scene.add(cameraPivot);
@@ -1529,17 +1555,27 @@
                 setTimeout(hideTooltip, 2000);
             });
 
+            function addSceneLights3(s) {
+                s.add(new THREE.AmbientLight(0x404060, 0.6));
+                const dl = new THREE.DirectionalLight(0xffeedd, 1.0);dl.position.set(10,15,10);s.add(dl);
+                const pl = new THREE.PointLight(0xffaa44, 0.4);pl.position.set(-10,-5,10);s.add(pl);
+                const sg = new THREE.BufferGeometry();const sp = new Float32Array(600*3);
+                for(let i=0;i<600;i++){const r=200+Math.random()*100;const t=Math.random()*6.28;const p=Math.acos(2*Math.random()-1);sp[i*3]=r*Math.sin(p)*Math.cos(t);sp[i*3+1]=r*Math.sin(p)*Math.sin(t);sp[i*3+2]=r*Math.cos(p);}
+                sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+                s.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x8899bb,size:0.4})));
+            }
             function init() {
                 const container = document.getElementById('station-canvas');
                 const w = container.clientWidth || 400;
                 const h = container.clientHeight || 280;
                 scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x0a0500);
+                scene.background = new THREE.Color(0x030208);
                 camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 1000);
                 renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
                 renderer.setSize(w, h);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 container.appendChild(renderer.domElement);
+                addSceneLights3(scene);
                 const spriteTexture = createSpriteTexture();
                 spriteMaterial = new THREE.SpriteMaterial({ map: spriteTexture, color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
                 scene.add(stationGroup);

@@ -50,6 +50,7 @@
         .tab-button[data-market="bio"].active    { background: #98fb98; border-bottom-color: #32cd32; }
         .tab-button[data-market="industry"].active { background: #87ceeb; border-bottom-color: #4682b4; }
         .tab-button[data-market="data"].active   { background: #dda0dd; border-bottom-color: #ba55d3; }
+        .tab-button[data-market="crypto"].active { background: #ffd700; border-bottom-color: #daa520; }
         .tab-button.active {
             transform: translateY(-2px);
             box-shadow: 0 -4px 8px rgba(180,100,40,0.2);
@@ -281,6 +282,35 @@
             background: #fff8e7;
             font-size: 0.95rem;
         }
+        .buy-btn, .sell-btn {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: 0.15s;
+            margin: 1px;
+        }
+        .buy-btn {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #3a2800;
+        }
+        .buy-btn:hover { background: linear-gradient(135deg, #ffe44d, #ffbb33); transform: scale(1.05); }
+        .sell-btn {
+            background: linear-gradient(135deg, #44cc66, #22aa44);
+            color: #fff;
+        }
+        .sell-btn:hover { background: linear-gradient(135deg, #66dd88, #33bb55); transform: scale(1.05); }
+        .trade-msg {
+            position: fixed; bottom: 20px; right: 20px;
+            background: rgba(0,0,0,0.85); color: #ffd700;
+            padding: 12px 24px; border-radius: 12px;
+            font-size: 1.1rem; z-index: 99999;
+            border: 1px solid #ffd700;
+            animation: fadein 0.3s;
+        }
+        @keyframes fadein { from {opacity:0;transform:translateY(10px);} to {opacity:1;transform:translateY(0);} }
     </style>
 </head>
 <body>
@@ -297,6 +327,7 @@
         <button class="tab-button" data-market="bio">🧬 Био</button>
         <button class="tab-button" data-market="industry">🏭 Промышленность</button>
         <button class="tab-button" data-market="data">📀 Данные</button>
+        <button class="tab-button" data-market="crypto">🪙 Крипто</button>
     </div>
 
     <!-- Динамическое содержимое -->
@@ -335,6 +366,7 @@
                         <th>Базовая цена (₡)</th>
                         <th>Игровая цена (₡)</th>
                         <th>График · 30 обновлений</th>
+                        <th>Действия</th>
                     </tr>
                     </thead>
                     <tbody id="price-table-body">
@@ -414,6 +446,8 @@
             return `hsl(${200 + (index * 6) % 40}, 80%, 70%)`;
         } else if (market === 'data') {
             return `hsl(${280 + (index * 8) % 60}, 80%, 75%)`;
+        } else if (market === 'crypto') {
+            return `hsl(${40 + (index * 12) % 50}, 90%, 60%)`;
         }
         return '#cccccc';
     }
@@ -655,13 +689,36 @@
         return res;
     }
 
+    // Крипто-ресурсы (внутриигровые токены, привязанные к реальным монетам через CoinGecko)
+    function buildCryptoResources() {
+        const coins = [
+            { name: '🪙 FrontierCoin (FRC)',  basePrice: 1200, cryptoId: 'bitcoin',  isExotic: false },
+            { name: '💎 AsteriteCoin (AST)',   basePrice: 340,  cryptoId: 'ethereum', isExotic: false },
+            { name: '⚡ PlasmaCred (PLC)',      basePrice: 85,   cryptoId: 'solana',   isExotic: false },
+            { name: '🔗 ChainOre (CHO)',       basePrice: 52,   cryptoId: 'cardano',  isExotic: false },
+            { name: '🛡️ ShieldToken (SHT)',    basePrice: 190,  cryptoId: 'polkadot', isExotic: false },
+            { name: '🚀 HyperDrive (HDR)',     basePrice: 720,  cryptoId: 'avalanche-2', isExotic: false },
+            { name: '🌐 NebulaBit (NBT)',      basePrice: 410,  cryptoId: 'chainlink', isExotic: false },
+            { name: '🔮 QuantumCrypt (QTC)',    basePrice: 1500, cryptoId: 'dogecoin', isExotic: false },
+            { name: '🏴 DarkMatter (DKM)',     basePrice: 2800, cryptoId: null, isExotic: true },
+            { name: '⭐ StellarCredit (STC)',   basePrice: 95,   cryptoId: 'stellar', isExotic: false },
+            { name: '🧊 CryoVault (CRV)',      basePrice: 270,  cryptoId: 'cosmos', isExotic: false },
+            { name: '🔥 FusionToken (FSN)',     basePrice: 620,  cryptoId: 'litecoin', isExotic: false },
+            { name: '🌑 VoidCoin (VDC)',        basePrice: 3500, cryptoId: null, isExotic: true },
+            { name: '📡 SignalByte (SGB)',      basePrice: 145,  cryptoId: 'uniswap', isExotic: false },
+            { name: '🏗️ ForgeAlloy (FGA)',     basePrice: 380,  cryptoId: 'polygon', isExotic: false },
+        ];
+        return coins;
+    }
+
     // ================== СОСТОЯНИЕ РЫНКОВ ==================
     let markets = {
         mining:   { name: 'Добыча', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
         energy:   { name: 'Энергия', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
         bio:      { name: 'Био', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
         industry: { name: 'Промышленность', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
-        data:     { name: 'Данные', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} }
+        data:     { name: 'Данные', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} },
+        crypto:   { name: 'Крипто', resources: [], events: [], trades: [], priceHistory: [], currentPrices: {} }
     };
 
     // Глобальные переменные
@@ -721,6 +778,7 @@
         markets.bio.resources = buildBioResources();
         markets.industry.resources = buildIndustryResources();
         markets.data.resources = buildDataResources();
+        markets.crypto.resources = buildCryptoResources();
     }
 
     // Применить цвета и сбросить временные данные
@@ -985,6 +1043,8 @@
                 <td>₡${r.basePrice.toFixed(2)}</td>
                 <td style="color:#3f6b4f; font-weight:600;">₡${gamePrice.toFixed(2)}</td>
                 <td><div class="spark">${spark}</div></td>
+                <td><button class="buy-btn" onclick="window._buyResource('${currentMarket}',${i})">🪙 Купить</button>
+                    <button class="sell-btn" onclick="window._sellResource('${currentMarket}',${i})">💰 Продать</button></td>
             </tr>`;
         }
         tbody.innerHTML = html;
@@ -1249,6 +1309,44 @@ window._gs = null;
 window.addEventListener('message', e => { if(e.data&&e.data.type==='game_state') window._gs=e.data.state; });
 if(window.parent!==window) window.parent.postMessage({type:'get_state'},'*');
 window.hubMsg = function(msg){ if(window.parent!==window) window.parent.postMessage(msg,'*'); };
+
+function showTradeMsg(text) {
+    const d = document.createElement('div');
+    d.className = 'trade-msg';
+    d.textContent = text;
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 3000);
+}
+
+window._buyResource = function(marketKey, idx) {
+    const m = markets[marketKey];
+    if (!m) return;
+    const r = m.resources[idx];
+    if (!r) return;
+    const price = m.currentPrices[r.name] || r.basePrice;
+    if (window.hubMsg) {
+        window.hubMsg({ type: 'credits_change', amount: -Math.round(price) });
+        window.hubMsg({ type: 'cargo_add', resource: r.name, amount: 1 });
+        window.hubMsg({ type: 'stat_increment', stat: 'traded' });
+        window.hubMsg({ type: 'status_msg', text: `Куплено: ${r.name} за ₡${price.toFixed(0)}` });
+    }
+    showTradeMsg(`🪙 Куплено: ${r.name} — ₡${price.toFixed(0)}`);
+};
+
+window._sellResource = function(marketKey, idx) {
+    const m = markets[marketKey];
+    if (!m) return;
+    const r = m.resources[idx];
+    if (!r) return;
+    const price = m.currentPrices[r.name] || r.basePrice;
+    const sellPrice = Math.round(price * 0.85);
+    if (window.hubMsg) {
+        window.hubMsg({ type: 'credits_change', amount: sellPrice });
+        window.hubMsg({ type: 'stat_increment', stat: 'traded' });
+        window.hubMsg({ type: 'status_msg', text: `Продано: ${r.name} за ₡${sellPrice}` });
+    }
+    showTradeMsg(`💰 Продано: ${r.name} — ₡${sellPrice}`);
+};
 </script>
 </body>
 </html>

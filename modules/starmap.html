@@ -460,7 +460,8 @@ pointer-events: none;
 <div id="screen-overlay"></div>
 <div id="help-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:20px;font-family:'VT323',monospace;">
   <div style="font-family:'Press Start 2P',cursive;font-size:18px;color:#ffff88;text-shadow:0 0 20px #ffaa00;">КАРТА ЗВЁЗДНОГО НЕБА</div>
-  <div style="color:#ffdd88;font-size:22px;max-width:500px;text-align:center;line-height:1.6;">
+  <div style="color:#ffdd88;font-size:22px;max-width:600px;text-align:center;line-height:1.6;">
+    <div style="margin-bottom:8px;color:#88ccff;font-size:16px;">Каждая звезда — реальная из каталога HIP (Hipparcos).<br>Во Вселенной ≈2×10²³ звёзд. Здесь 5000 ближайших.</div>
     <div style="margin-bottom:12px;border-bottom:1px dashed #ffaa00;padding-bottom:8px;">УПРАВЛЕНИЕ</div>
     <div><span style="color:#88ff88;">ЛКМ + тянуть</span> — вращение камеры</div>
     <div><span style="color:#88ff88;">ПКМ + тянуть</span> — панорамирование</div>
@@ -469,7 +470,10 @@ pointer-events: none;
     <div><span style="color:#88ff88;">Q / E</span> — вверх / вниз</div>
     <div><span style="color:#88ff88;">SHIFT</span> — ускорение x3</div>
     <div><span style="color:#88ff88;">ДВОЙНОЙ КЛИК</span> — перелёт к звезде</div>
-    <div style="margin-top:16px;color:#ffaa00;font-size:16px;">⚡ Панель справа · Новости внизу</div>
+    <div style="margin-top:12px;border-top:1px dashed #ffaa00;padding-top:8px;color:#88ccff;font-size:15px;">
+      🔭 ФАКТЫ: Млечный Путь — 100-400 млрд звёзд · ~1 трлн планет<br>
+      Ближайшая: Проксима Центавра (4.24 св.г) · 5700+ экзопланет (NASA 2024)
+    </div>
   </div>
   <div style="color:#886622;font-size:18px;animation:blink 1.2s infinite;">[ КЛИКНИТЕ ЧТОБЫ НАЧАТЬ ]</div>
   <style>@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}</style>
@@ -1819,14 +1823,14 @@ renderer.domElement.addEventListener('click', function(e) {
     const pl = hits[0].object;
     const name = pl.userData.name || 'Unknown';
     const planetDescs = {
-      'Меркурий': 'Скалистая планета. Нет атмосферы. Месторождения: Fe, Ni, Si.',
-      'Венера': 'Токсичная атмосфера 90 атм. Месторождения: S, Pb, Zn.',
-      'Земля': 'Колыбель человечества. Верфь «Титан». Главный хаб торговли.',
-      'Марс': 'Терраформинг: этап 3/7. Шахты: Fe, Ti, Al. Колония: 4.2M жителей.',
-      'Юпитер': 'Газовый гигант. Станции He-3 на орбите. Луна Европа — океан.',
-      'Сатурн': 'Кольца содержат лёд и минералы. Титан — углеводородные озёра.',
-      'Уран': 'Ледяной гигант. Запасы дейтерия. Научная станция «Кристалл».',
-      'Нептун': 'Дальний рубеж. Секретная военная база. Добыча: He-3, D2O.'
+      'Меркурий': '☿ Ø 4879 км. Орбита: 0.39 а.е. T: -173°C/+427°C. Нет атмосферы. Ядро ~85% радиуса. В игре: Fe, Ni, Si.',
+      'Венера': '♀ Ø 12104 км. Давление 92 атм. T: +462°C (CO₂). Сутки=243 земных. В игре: S, Pb, Zn, кислоты.',
+      'Земля': '♁ Ø 12742 км. 1 а.е. от Солнца. 71% вода. 8 млрд чел. Единственная с подтверждённой жизнью.',
+      'Марс': '♂ Ø 6779 км. T: -87°C. Олимп Монс — 21.9 км (высочайшая гора Сол. сист.). Есть водяной лёд. В игре: Fe, Ti, колония.',
+      'Юпитер': '♃ Ø 139820 км. Масса = 318 Земель. 95 известных спутников. Большое красное пятно > Земли. Европа: подлёдный океан.',
+      'Сатурн': '♄ Ø 116460 км. Кольца: 99.9% лёд. Плотность < воды (0.687 г/см³). Титан: моря метана, плотная атмосфера.',
+      'Уран': '⛢ Ø 50724 км. Наклон оси 98° (вращается «на боку»). T: -224°C. 27 спутников. В игре: дейтерий, He-3.',
+      'Нептун': '♆ Ø 49244 км. Ветры до 2100 км/ч (рекорд). 30 а.е. от Солнца. Тритон: гейзеры азота. В игре: He-3, D₂O.'
     };
     const desc = planetDescs[name] || 'Данные загружаются...';
     document.getElementById('planet-type').innerText = name;
@@ -2001,11 +2005,23 @@ document.addEventListener('mousemove', function(e) {
             const dist = s.dist ? s.dist.toFixed(1) + ' пк' : '—';
             const mag = s.mag !== undefined ? s.mag.toFixed(2) : '—';
             const absmag = s.absmag !== undefined ? s.absmag.toFixed(2) : '—';
+            const distLy = s.dist ? (s.dist * 3.2616).toFixed(1) + ' св.лет' : '—';
+            let spectInfo = '';
+            const sp0 = (spec||'')[0];
+            if(sp0==='O') spectInfo = 'Горячий голубой гигант (>30000K)';
+            else if(sp0==='B') spectInfo = 'Бело-голубая (10000-30000K)';
+            else if(sp0==='A') spectInfo = 'Белая (7500-10000K), пр.: Сириус, Вега';
+            else if(sp0==='F') spectInfo = 'Жёлто-белая (6000-7500K)';
+            else if(sp0==='G') spectInfo = 'Жёлтый карлик (5200-6000K), как Солнце';
+            else if(sp0==='K') spectInfo = 'Оранжевая (3700-5200K)';
+            else if(sp0==='M') spectInfo = 'Красный карлик (<3700K), 75% всех звёзд';
             hoverInfoDiv.innerHTML = '<div class="hover-info-title">' + name + '</div>' +
                 '<div>Спектр: <span style="color:#ffff88">' + spec + '</span></div>' +
-                '<div>Расст.: <span style="color:#ffff88">' + dist + '</span></div>' +
-                '<div>Зв. вел.: <span style="color:#ffff88">' + mag + '</span></div>' +
-                '<div>Абс. вел.: <span style="color:#ffff88">' + absmag + '</span></div>';
+                (spectInfo ? '<div style="color:#88ccff;font-size:13px;">' + spectInfo + '</div>' : '') +
+                '<div>Расст.: <span style="color:#ffff88">' + dist + '</span> (' + distLy + ')</div>' +
+                '<div>Зв. вел.: <span style="color:#ffff88">' + mag + '</span> (видимая)</div>' +
+                '<div>Абс. вел.: <span style="color:#ffff88">' + absmag + '</span></div>' +
+                '<div style="color:#886644;font-size:12px;margin-top:4px;">1 парсек = 3.26 св.лет = 3.086×10¹³ км</div>';
             hoverInfoDiv.style.display = 'block';
             hoverInfoDiv.style.left = e.clientX + 'px';
             hoverInfoDiv.style.top = (e.clientY - 10) + 'px';
