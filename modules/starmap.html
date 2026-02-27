@@ -932,26 +932,66 @@ ship.visible = tradeRoutesVisible && (dx*dx + dy*dy + dz*dz < maxDist * maxDist)
 });
 }
 // ======================== НОВОСТИ ========================
+const STARMAP_NEWS = [
+  { id:1, title:'AXIOM захватила Delta-7', content:'Корпорация AXIOM заняла сектор Delta-7. Залежи He-3 обеспечат флот на 200 лет. Акции +340%.', category:'market', system:'Delta-7' },
+  { id:2, title:'Забастовка шахтёров', content:'Альянс Независимых Шахтёров остановил 40% рудников в секторе Barnard. Цены на руду растут.', category:'incident', system:'Barnard' },
+  { id:3, title:'Kepler-442b: 18 месторождений', content:'Спутник «Зоркий-14» завершил картографию Kepler-442b. Обнаружено 18 месторождений редкоземов.', category:'science', system:'Kepler-442' },
+  { id:4, title:'[ФАКТ] 2 трлн галактик', content:'По данным Conselice et al. (2016), во Вселенной ≈2 трлн галактик. Наблюдаемая Вселенная: 93 млрд св.лет в диаметре.', category:'science', system:'Вселенная' },
+  { id:5, title:'Алмазная планета 55 Cancri e', content:'Реальная экзопланета: масса 8.6 Земель, 40 св.лет от нас. Предполагается алмазная мантия. PRISMA начала экспедицию.', category:'science', system:'55 Cancri' },
+  { id:6, title:'Вулканический кризис Io-7', content:'3 станции уничтожены, 1200 человек эвакуированы. Убытки 2.4 млрд CR. Реальная Ио — самое вулканически активное тело Сол. системы.', category:'incident', system:'Io-7' },
+  { id:7, title:'[ФАКТ] 5700+ экзопланет', content:'NASA подтвердило открытие 5700+ экзопланет (2024). TRAPPIST-1 имеет 7 планет размером с Землю в 40 св.лет от нас.', category:'science', system:'TRAPPIST-1' },
+  { id:8, title:'Рекорд перевозки', content:'Транспортник «ЛЕВИАФАН» доставил 450 000 тонн руды на Proxima Hub. Proxima Центавра — ближайшая звезда (4.24 св.лет).', category:'market', system:'Proxima' },
+  { id:9, title:'Иридий: 89 000 CR/тонна', content:'Война AXIOM и PRISMA за месторождения на Цереста-9. Астероид Психея (16 Psyche) содержит металлов на $10 квинтиллионов.', category:'market', system:'Ceresta-9' },
+  { id:10, title:'[ФАКТ] Нейтронные звёзды', content:'Плотность 10¹⁷ кг/м³. Чайная ложка весит ~6 млрд тонн. Диаметр ~20 км при массе 1.4–2 Солнца.', category:'science', system:'Pulsar' },
+  { id:11, title:'Подлёдный океан Европы-9', content:'Роверы «Кирилл» обнаружили океан. На реальной Европе — до 100 км льда над океаном. Возможна жизнь.', category:'science', system:'Europa-9' },
+  { id:12, title:'Терраформинг Марса: этап 3/7', content:'Атмосферное давление достигло 0.12 атм. Реальный Марс: T -87°C, давление 0.6% земного, Олимп — 21.9 км.', category:'science', system:'Mars' },
+  { id:13, title:'Gliese 667Cc — Терра-2', content:'200 колонистов прибыли. Реальная суперземля в обитаемой зоне, 23.6 св.лет, масса 3.8 Земель.', category:'culture', system:'Gliese 667C' },
+  { id:14, title:'Пираты у Wolf 359', content:'«Тёмный Коготь» атаковал конвой. Wolf 359 — реальная звезда, красный карлик М6.5, 7.86 св.лет от Солнца.', category:'incident', system:'Wolf 359' },
+  { id:15, title:'[ФАКТ] Млечный Путь', content:'Спиральная галактика, Ø ~100 000 св.лет, 100–400 млрд звёзд, ~1 трлн планет. Солнце — в 27 000 св.лет от центра.', category:'science', system:'Milky Way' },
+];
 async function loadNews() {
-newsData = [ { id:0, title:'Локальные новости', content:'В системе Lave всё спокойно.', timestamp:new Date().toISOString(), category:'incident', system:'Lave' } ];
+newsData = STARMAP_NEWS.map(n => ({ ...n, timestamp: new Date(Date.now() - Math.random()*86400000*30).toISOString() }));
 renderNewsWidget();
+renderNewsList();
 }
 function renderNewsWidget() {
 const ticker = document.getElementById('news-ticker');
-const last3 = newsData.slice(-3).reverse();
-ticker.innerHTML = last3.map((news) => `
+const last5 = newsData.slice(-5).reverse();
+ticker.innerHTML = last5.map((news) => `
 <div class="news-ticker-item" onclick="toggleNewsModal()">
-<div class="news-icon">📰</div>
+<div class="news-icon">${news.category==='science'?'🔬':news.category==='market'?'📊':news.category==='incident'?'⚠️':'🌍'}</div>
 <div class="title">${news.title}</div>
 <div class="system">${news.system}</div>
 </div>
 `).join('');
 }
+function renderNewsList(cat) {
+const list = document.getElementById('news-list');
+const filtered = (!cat || cat==='all') ? newsData : newsData.filter(n=>n.category===cat);
+list.innerHTML = filtered.map(n => `
+<div class="news-item">
+<div class="news-icon">${n.category==='science'?'🔬':n.category==='market'?'📊':n.category==='incident'?'⚠️':'🌍'}</div>
+<div class="news-content">
+<div class="news-title">${n.title}</div>
+<div class="news-meta"><span>📍 ${n.system}</span><span>🕐 ${new Date(n.timestamp).toLocaleDateString('ru')}</span></div>
+<div class="news-body">${n.content}</div>
+</div>
+</div>`).join('');
+}
 window.toggleNewsModal = function() {
 const modal = document.getElementById('news-modal');
 modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+if(modal.style.display==='block') renderNewsList(currentCategory);
 };
 document.getElementById('close-news').addEventListener('click', toggleNewsModal);
+document.getElementById('news-filter').addEventListener('click', (e) => {
+if(e.target.dataset.category) {
+currentCategory = e.target.dataset.category;
+document.querySelectorAll('#news-filter button').forEach(b=>b.classList.remove('active'));
+e.target.classList.add('active');
+renderNewsList(currentCategory);
+}
+});
 // ======================== ЗАГРУЗКА ЗВЁЗД ========================
 async function loadStars() {
 try {
