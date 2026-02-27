@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Elite: Dark Frontier — Карта неба</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
@@ -137,6 +138,67 @@ canvas { display:block; }
 #ctx-menu button { display:block; width:100%; background:var(--dim); border:1px solid var(--amber);
   color:var(--gold); padding:5px 8px; margin:2px 0; cursor:pointer; font-size:12px; text-align:left; }
 #ctx-menu button:hover { background:#aa6633; }
+
+/* Mobile touch button */
+#mobile-controls { display:none; position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  z-index:3000; gap:6px; flex-wrap:wrap; justify-content:center; }
+.touch-btn { width:48px; height:48px; background:rgba(255,170,0,.15); border:2px solid var(--amber);
+  color:var(--gold); font-size:18px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  user-select:none; }
+.touch-btn:active { background:rgba(255,170,0,.4); }
+#mobile-toggle { display:none; position:absolute; top:10px; right:10px; z-index:3001;
+  background:rgba(0,0,0,.8); border:2px solid var(--amber); color:var(--gold);
+  padding:6px 10px; font-size:20px; border-radius:6px; cursor:pointer; }
+
+/* ═══ MOBILE / iPHONE ═══ */
+@media (max-width: 768px) {
+  #info { top:8px; left:8px; padding:8px 10px; font-size:12px; max-width:55%; }
+  #info h2 { font-size:9px; }
+
+  #controls { display:none; top:8px; right:8px; width:200px; padding:8px; font-size:11px; }
+  #controls.mob-open { display:block; }
+  #controls h3 { font-size:8px; }
+  #controls .btn { padding:4px 6px; font-size:7px; margin:2px 1px; }
+  #controls label { font-size:11px; margin:4px 0 1px; }
+
+  #hud { bottom:70px; left:8px; right:8px; gap:4px; }
+  .hud-block { padding:6px 8px; font-size:7px; line-height:1.5; }
+
+  #quicktravel { display:none; }
+  #news-widget { display:none; }
+  #hover-info { display:none !important; }
+
+  .modal-panel { width:95vw; max-height:70vh; padding:12px; font-size:13px; }
+  .modal-panel h3 { font-size:10px; }
+
+  #route-panel { top:60px; left:6px; width:calc(100vw - 12px); max-height:60vh; padding:8px; }
+  #star-select { top:60px; width:90vw; left:5vw; transform:none; padding:10px; }
+  #fuel-panel { top:auto; bottom:80px; left:6px; width:calc(100vw - 12px); }
+
+  #help .title { font-size:13px; }
+  #help .body { font-size:15px; max-width:90vw; }
+  #help .hint { font-size:14px; }
+
+  #mobile-controls { display:flex; }
+  #mobile-toggle { display:block; }
+
+  .star-label { font-size:10px; padding:1px 4px; }
+  .ship-tag { font-size:10px; }
+}
+
+@media (max-width: 480px) {
+  #info { max-width:60%; }
+  #info h2 { font-size:8px; }
+  .hud-block { font-size:6px; padding:4px 6px; }
+  #hud { bottom:65px; }
+  .touch-btn { width:42px; height:42px; font-size:16px; }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  #mobile-controls { padding-bottom: env(safe-area-inset-bottom); }
+  #hud { bottom: calc(70px + env(safe-area-inset-bottom)); }
+}
 </style>
 </head>
 <body>
@@ -290,6 +352,19 @@ canvas { display:block; }
   <div class="fuel-row"><span class="lbl">Есть:</span><span class="val" id="f-have">—</span></div>
   <div class="fuel-row"><span class="lbl">Статус:</span><span class="val" id="f-status">—</span></div>
   <button class="btn btn-full" id="close-fuel" style="margin-top:6px;">ЗАКРЫТЬ</button>
+</div>
+
+<!-- MOBILE CONTROLS -->
+<button id="mobile-toggle">⚙</button>
+<div id="mobile-controls">
+  <button class="touch-btn" data-act="fwd">▲</button>
+  <button class="touch-btn" data-act="left">◀</button>
+  <button class="touch-btn" data-act="back">▼</button>
+  <button class="touch-btn" data-act="right">▶</button>
+  <button class="touch-btn" data-act="up">⬆</button>
+  <button class="touch-btn" data-act="down">⬇</button>
+  <button class="touch-btn" data-act="solar">🪐</button>
+  <button class="touch-btn" data-act="fast">⚡</button>
 </div>
 
 <!-- CONTEXT MENU -->
@@ -1230,6 +1305,61 @@ window.addEventListener('resize',()=>{
 
 // Help overlay
 document.getElementById('help').addEventListener('click',function(){this.style.display='none';});
+
+// ═══════════════════════════════════════════════════
+//  MOBILE TOUCH CONTROLS
+// ═══════════════════════════════════════════════════
+(function initMobile(){
+  const isMob = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  if (!isMob) return;
+
+  // Toggle controls panel
+  document.getElementById('mobile-toggle').addEventListener('click', () => {
+    document.getElementById('controls').classList.toggle('mob-open');
+  });
+
+  // Touch movement buttons
+  const actions = {fwd:'moveF',back:'moveB',left:'moveL',right:'moveR',up:'moveU',down:'moveD'};
+  document.querySelectorAll('.touch-btn').forEach(btn => {
+    const act = btn.dataset.act;
+    if (actions[act]) {
+      const setMove = (val) => {
+        switch(act){
+          case'fwd':moveF=val;break;case'back':moveB=val;break;
+          case'left':moveL=val;break;case'right':moveR=val;break;
+          case'up':moveU=val;break;case'down':moveD=val;break;
+        }
+      };
+      btn.addEventListener('touchstart', e => { e.preventDefault(); setMove(true); }, {passive:false});
+      btn.addEventListener('touchend', e => { e.preventDefault(); setMove(false); }, {passive:false});
+      btn.addEventListener('touchcancel', e => { setMove(false); });
+    }
+    if (act === 'solar') {
+      btn.addEventListener('click', () => { solarMode ? exitSolar() : enterSolar(); });
+    }
+    if (act === 'fast') {
+      btn.addEventListener('touchstart', e => { e.preventDefault(); speed *= 3; }, {passive:false});
+      btn.addEventListener('touchend', e => { e.preventDefault(); speed /= 3; }, {passive:false});
+    }
+  });
+
+  // Double-tap to fly to star
+  let lastTap = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      const touch = e.changedTouches[0];
+      if (touch && !e.target.closest('.panel,.modal-panel,.touch-btn,#mobile-toggle,#mobile-controls')) {
+        const idx = pickStar(touch.clientX, touch.clientY, 40);
+        if (idx !== -1) {
+          flyTo(starData[idx].position, 50);
+          player.currentSystem = idx; updateHUD();
+        }
+      }
+    }
+    lastTap = now;
+  });
+})();
 
 // Launch
 init().catch(console.error);

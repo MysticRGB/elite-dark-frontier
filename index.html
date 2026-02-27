@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Elite: Dark Frontier v4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
@@ -356,6 +358,60 @@ body {
   100% { color: #886622; text-shadow: none; }
 }
 #status-msg.flash { animation: status-flash 1s ease; }
+
+/* ═══ MOBILE / iPHONE ═══ */
+@media (max-width: 768px) {
+  #nav-bar {
+    height: auto; min-height: 40px; flex-wrap: wrap; padding: 4px 6px; gap: 3px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-title { font-size: 8px; margin-right: 6px; }
+  .nav-btn { padding: 4px 8px; font-size: 12px; letter-spacing: 0; }
+  #hud-bar { gap: 6px; padding-left: 6px; border-left: none; flex-wrap: wrap; }
+  .hud-label { font-size: 10px; } .hud-val { font-size: 12px; }
+
+  #welcome-screen { padding: 12px 10px; overflow-y: auto; justify-content: flex-start; padding-top: 20px; }
+  .welcome-title { font-size: 14px; margin-bottom: 12px; }
+  .welcome-sub { font-size: 15px; margin-bottom: 16px; line-height: 1.4; }
+  .welcome-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .welcome-card { padding: 10px; }
+  .welcome-card .icon { font-size: 24px; margin-bottom: 4px; }
+  .welcome-card .name { font-size: 7px; }
+  .welcome-card .desc { font-size: 12px; }
+
+  #nasa-apod.loaded { flex-direction: column; }
+  #nasa-apod img, #nasa-apod iframe { width: 100%; min-height: 150px; border-right: none; border-bottom: 1px solid #334455; }
+  #nasa-apod-info { max-height: 120px; }
+  .neo-item { font-size: 11px; padding: 4px 6px; }
+
+  #profile-panel { width: 100%; right: -100%; }
+  #profile-panel.open { right: 0; }
+  #profile-panel { padding: 12px; font-size: 14px; }
+  #profile-panel h2 { font-size: 10px; }
+  .prof-section { padding: 8px; }
+  .skill-tree { grid-template-columns: 1fr; }
+
+  #status-bar { height: 22px; min-height: 22px; font-size: 11px; padding: 0 6px; gap: 8px; }
+  #status-loc { font-size: 10px; }
+
+  .game-tooltip { display: none !important; }
+  .news-ticker-wrap { height: 28px; }
+  .news-content { font-size: 13px; }
+}
+
+@media (max-width: 480px) {
+  .welcome-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .welcome-card .name { font-size: 6px; }
+  .nav-btn { padding: 3px 5px; font-size: 11px; }
+  .nav-title { font-size: 7px; }
+  #hud-bar .hud-item:nth-child(3) { display: none; }
+}
+
+/* iOS safe areas */
+@supports (padding-top: env(safe-area-inset-top)) {
+  #nav-bar { padding-top: env(safe-area-inset-top); }
+  #status-bar { padding-bottom: env(safe-area-inset-bottom); }
+}
 </style>
 </head>
 <body>

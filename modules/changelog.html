@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Elite: Dark Frontier — Бортовой журнал разработки</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
@@ -170,11 +171,49 @@ body::after {
   pointer-events:none; z-index:100;
 }
 
-/* Mobile */
+/* ═══ MOBILE / iPHONE ═══ */
 @media(max-width:700px){
-  .header h1{font-size:12px;} .timeline{padding:12px 10px 40px;}
-  .timeline::before{left:16px;} .version-header{padding-left:36px;}
-  .version-dot{left:8px;} .entries{padding-left:36px;}
+  .header { padding:16px 12px 12px; }
+  .header h1 { font-size:11px; }
+  .header .sub { font-size:14px; }
+
+  .ticker-wrap { height:30px; }
+  .ticker-tag { font-size:6px; padding:4px 8px; }
+  .ticker-text { font-size:13px; }
+
+  .stats-bar { gap:8px; padding:10px 12px; justify-content:center; }
+  .stat-num { font-size:18px; }
+  .stat-label { font-size:7px; letter-spacing:0; }
+
+  .filters { padding:10px 12px; gap:4px; }
+  .filters .label { font-size:7px; margin-right:4px; }
+  .filter-btn { padding:4px 8px; font-size:13px; }
+
+  .timeline { padding:12px 10px 60px; }
+  .timeline::before { left:16px; }
+  .version-header { padding-left:36px; flex-wrap:wrap; gap:6px; }
+  .version-dot { left:8px; width:14px; height:14px; }
+  .version-tag { font-size:9px; padding:3px 8px; }
+  .version-date { font-size:12px; }
+  .version-title { font-size:15px; }
+  .entries { padding-left:36px; }
+  .entry { padding:8px 10px; gap:6px; }
+  .entry-badge { font-size:5px; padding:2px 5px; }
+  .entry-title { font-size:14px; }
+  .entry-desc { font-size:12px; }
+  .entry-module { font-size:9px; }
+}
+
+@media(max-width:400px){
+  .header h1 { font-size:9px; }
+  .version-tag { font-size:8px; }
+  .version-title { font-size:13px; }
+  .stat-num { font-size:16px; }
+  .filter-btn { font-size:11px; padding:3px 6px; }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .timeline { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
 }
 </style>
 </head>
