@@ -951,6 +951,42 @@ const STARMAP_NEWS = [
 ];
 async function loadNews() {
 newsData = STARMAP_NEWS.map(n => ({ ...n, timestamp: new Date(Date.now() - Math.random()*86400000*30).toISOString() }));
+try {
+  const today = new Date().toISOString().slice(0,10);
+  const r = await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date='+today+'&end_date='+today+'&api_key=DEMO_KEY');
+  if (r.ok) {
+    const d = await r.json();
+    const neos = d.near_earth_objects[today] || [];
+    neos.slice(0,5).forEach((n, i) => {
+      const diam = n.estimated_diameter.meters;
+      const size = ((diam.estimated_diameter_min + diam.estimated_diameter_max)/2).toFixed(0);
+      const km = n.close_approach_data[0] ? parseFloat(n.close_approach_data[0].miss_distance.kilometers).toLocaleString('ru-RU',{maximumFractionDigits:0}) : '?';
+      const danger = n.is_potentially_hazardous_asteroid;
+      newsData.unshift({
+        id: 100+i,
+        title: '☄️ [NASA LIVE] ' + n.name.replace(/[()]/g,''),
+        content: 'Реальный околоземный объект! Ø ' + size + ' м, пролетает в ' + km + ' км от Земли.' + (danger ? ' ⚠️ ПОТЕНЦИАЛЬНО ОПАСНЫЙ!' : ' Безопасен.') + ' Данные: NASA NEO API.',
+        category: 'science',
+        system: 'Земля',
+        timestamp: new Date().toISOString()
+      });
+    });
+  }
+} catch(e) { console.warn('NASA NEO unavailable'); }
+try {
+  const r2 = await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
+  if (r2.ok) {
+    const apod = await r2.json();
+    newsData.unshift({
+      id: 200,
+      title: '🔭 [NASA] ' + (apod.title||'Фото дня'),
+      content: (apod.explanation||'').slice(0,250) + '…',
+      category: 'science',
+      system: 'NASA APOD',
+      timestamp: apod.date || new Date().toISOString()
+    });
+  }
+} catch(e) { console.warn('NASA APOD unavailable'); }
 renderNewsWidget();
 renderNewsList();
 }
