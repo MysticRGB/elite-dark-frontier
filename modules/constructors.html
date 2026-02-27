@@ -488,9 +488,16 @@
             function addNextModule() {
                 if (currentModuleIndex < MAX_MODULES) {
                     addModule(MODULE_DATA[currentModuleIndex], currentModuleIndex);
+                    if (window.hubMsg) {
+                        const cost = 500 * currentModuleIndex;
+                        window.hubMsg({type:'credits_change', amount:-cost});
+                        window.hubMsg({type:'ship_upgrade', shipName: titleSpan.textContent, level: currentModuleIndex});
+                        window.hubMsg({type:'status_msg', text: 'Верфь: модуль ' + MODULE_DATA[currentModuleIndex-1].name + ' установлен (-' + cost + ' CR)'});
+                    }
                 } else {
                     fullMessageDiv.classList.add('show');
                     setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
+                    if (window.hubMsg) window.hubMsg({type:'status_msg', text: 'Верфь: корабль ' + titleSpan.textContent + ' полностью собран!'});
                 }
             }
 
@@ -969,6 +976,11 @@
                     updateStats();
                     updateCameraPosition();
                     updateShipName();
+                    if (window.hubMsg) {
+                        const cost = 1000 * currentVersion;
+                        window.hubMsg({type:'credits_change', amount:-cost});
+                        window.hubMsg({type:'status_msg', text: 'Верфь: транспорт ' + titleSpan.textContent + ' v' + currentVersion + ' (-' + cost + ' CR)'});
+                    }
                 } else {
                     fullMessageDiv.classList.add('show');
                     setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
@@ -1368,9 +1380,15 @@
             function addNextModule() {
                 if (currentModuleIndex < MAX_MODULES) {
                     addModule(MODULE_DATA[currentModuleIndex], currentModuleIndex);
+                    if (window.hubMsg) {
+                        const cost = 2000 * currentModuleIndex;
+                        window.hubMsg({type:'credits_change', amount:-cost});
+                        window.hubMsg({type:'status_msg', text: 'Верфь: станция ' + titleSpan.textContent + ' модуль ' + currentModuleIndex + '/14 (-' + cost + ' CR)'});
+                    }
                 } else {
                     fullMessageDiv.classList.add('show');
                     setTimeout(() => fullMessageDiv.classList.remove('show'), 1000);
+                    if (window.hubMsg) window.hubMsg({type:'status_msg', text: 'Верфь: станция ' + titleSpan.textContent + ' полностью собрана!'});
                 }
             }
 

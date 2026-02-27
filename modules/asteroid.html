@@ -134,21 +134,94 @@
         backLight.position.set(-3, -1, -4);
         scene.add(backLight);
 
-        // Звёзды
+        // Звёзды с мерцанием
         const starsGeo = new THREE.BufferGeometry();
-        const starsCount = 2000;
+        const starsCount = 3000;
         const starPos = new Float32Array(starsCount * 3);
+        const starSizes = new Float32Array(starsCount);
+        const starPhases = new Float32Array(starsCount);
         for (let i = 0; i < starsCount; i++) {
-            const r = 150 + Math.random() * 100;
+            const r = 120 + Math.random() * 130;
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
             starPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
             starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
             starPos[i*3+2] = r * Math.cos(phi);
+            starSizes[i] = 0.15 + Math.random() * 0.4;
+            starPhases[i] = Math.random() * Math.PI * 2;
         }
         starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const stars = new THREE.Points(starsGeo, new THREE.PointsMaterial({color: 0xaaccff, size: 0.3}));
+        starsGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        const starMat = new THREE.PointsMaterial({color: 0xaaccff, size: 0.3, transparent: true, opacity: 0.9});
+        const stars = new THREE.Points(starsGeo, starMat);
         scene.add(stars);
+
+        // Туманности (цветные далёкие облака)
+        for (let n = 0; n < 5; n++) {
+            const nebGeo = new THREE.SphereGeometry(15 + Math.random()*20, 8, 8);
+            const nebMat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(Math.random(), 0.5, 0.15),
+                transparent: true, opacity: 0.08, wireframe: true
+            });
+            const neb = new THREE.Mesh(nebGeo, nebMat);
+            neb.position.set((Math.random()-0.5)*200, (Math.random()-0.5)*200, (Math.random()-0.5)*200);
+            scene.add(neb);
+        }
+
+        // Соседние астероиды (мелкие, кликабельные)
+        const neighborAsteroids = [];
+        const neighborColors = [0x886644, 0x664422, 0xaa8866, 0x998877, 0x776655, 0x554433];
+        for (let na = 0; na < 6; na++) {
+            const r = 20 + Math.random() * 25;
+            const angle = (na / 6) * Math.PI * 2 + Math.random() * 0.4;
+            const yOff = (Math.random() - 0.5) * 10;
+            const nGeo = new THREE.IcosahedronGeometry(0.5 + Math.random() * 0.8, 1);
+            const nPos = nGeo.attributes.position;
+            for (let v = 0; v < nPos.count; v++) {
+                const noise = 0.8 + Math.random() * 0.4;
+                nPos.setXYZ(v, nPos.getX(v)*noise, nPos.getY(v)*noise, nPos.getZ(v)*noise);
+            }
+            nGeo.computeVertexNormals();
+            const nMat = new THREE.MeshPhongMaterial({
+                color: neighborColors[na], flatShading: true,
+                wireframe: false, transparent: true, opacity: 0.7
+            });
+            const nMesh = new THREE.Mesh(nGeo, nMat);
+            nMesh.position.set(Math.cos(angle)*r, yOff, Math.sin(angle)*r);
+            nMesh.userData.neighborIndex = na;
+            nMesh.userData.level = 1 + Math.floor(Math.random() * 7);
+            nMesh.userData.gradient = Math.floor(Math.random() * 10);
+            scene.add(nMesh);
+            neighborAsteroids.push(nMesh);
+            
+            // wireframe overlay
+            const wMat = new THREE.MeshBasicMaterial({color: neighborColors[na], wireframe: true, transparent: true, opacity: 0.3});
+            const wMesh = new THREE.Mesh(nGeo, wMat);
+            wMesh.position.copy(nMesh.position);
+            scene.add(wMesh);
+        }
+
+        // Клик по соседнему астероиду — переключение
+        const raycasterNeighbor = new THREE.Raycaster();
+        renderer.domElement.addEventListener('dblclick', (event) => {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouseNDC = new THREE.Vector2(
+                ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            raycasterNeighbor.setFromCamera(mouseNDC, camera);
+            const hits = raycasterNeighbor.intersectObjects(neighborAsteroids);
+            if (hits.length > 0) {
+                const hit = hits[0].object;
+                currentGradientIndex = hit.userData.gradient;
+                const radios = document.querySelectorAll('input[name="gradient"]');
+                radios.forEach((r, i) => r.checked = (i === currentGradientIndex));
+                createAsteroid(hit.userData.level);
+                // Визуальная обратная связь
+                hit.material.emissive = new THREE.Color(0xffaa00);
+                setTimeout(() => { hit.material.emissive = new THREE.Color(0); }, 500);
+            }
+        });
 
         // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
         let currentLevel = 1, asteroidMesh = null, wireframeMesh = null, geometry = null;
@@ -452,15 +525,30 @@
         // ==================== ЗАПУСК ====================
         createAsteroid(START_LEVEL);
 
+        let animTime = 0;
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
+            animTime += 0.016;
             
-            // Авто-вращение
-            if (asteroidMesh && !controls.enableRotate) {
-                asteroidMesh.rotation.y += 0.003;
-                wireframeMesh.rotation.y += 0.003;
+            // Мерцание звёзд
+            starMat.opacity = 0.7 + Math.sin(animTime * 0.5) * 0.2;
+            const sizes = starsGeo.attributes.size.array;
+            for (let i = 0; i < Math.min(300, starsCount); i++) {
+                sizes[i] = starSizes[i] * (0.6 + Math.sin(animTime * 2 + starPhases[i]) * 0.4);
             }
+            starsGeo.attributes.size.needsUpdate = true;
+            
+            // Вращение звёздного фона
+            stars.rotation.y += 0.0001;
+            stars.rotation.x += 0.00005;
+            
+            // Вращение соседних астероидов
+            neighborAsteroids.forEach((na, i) => {
+                na.rotation.y += 0.002 + i * 0.001;
+                na.rotation.x += 0.001;
+                na.position.y += Math.sin(animTime * 0.5 + i) * 0.003;
+            });
             
             // Обновляем частицы
             for (let i = sculptParticles.length - 1; i >= 0; i--) {
