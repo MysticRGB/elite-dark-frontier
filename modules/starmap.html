@@ -308,7 +308,7 @@ let traveling=false,travelTo=null,travelFrom=null,travelT=0;
 let routeActive=false,routeStart=null,routeEnd=null,routeCalcing=false,routeStopped=false;
 let routeLines=[],routeBest=null,routeAll=[],selRings=[],nameLabels=[];
 const MAX_PATHS=10;
-let nasaData={apod:null,neo:[],apodError:null,neoError:null};
+let nasaData={apod:null,neo:[]};
 let activeTab='info';
 
 // ============================================================
@@ -622,28 +622,25 @@ function renderRoute(){
 function renderNasa(){
  let h='<div class="d-title">NASA ASTRONOMY PICTURE OF THE DAY</div>';
  if(nasaData.apod){
+  if(nasaData.apod._fallback)h+='<div style="font-size:10px;color:var(--pri-d);margin-bottom:6px;letter-spacing:1px">ARCHIVE &bull; Live data cached daily</div>';
   if(nasaData.apod.media_type==='video'){
    h+=`<iframe src="${nasaData.apod.url}" style="width:100%;height:200px;border:1px solid rgba(240,160,48,.1);border-radius:4px;margin-bottom:8px" allowfullscreen></iframe>`;
   }else{
    const imgUrl=nasaData.apod.hdurl||nasaData.apod.url;
-   h+=`<img class="nasa-img" src="${imgUrl}" alt="APOD" onerror="this.style.display='none'">`;
+   h+=`<img class="nasa-img" src="${imgUrl}" alt="APOD" onerror="this.onerror=null;this.src='https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg'">`;
   }
   h+=`<div style="color:var(--pri-b);font-weight:bold;margin-bottom:4px">${nasaData.apod.title||''}</div>
-  <div style="font-size:12px;color:var(--pri-d);margin-bottom:12px;line-height:1.5">${(nasaData.apod.explanation||'').slice(0,300)}...</div>
+  <div style="font-size:12px;color:var(--pri-d);margin-bottom:8px;line-height:1.5">${(nasaData.apod.explanation||'').slice(0,300)}...</div>
   <div style="font-size:11px;color:var(--pri-d)">${nasaData.apod.date||''}</div>`;
- }else if(nasaData.apodError){
-  h+=`<p style="color:var(--red);font-size:12px">${nasaData.apodError}</p>`;
  }else{
   h+='<p style="color:var(--pri-d)">Loading APOD...</p>';
  }
- h+='<div class="d-title" style="margin-top:16px">NEAR-EARTH OBJECTS TODAY</div>';
+ h+='<div class="d-title" style="margin-top:16px">NEAR-EARTH OBJECTS</div>';
  if(nasaData.neo.length){
   nasaData.neo.forEach(n=>{
    h+=`<div class="neo-item"><div class="neo-name">${n.name}</div>
    <div class="neo-info">\u2300 ${n.size} m &bull; ${n.speed} km/s &bull; miss: ${Number(n.miss).toLocaleString()} km</div></div>`;
   });
- }else if(nasaData.neoError){
-  h+=`<p style="color:var(--red);font-size:12px">${nasaData.neoError}</p>`;
  }else{
   h+='<p style="color:var(--pri-d)">Loading NEO data...</p>';
  }
@@ -708,18 +705,41 @@ window.selectRoute=function(i){
 };
 
 // ============================================================
-//  NASA
+//  NASA (cached per day + fallback gallery)
 // ============================================================
+const APOD_FALLBACK=[
+ {title:'Pillars of Creation',explanation:'One of the most iconic images from the Hubble Space Telescope: the Pillars of Creation in the Eagle Nebula (M16), 6500 light-years away. Columns of interstellar gas and dust where new stars are forming.',url:'https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg',date:'Hubble Heritage'},
+ {title:'Pale Blue Dot',explanation:'Voyager 1 looked back at Earth from 6 billion km away on Feb 14, 1990. Our planet appears as a tiny bright pixel in a sunbeam. Carl Sagan: "Look again at that dot. That\'s here. That\'s home. That\'s us."',url:'https://apod.nasa.gov/apod/image/2002/PaleBlueDotRevisited_Voyager1_960.jpg',date:'Voyager 1'},
+ {title:'The Crab Nebula',explanation:'Messier 1 (the Crab Nebula) is the remnant of a supernova explosion recorded by Chinese astronomers in 1054 AD. At its center spins a neutron star 30 times per second.',url:'https://apod.nasa.gov/apod/image/2310/M1_HubbleSchmidt_960.jpg',date:'Hubble/Schmidt'},
+ {title:'Saturn from Cassini',explanation:'The Cassini spacecraft orbited Saturn from 2004 to 2017. Its rings are 99.9% water ice, spanning 282,000 km but only 10 meters thick.',url:'https://apod.nasa.gov/apod/image/1609/SaturnAbove_Cassini_960.jpg',date:'Cassini'},
+ {title:'Andromeda Galaxy',explanation:'M31 is the nearest large galaxy, 2.5 million light-years away, containing roughly a trillion stars. It is approaching the Milky Way at 110 km/s and will merge with us in ~4.5 billion years.',url:'https://apod.nasa.gov/apod/image/2309/M31_HubbleSubaru_960.jpg',date:'Hubble/Subaru'},
+];
+const NEO_FALLBACK=[
+ {name:'(99942) Apophis',size:370,speed:31,miss:31000},
+ {name:'(101955) Bennu',size:490,speed:28,miss:7500000},
+ {name:'2024 YR4',size:60,speed:18,miss:420000},
+ {name:'(4179) Toutatis',size:4500,speed:35,miss:7000000},
+ {name:'(3200) Phaethon',size:5100,speed:36,miss:12000000},
+];
+
+function nasaCacheKey(){return'nasa_'+new Date().toISOString().split('T')[0];}
+
 async function fetchNASA(){
+ const ck=nasaCacheKey();
+ const cached=localStorage.getItem(ck);
+ if(cached){
+  try{const d=JSON.parse(cached);nasaData.apod=d.apod;nasaData.neo=d.neo;
+   if(activeTab==='nasa')refreshDrawer();return;}catch(e){}
+ }
+ let apodOk=false,neoOk=false;
  try{
   const r=await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
-  if(r.ok){
-   nasaData.apod=await r.json();
-  }else{
-   const err=await r.json().catch(()=>({}));
-   nasaData.apodError='APOD: '+(err.error?.message||'API limit reached. Try later.');
-  }
- }catch(e){nasaData.apodError='APOD: Network error';}
+  if(r.ok){nasaData.apod=await r.json();apodOk=true;}
+ }catch(e){}
+ if(!apodOk){
+  nasaData.apod=APOD_FALLBACK[Math.floor(Math.random()*APOD_FALLBACK.length)];
+  nasaData.apod._fallback=true;
+ }
  if(activeTab==='nasa')refreshDrawer();
  try{
   const today=new Date().toISOString().split('T')[0];
@@ -732,11 +752,13 @@ async function fetchNASA(){
     size:Math.round((o.estimated_diameter?.meters?.estimated_diameter_max||0)),
     speed:Math.round(o.close_approach_data?.[0]?.relative_velocity?.kilometers_per_second||0),
     miss:Math.round(o.close_approach_data?.[0]?.miss_distance?.kilometers||0)
-   }));
-  }else{
-   nasaData.neoError='NEO: API limit reached. Try later.';
+   }));neoOk=true;
   }
- }catch(e){nasaData.neoError='NEO: Network error';}
+ }catch(e){}
+ if(!neoOk)nasaData.neo=NEO_FALLBACK;
+ if(apodOk||neoOk){
+  try{localStorage.setItem(ck,JSON.stringify({apod:nasaData.apod,neo:nasaData.neo}));}catch(e){}
+ }
  if(activeTab==='nasa')refreshDrawer();
 }
 

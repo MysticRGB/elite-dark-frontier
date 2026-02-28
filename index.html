@@ -691,55 +691,97 @@ if (newsEl) {
 setInterval(() => { saveGameState(); }, 30000);
 
 // ============================================================
-// NASA REAL DATA
+// NASA REAL DATA (cached per day + fallback)
 // ============================================================
 const NASA_KEY = 'DEMO_KEY';
+const APOD_FALLBACK_INDEX = [
+ {title:'Pillars of Creation',date:'Hubble Heritage',media_type:'image',
+  explanation:'One of the most iconic images from the Hubble Space Telescope: the Pillars of Creation in the Eagle Nebula (M16), 6500 light-years away. Columns of interstellar gas and dust where new stars are born.',
+  url:'https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg'},
+ {title:'Pale Blue Dot',date:'Voyager 1, 1990',media_type:'image',
+  explanation:'Voyager 1 looked back at Earth from 6 billion km away. Our planet appears as a tiny bright pixel. Carl Sagan: "Look again at that dot. That is here. That is home. That is us."',
+  url:'https://apod.nasa.gov/apod/image/2002/PaleBlueDotRevisited_Voyager1_960.jpg'},
+ {title:'Andromeda Galaxy',date:'Hubble/Subaru',media_type:'image',
+  explanation:'M31 is the nearest large galaxy, 2.5 million light-years away, containing roughly a trillion stars. It is approaching the Milky Way at 110 km/s.',
+  url:'https://apod.nasa.gov/apod/image/2309/M31_HubbleSubaru_960.jpg'},
+];
+const NEO_FALLBACK_INDEX = [
+ {name:'99942 Apophis',size:370,miss:31000,danger:true},
+ {name:'101955 Bennu',size:490,miss:7500000,danger:true},
+ {name:'4179 Toutatis',size:4500,miss:7000000,danger:false},
+ {name:'3200 Phaethon',size:5100,miss:12000000,danger:false},
+];
+
+function nasaCacheKeyIdx(){return 'nasa_idx_'+new Date().toISOString().slice(0,10);}
 
 (async function loadNasaAPOD() {
-  try {
-    const r = await fetch('https://api.nasa.gov/planetary/apod?api_key=' + NASA_KEY);
-    if (!r.ok) return;
-    const d = await r.json();
-    const img = document.getElementById('apod-img');
-    const block = document.getElementById('nasa-apod');
-    if (d.media_type === 'image') {
-      img.src = d.url;
-    } else if (d.media_type === 'video') {
-      const ifr = document.createElement('iframe');
-      ifr.src = d.url; ifr.allow = 'autoplay'; ifr.style.border = 'none';
-      ifr.width = 320; ifr.height = 200;
-      img.replaceWith(ifr);
-    }
-    document.getElementById('apod-date').textContent = d.date;
-    const desc = d.explanation || '';
-    document.getElementById('apod-desc').textContent = desc.length > 400 ? desc.slice(0, 400) + '…' : desc;
-    block.classList.add('loaded');
-  } catch(e) { console.warn('APOD unavailable', e); }
+  const ck = nasaCacheKeyIdx();
+  let d = null;
+  const cached = localStorage.getItem(ck+'_apod');
+  if(cached){try{d=JSON.parse(cached);}catch(e){}}
+  if(!d){
+    try {
+      const r = await fetch('https://api.nasa.gov/planetary/apod?api_key=' + NASA_KEY);
+      if (r.ok) { d = await r.json(); try{localStorage.setItem(ck+'_apod',JSON.stringify(d));}catch(e){} }
+    } catch(e) {}
+  }
+  if(!d) d = APOD_FALLBACK_INDEX[Math.floor(Math.random()*APOD_FALLBACK_INDEX.length)];
+  const img = document.getElementById('apod-img');
+  const block = document.getElementById('nasa-apod');
+  if (d.media_type === 'image') {
+    img.src = d.hdurl || d.url;
+    img.onerror = function(){this.src='https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg';};
+  } else if (d.media_type === 'video') {
+    const ifr = document.createElement('iframe');
+    ifr.src = d.url; ifr.allow = 'autoplay'; ifr.style.border = 'none';
+    ifr.width = 320; ifr.height = 200;
+    img.replaceWith(ifr);
+  }
+  document.getElementById('apod-date').textContent = d.date || '';
+  const desc = d.explanation || '';
+  document.getElementById('apod-desc').textContent = desc.length > 400 ? desc.slice(0, 400) + '...' : desc;
+  block.classList.add('loaded');
 })();
 
 (async function loadNasaNEO() {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const r = await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date=' + today + '&end_date=' + today + '&api_key=' + NASA_KEY);
-    if (!r.ok) return;
-    const d = await r.json();
-    const neos = d.near_earth_objects[today] || [];
-    if (!neos.length) return;
-    const list = document.getElementById('neo-list');
-    const top8 = neos.slice(0, 8);
-    list.innerHTML = top8.map(n => {
-      const km = n.close_approach_data[0] ? parseFloat(n.close_approach_data[0].miss_distance.kilometers).toLocaleString('ru-RU', {maximumFractionDigits: 0}) : '?';
-      const diam = n.estimated_diameter.meters;
-      const size = ((diam.estimated_diameter_min + diam.estimated_diameter_max) / 2).toFixed(0);
-      const danger = n.is_potentially_hazardous_asteroid;
-      return '<div class="neo-item">' +
-        '<span class="neo-name">☄️ ' + n.name.replace(/[()]/g,'') + '</span><br>' +
-        'Ø ' + size + ' м · ' + km + ' км' +
-        (danger ? ' <span class="neo-danger">⚠ ОПАСНЫЙ</span>' : '') +
-        '</div>';
-    }).join('');
+  const ck = nasaCacheKeyIdx();
+  let neos = null;
+  const cached = localStorage.getItem(ck+'_neo');
+  if(cached){try{neos=JSON.parse(cached);}catch(e){}}
+  if(!neos){
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const r = await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date=' + today + '&end_date=' + today + '&api_key=' + NASA_KEY);
+      if (r.ok) {
+        const d = await r.json();
+        neos = d.near_earth_objects[today] || [];
+        try{localStorage.setItem(ck+'_neo',JSON.stringify(neos.slice(0,8)));}catch(e){}
+      }
+    } catch(e) {}
+  }
+  const list = document.getElementById('neo-list');
+  if(!neos || !neos.length){
+    list.innerHTML = NEO_FALLBACK_INDEX.map(n =>
+      '<div class="neo-item"><span class="neo-name">\u2604 ' + n.name + '</span><br>' +
+      '\u00D8 ' + n.size + ' m \u00B7 ' + Number(n.miss).toLocaleString() + ' km' +
+      (n.danger ? ' <span class="neo-danger">\u26A0 HAZARDOUS</span>' : '') + '</div>'
+    ).join('');
     document.getElementById('nasa-neo').classList.add('loaded');
-  } catch(e) { console.warn('NEO unavailable', e); }
+    return;
+  }
+  const top8 = neos.slice(0, 8);
+  list.innerHTML = top8.map(n => {
+    const km = n.close_approach_data && n.close_approach_data[0] ? parseFloat(n.close_approach_data[0].miss_distance.kilometers).toLocaleString('ru-RU', {maximumFractionDigits: 0}) : '?';
+    const diam = n.estimated_diameter ? n.estimated_diameter.meters : {estimated_diameter_min:0,estimated_diameter_max:0};
+    const size = ((diam.estimated_diameter_min + diam.estimated_diameter_max) / 2).toFixed(0);
+    const danger = n.is_potentially_hazardous_asteroid;
+    return '<div class="neo-item">' +
+      '<span class="neo-name">\u2604 ' + n.name.replace(/[()]/g,'') + '</span><br>' +
+      '\u00D8 ' + size + ' \u043C \u00B7 ' + km + ' \u043A\u043C' +
+      (danger ? ' <span class="neo-danger">\u26A0 \u041E\u041F\u0410\u0421\u041D\u042B\u0419</span>' : '') +
+      '</div>';
+  }).join('');
+  document.getElementById('nasa-neo').classList.add('loaded');
 })();
 
 // ============================================================
