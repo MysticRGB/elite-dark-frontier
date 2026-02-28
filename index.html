@@ -2,1083 +2,685 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Elite: Dark Frontier v4.0</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<title>Elite: Dark Frontier</title>
 <style>
-:root {
-  --amber: #ffaa00;
-  --amber-dim: #aa7700;
-  --gold: #ffdd99;
-  --gold-dim: #cc9944;
-  --dark: #03010a;
-  --panel: rgba(5,3,15,0.94);
-  --glow: 0 0 12px rgba(255,170,0,0.35), inset 0 0 6px rgba(68,34,0,0.5);
-  --glass: rgba(255,170,0,0.04);
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap');
+:root{
+  --c1:#f0a030;--c1b:#ffd070;--c1d:#8a5a10;--c1g:rgba(240,160,48,.15);
+  --bg:#06050e;--bg2:#0a0914;
+  --glass:rgba(12,10,22,.82);--glass-b:rgba(240,160,48,.04);--glass-border:rgba(240,160,48,.12);
+  --text:#e0d0b0;--text-d:#8a7a5a;--text-dd:#5a4a2a;
+  --grn:#40ff80;--red:#ff5050;--blu:#40a0ff;--cyn:#00e8ff;
+  --radius:8px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --title:'Orbitron',sans-serif;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  background: var(--dark);
-  font-family: 'VT323', monospace;
-  color: var(--gold);
-  overflow: hidden;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-#crt-overlay {
-  position: fixed; inset:0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgba(255,200,100,0.02) 0px, rgba(0,0,0,0.1) 2px, transparent 3px);
-  z-index: 99999; mix-blend-mode: multiply;
-}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;height:100vh;height:100dvh;display:flex;flex-direction:column}
+::selection{background:rgba(240,160,48,.3);color:#fff}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--c1d);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--c1)}
 
-/* --- NAV BAR --- */
-#nav-bar {
-  height: 50px; min-height: 50px;
-  background: linear-gradient(180deg, rgba(15,8,2,0.98) 0%, rgba(5,2,0,0.98) 100%);
-  border-bottom: 2px solid var(--amber);
-  display: flex; align-items: center; gap: 3px;
-  padding: 0 14px; z-index: 10000;
-  box-shadow: 0 4px 24px rgba(255,140,0,0.15), 0 1px 0 rgba(255,170,0,0.3) inset;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-#nav-bar::-webkit-scrollbar { display:none; }
-.nav-title {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 10px; color: #ffee88;
-  margin-right: 14px;
-  text-shadow: 0 0 12px #ffaa00, 0 0 30px rgba(255,140,0,0.4);
-  white-space: nowrap;
-  cursor: pointer;
-  letter-spacing: 1px;
-  transition: text-shadow .3s;
-}
-.nav-title:hover { text-shadow: 0 0 20px #ffcc00, 0 0 40px rgba(255,170,0,0.6); }
-.nav-btn {
-  background: transparent;
-  border: 1px solid rgba(255,170,0,0.15);
-  color: var(--gold-dim);
-  padding: 7px 13px;
-  cursor: pointer;
-  font-family: 'VT323', monospace;
-  font-size: 15px;
-  transition: all .2s ease;
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-radius: 3px;
-  position: relative;
-}
-.nav-btn:hover {
-  background: rgba(255,170,0,0.08);
-  border-color: var(--amber);
-  color: #ffee88;
-  text-shadow: 0 0 10px var(--amber);
-}
-.nav-btn.active {
-  background: linear-gradient(180deg, rgba(255,170,0,0.2) 0%, rgba(255,170,0,0.08) 100%);
-  border-color: var(--amber);
-  color: #ffff88;
-  text-shadow: 0 0 10px var(--amber);
-  box-shadow: 0 0 12px rgba(255,170,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
-}
-.nav-spacer { flex: 1; }
+/* ═══ ANIMATED BACKGROUND ═══ */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+#bg-grad{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 30%,rgba(30,18,4,.25) 0%,transparent 60%)}
 
-/* --- HUD CREDITS BAR --- */
-#hud-bar {
-  display: flex; align-items: center; gap: 14px;
-  font-size: 14px;
-  margin-left: auto;
-  padding-left: 14px;
-  border-left: 1px solid rgba(255,170,0,0.2);
-}
-.hud-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-.hud-label { color: var(--amber-dim); font-size: 11px; letter-spacing: 1px; }
-.hud-val { color: #ffee88; font-weight: bold; font-size: 16px; text-shadow: 0 0 8px rgba(255,200,0,0.3); }
+/* ═══ TOP NAV ═══ */
+#nav{position:relative;z-index:100;height:52px;min-height:52px;
+  display:flex;align-items:center;gap:4px;padding:0 16px;
+  background:var(--glass);border-bottom:1px solid var(--glass-border);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.nav-logo{font-family:var(--title);font-weight:900;font-size:13px;
+  color:var(--c1b);letter-spacing:4px;cursor:pointer;white-space:nowrap;
+  text-shadow:0 0 20px rgba(240,160,48,.4);transition:text-shadow .3s;margin-right:8px}
+.nav-logo:hover{text-shadow:0 0 30px rgba(240,160,48,.7)}
+.nav-logo span{font-weight:400;font-size:10px;color:var(--c1d);letter-spacing:1px;margin-left:6px}
+.n-btn{background:none;border:1px solid transparent;color:var(--text-d);
+  padding:6px 14px;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;
+  border-radius:20px;transition:all .2s;white-space:nowrap;letter-spacing:.5px}
+.n-btn:hover{color:var(--c1b);background:var(--c1g);border-color:var(--glass-border)}
+.n-btn.act{color:var(--c1b);background:var(--c1g);border-color:rgba(240,160,48,.25);
+  box-shadow:0 0 12px rgba(240,160,48,.1)}
+.nav-spacer{flex:1}
+.nav-hud{display:flex;align-items:center;gap:14px;padding-left:12px;
+  border-left:1px solid var(--glass-border)}
+.hud-chip{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:12px}
+.hud-chip .lbl{color:var(--text-dd);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.hud-chip .val{color:var(--c1b);font-weight:700}
+#nav-scroll{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;flex:1;align-items:center}
+#nav-scroll::-webkit-scrollbar{display:none}
 
-/* --- MODULE FRAME --- */
-#module-container {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-#module-frame {
-  width: 100%; height: 100%;
-  border: none;
-  background: var(--dark);
-}
+/* ═══ MAIN CONTENT ═══ */
+#main{flex:1;position:relative;z-index:10;overflow:hidden}
+#welcome{position:absolute;inset:0;overflow-y:auto;padding:24px 20px 40px;
+  scrollbar-width:thin;scrollbar-color:var(--c1d) transparent;
+  transition:opacity .4s,transform .4s}
+#welcome.out{opacity:0;transform:scale(.98);pointer-events:none}
+#frame{position:absolute;inset:0;border:none;background:var(--bg);
+  transition:opacity .3s;width:100%;height:100%}
+#frame.hide{opacity:0;pointer-events:none}
 
-/* --- WELCOME SCREEN --- */
-#welcome-screen {
-  position: absolute; inset:0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-start;
-  background: radial-gradient(ellipse at 50% 30%, rgba(30,18,4,0.6) 0%, var(--dark) 65%);
-  z-index: 5000;
-  padding: 30px 40px 40px;
-  overflow-y: auto;
-  scrollbar-width: thin; scrollbar-color: var(--amber) transparent;
-}
-#welcome-screen::-webkit-scrollbar { width:6px; }
-#welcome-screen::-webkit-scrollbar-thumb { background:var(--amber); border-radius:3px; }
-#welcome-screen.hidden { display: none; }
-.welcome-title {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 24px; color: #ffee88;
-  text-shadow: 0 0 30px rgba(255,170,0,0.8), 0 0 60px rgba(255,100,0,0.3), 0 2px 0 #553300;
-  margin-bottom: 16px;
-  text-align: center;
-  line-height: 1.4;
-  letter-spacing: 2px;
-}
-.welcome-sub {
-  font-size: 20px; color: #bbaa77;
-  text-align: center; max-width: 720px;
-  line-height: 1.6; margin-bottom: 24px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-}
-.welcome-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  max-width: 920px;
-  width: 100%;
-  margin-bottom: 20px;
-}
-.welcome-card {
-  border: 1px solid rgba(255,170,0,0.15);
-  background: linear-gradient(160deg, rgba(20,12,4,0.9) 0%, rgba(8,4,2,0.95) 100%);
-  padding: 18px 14px;
-  cursor: pointer;
-  transition: all .25s ease;
-  text-align: center;
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
-}
-.welcome-card::before {
-  content:''; position:absolute; inset:0;
-  background: linear-gradient(180deg, rgba(255,170,0,0.04) 0%, transparent 50%);
-  pointer-events:none; transition: opacity .25s;
-  opacity: 0;
-}
-.welcome-card:hover::before { opacity:1; }
-.welcome-card:hover {
-  border-color: var(--amber);
-  box-shadow: 0 4px 20px rgba(255,140,0,0.2), 0 0 1px var(--amber);
-  transform: translateY(-3px);
-}
-.welcome-card:active { transform: translateY(0); }
-.welcome-card .icon { font-size: 32px; margin-bottom: 8px; filter: drop-shadow(0 0 6px rgba(255,170,0,0.3)); }
-.welcome-card .name {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 8px; color: #ffee88; margin-bottom: 6px;
-  letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(255,200,0,0.3);
-}
-.welcome-card .desc { font-size: 14px; color: #997744; line-height: 1.3; }
+/* ═══ HERO ═══ */
+.hero{text-align:center;max-width:820px;margin:0 auto 28px;padding-top:8px}
+.hero-title{font-family:var(--title);font-weight:900;font-size:clamp(22px,4vw,36px);
+  background:linear-gradient(135deg,var(--c1) 0%,var(--c1b) 50%,#fff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1.2;margin-bottom:10px;
+  animation:hero-shimmer 4s ease-in-out infinite alternate}
+@keyframes hero-shimmer{
+  0%{filter:brightness(1) drop-shadow(0 0 12px rgba(240,160,48,.3))}
+  100%{filter:brightness(1.15) drop-shadow(0 0 20px rgba(240,160,48,.5))}}
+.hero-sub{font-size:clamp(13px,2vw,16px);color:var(--text-d);line-height:1.7;max-width:640px;margin:0 auto}
+.hero-sub b{color:var(--c1b);font-weight:600}
 
-/* --- TOOLTIPS --- */
-.game-tooltip {
-  position: fixed; z-index: 99000; pointer-events: none;
-  background: rgba(0,0,0,0.95); border: 2px solid #ffaa00;
-  color: #ffdd88; padding: 8px 14px; font-size: 15px;
-  max-width: 280px; opacity: 0; transition: opacity .2s;
-  box-shadow: 0 0 15px rgba(255,170,0,0.3);
-  font-family: 'VT323', monospace;
-}
-.game-tooltip.visible { opacity: 1; }
+/* ═══ NASA ═══ */
+.nasa-row{display:flex;gap:12px;max-width:920px;margin:0 auto 20px;flex-wrap:wrap}
+.nasa-card{flex:1;min-width:280px;background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:var(--radius);overflow:hidden;backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);transition:border-color .3s}
+.nasa-card:hover{border-color:rgba(240,160,48,.25)}
+.nasa-card img{width:100%;height:180px;object-fit:cover;display:block;border-bottom:1px solid var(--glass-border)}
+.nasa-card iframe{width:100%;height:180px;border:none;border-bottom:1px solid var(--glass-border)}
+.nasa-body{padding:12px 14px}
+.nasa-tag{font-family:var(--mono);font-size:10px;color:var(--c1);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:4px}
+.nasa-title{font-family:var(--title);font-size:12px;color:var(--c1b);margin-bottom:6px;letter-spacing:1px}
+.nasa-desc{font-size:13px;color:var(--text-d);line-height:1.5}
+.neo-list{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px}
+.neo-chip{background:rgba(240,160,48,.05);border:1px solid var(--glass-border);
+  border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--mono)}
+.neo-chip .name{color:var(--c1b);font-weight:700}
+.neo-chip .info{color:var(--text-dd);font-size:11px}
+.neo-chip .danger{color:var(--red);font-weight:700}
 
-/* --- ANIMATIONS --- */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 6px rgba(255,170,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05); }
-  50% { box-shadow: 0 0 16px rgba(255,170,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1); }
-}
-@keyframes title-breathe {
-  0%, 100% { text-shadow: 0 0 30px rgba(255,170,0,0.8), 0 0 60px rgba(255,100,0,0.3), 0 2px 0 #553300; }
-  50% { text-shadow: 0 0 40px rgba(255,170,0,1), 0 0 80px rgba(255,100,0,0.5), 0 2px 0 #553300; }
-}
-.welcome-title { animation: title-breathe 4s ease-in-out infinite; }
-.welcome-card { animation: fadeInUp 0.5s cubic-bezier(.4,0,.2,1) both; }
-.welcome-card:nth-child(1) { animation-delay: 0.03s; }
-.welcome-card:nth-child(2) { animation-delay: 0.07s; }
-.welcome-card:nth-child(3) { animation-delay: 0.11s; }
-.welcome-card:nth-child(4) { animation-delay: 0.15s; }
-.welcome-card:nth-child(5) { animation-delay: 0.19s; }
-.welcome-card:nth-child(6) { animation-delay: 0.23s; }
-.welcome-card:nth-child(7) { animation-delay: 0.27s; }
-.welcome-card:nth-child(8) { animation-delay: 0.31s; }
-.welcome-card:nth-child(9) { animation-delay: 0.35s; }
-.welcome-card:nth-child(10) { animation-delay: 0.39s; }
-.nav-btn:active { transform: scale(0.96); }
-.nav-btn.active { animation: pulse-glow 3s ease-in-out infinite; }
-.hud-val { transition: color .3s, text-shadow .3s; }
+/* ═══ MODULE GRID ═══ */
+.grid-title{text-align:center;font-family:var(--title);font-size:11px;color:var(--text-dd);
+  letter-spacing:4px;text-transform:uppercase;margin-bottom:14px}
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:10px;max-width:920px;margin:0 auto 20px}
+.mod-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);
+  padding:16px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mod-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;
+  background:var(--c1);opacity:.3;transition:opacity .25s}
+.mod-card:hover{border-color:rgba(240,160,48,.3);transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 1px rgba(240,160,48,.3)}
+.mod-card:hover::after{opacity:1}
+.mod-card:active{transform:translateY(0)}
+.mod-card .ic{font-size:28px;margin-bottom:8px;filter:drop-shadow(0 2px 6px rgba(240,160,48,.2))}
+.mod-card .nm{font-family:var(--title);font-size:10px;color:var(--c1b);letter-spacing:2px;margin-bottom:4px}
+.mod-card .ds{font-size:13px;color:var(--text-d);line-height:1.4}
 
-/* --- LEVEL BADGES --- */
-.level-badge {
-  display: inline-block; padding: 2px 8px;
-  border: 1px solid #ffaa00; background: rgba(255,170,0,0.1);
-  font-family: 'Press Start 2P', cursive; font-size: 8px;
-  color: #ffff88; margin-left: 6px;
-}
-.skill-tree { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.skill-item {
-  border: 1px solid rgba(255,170,0,0.12); padding: 8px; text-align: center;
-  transition: all .25s; cursor: default; border-radius: 4px;
-  background: rgba(10,6,2,0.5);
-}
-.skill-item.unlocked { border-color: rgba(255,170,0,0.4); background: linear-gradient(160deg, rgba(255,170,0,0.08) 0%, rgba(255,170,0,0.02) 100%); }
-.skill-item .skill-name { font-size: 11px; color: var(--amber-dim); }
-.skill-item .skill-level { font-size: 18px; color: #ffee88; font-weight: bold; text-shadow: 0 0 6px rgba(255,200,0,0.3); }
-.skill-item .skill-bar { height: 3px; background: rgba(20,10,0,0.8); margin-top: 4px; border-radius: 2px; overflow: hidden; }
-.skill-item .skill-fill { height: 100%; background: linear-gradient(90deg, var(--amber), #ffdd66); transition: width .5s ease; border-radius: 2px; }
+/* ═══ NEWS TICKER ═══ */
+.ticker{max-width:920px;margin:0 auto;height:32px;display:flex;align-items:center;
+  background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);
+  overflow:hidden;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ticker-tag{background:linear-gradient(135deg,var(--c1),#cc7700);color:#000;
+  font-family:var(--mono);font-size:9px;font-weight:700;padding:4px 10px;
+  letter-spacing:2px;flex-shrink:0;border-radius:var(--radius) 0 0 var(--radius)}
+.ticker-scroll{flex:1;overflow:hidden;position:relative;height:100%}
+.ticker-text{white-space:nowrap;color:var(--text-d);font-size:13px;
+  position:absolute;top:50%;transform:translateY(-50%);will-change:transform}
 
-/* HUD flash effect */
-@keyframes hud-flash {
-  0% { color: #88ff88; text-shadow: 0 0 10px #88ff88; }
-  100% { color: #ffff88; text-shadow: none; }
-}
-.hud-val.flash { animation: hud-flash 0.6s ease; }
+/* ═══ PROFILE ═══ */
+#profile{position:fixed;top:52px;right:-400px;width:390px;height:calc(100vh - 52px);height:calc(100dvh - 52px);
+  background:var(--glass);border-left:1px solid var(--glass-border);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  z-index:90;padding:20px;overflow-y:auto;
+  transition:right .4s cubic-bezier(.4,0,.2,1);
+  scrollbar-width:thin;scrollbar-color:var(--c1d) transparent}
+#profile.open{right:0}
+.p-close{position:absolute;top:10px;right:10px;background:none;border:none;
+  color:var(--text-dd);font-size:22px;cursor:pointer;transition:color .2s;
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.p-close:hover{color:var(--c1);background:var(--c1g)}
+.p-title{font-family:var(--title);font-size:13px;color:var(--c1b);letter-spacing:3px;
+  text-align:center;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--glass-border)}
+.p-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(240,160,48,.04)}
+.p-row .lbl{color:var(--text-dd);font-size:13px} .p-row .val{color:var(--c1b);font-weight:600;font-family:var(--mono);font-size:13px}
+.p-section{margin-top:14px;background:rgba(240,160,48,.02);border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:12px}
+.p-section-t{font-family:var(--title);font-size:10px;color:var(--c1);letter-spacing:2px;
+  margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--glass-border)}
+.p-bar{height:6px;background:rgba(240,160,48,.08);border-radius:3px;overflow:hidden;margin:4px 0}
+.p-bar-fill{height:100%;background:linear-gradient(90deg,var(--c1d),var(--c1),var(--c1b));
+  border-radius:3px;transition:width .5s ease;box-shadow:0 0 8px rgba(240,160,48,.2)}
+.skill-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.skill-card{background:rgba(240,160,48,.03);border:1px solid var(--glass-border);
+  border-radius:6px;padding:8px;text-align:center;transition:border-color .2s}
+.skill-card.on{border-color:rgba(240,160,48,.25)}
+.skill-card .ic{font-size:18px} .skill-card .nm{font-size:11px;color:var(--text-dd);margin:2px 0}
+.skill-card .lv{font-family:var(--mono);font-size:16px;color:var(--c1b);font-weight:700}
+.lvl-badge{display:inline-block;padding:2px 8px;border:1px solid var(--c1);
+  border-radius:10px;font-family:var(--mono);font-size:10px;color:var(--c1b);margin-left:4px;
+  background:var(--c1g)}
 
-/* --- NASA APOD block --- */
-#nasa-apod {
-  width: 100%; max-width: 920px;
-  background: linear-gradient(135deg, rgba(10,15,25,0.9) 0%, rgba(5,8,18,0.95) 100%);
-  border: 1px solid rgba(80,120,180,0.25);
-  border-radius: 6px;
-  margin-bottom: 16px;
-  display: none;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,50,120,0.15);
-}
-#nasa-apod.loaded { display: flex; }
-#nasa-apod img, #nasa-apod iframe {
-  width: 320px; min-height: 200px; object-fit: cover; flex-shrink: 0;
-  border-right: 1px solid rgba(80,120,180,0.2);
-}
-#nasa-apod-info {
-  padding: 12px 16px; flex: 1; overflow-y: auto; max-height: 220px;
-}
-#nasa-apod-info .apod-title {
-  font-family: 'Press Start 2P', cursive; font-size: 9px;
-  color: #88ccff; margin-bottom: 8px;
-  text-shadow: 0 0 8px #4488cc;
-}
-#nasa-apod-info .apod-date { color: #667788; font-size: 13px; margin-bottom: 6px; }
-#nasa-apod-info .apod-desc {
-  color: #aabbcc; font-size: 14px; line-height: 1.5;
-}
-#nasa-apod-info .apod-source {
-  color: #556677; font-size: 11px; margin-top: 8px;
-}
-#nasa-neo {
-  width: 100%; max-width: 900px;
-  background: rgba(0,0,0,0.85);
-  border: 1px solid #553322;
-  margin-bottom: 12px;
-  padding: 10px 16px;
-  display: none;
-}
-#nasa-neo.loaded { display: block; }
-#nasa-neo .neo-title {
-  font-family: 'Press Start 2P', cursive; font-size: 8px;
-  color: #ff8844; margin-bottom: 8px;
-}
-#nasa-neo .neo-list { display: flex; gap: 10px; flex-wrap: wrap; }
-.neo-item {
-  background: rgba(255,100,0,0.1); border: 1px solid #663300;
-  padding: 6px 10px; font-size: 13px; color: #ffcc88;
-}
-.neo-item .neo-name { color: #ffaa44; font-weight: bold; }
-.neo-item .neo-danger { color: #ff4444; }
+/* ═══ STATUS BAR ═══ */
+#status{height:28px;min-height:28px;display:flex;align-items:center;padding:0 16px;gap:16px;
+  background:var(--glass);border-top:1px solid var(--glass-border);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:100;
+  font-size:12px;color:var(--text-dd)}
+#status-msg{flex:1;transition:color .3s}
+#status-loc{font-family:var(--mono);color:var(--c1d);font-size:11px}
+@keyframes s-flash{0%{color:var(--grn);text-shadow:0 0 8px var(--grn)}100%{color:var(--text-dd);text-shadow:none}}
+#status-msg.flash{animation:s-flash .8s ease}
 
-/* --- NEWS TICKER on welcome --- */
-.news-ticker-wrap {
-  width: 100%; max-width: 920px;
-  border: 1px solid rgba(255,170,0,0.2);
-  border-radius: 4px;
-  background: linear-gradient(90deg, rgba(30,18,4,0.8) 0%, rgba(10,6,2,0.7) 100%);
-  overflow: hidden; height: 34px;
-  display: flex; align-items: center;
-  box-shadow: 0 2px 12px rgba(255,140,0,0.08);
-}
-.news-label {
-  background: linear-gradient(135deg, var(--amber) 0%, #cc7700 100%); color: #000;
-  font-family: 'Press Start 2P', cursive;
-  font-size: 7px; padding: 4px 12px;
-  white-space: nowrap; flex-shrink: 0;
-  letter-spacing: 2px;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
-}
-.news-scroll { flex: 1; overflow: hidden; position: relative; height: 100%; }
-.news-content {
-  white-space: nowrap; color: #ffdd88; font-size: 15px;
-  position: absolute; top: 50%; transform: translateY(-50%);
-  left: 100%;
-  will-change: transform;
-}
+/* ═══ TOAST ═══ */
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
+  background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);
+  padding:10px 20px;font-size:13px;color:var(--c1b);backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:all .3s;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* --- PROFILE PANEL (slide-in) --- */
-#profile-panel {
-  position: fixed; top: 50px; right: -420px;
-  width: 400px; height: calc(100vh - 50px);
-  background: linear-gradient(180deg, rgba(10,6,2,0.98) 0%, rgba(3,1,8,0.98) 100%);
-  border-left: 2px solid var(--amber);
-  box-shadow: -8px 0 40px rgba(255,140,0,0.15), -2px 0 0 rgba(255,170,0,0.1);
-  z-index: 9000;
-  padding: 20px;
-  overflow-y: auto;
-  transition: right .35s cubic-bezier(.4,0,.2,1);
-  font-size: 16px;
-  scrollbar-width: thin; scrollbar-color: var(--amber) transparent;
-}
-#profile-panel::-webkit-scrollbar { width:5px; }
-#profile-panel::-webkit-scrollbar-thumb { background:var(--amber); border-radius:3px; }
-#profile-panel.open { right: 0; }
-#profile-panel h2 {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 13px; color: #ffff88;
-  text-align: center; margin-bottom: 16px;
-  border-bottom: 2px solid var(--amber);
-  padding-bottom: 10px;
-}
-.prof-row {
-  display: flex; justify-content: space-between;
-  padding: 7px 0; border-bottom: 1px solid rgba(255,170,0,0.08);
-}
-.prof-label { color: var(--amber-dim); font-size: 15px; }
-.prof-val { color: #ffee88; font-weight: bold; text-shadow: 0 0 6px rgba(255,200,0,0.2); }
-.prof-bar-wrap { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
-.prof-bar-bg { flex:1; height:12px; background:rgba(20,10,0,0.8); border:1px solid rgba(255,170,0,0.3); border-radius:2px; overflow:hidden; }
-.prof-bar-fill { height:100%; background: linear-gradient(90deg, #cc7700, var(--amber), #ffdd66); transition: width .5s ease; border-radius:2px; box-shadow: 0 0 8px rgba(255,170,0,0.3); }
-.prof-section {
-  margin-top: 14px;
-  border: 1px solid rgba(255,170,0,0.12);
-  border-radius: 4px;
-  padding: 12px;
-  background: linear-gradient(160deg, rgba(20,12,4,0.4) 0%, transparent 100%);
-}
-.prof-section-title {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 9px; color: #ffee88; letter-spacing: 1px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid rgba(255,170,0,0.15);
-  padding-bottom: 6px;
-  text-shadow: 0 0 8px rgba(255,200,0,0.2);
-}
-.prof-close {
-  position: absolute; top: 10px; right: 10px;
-  background: #664422; border: 1px solid var(--amber);
-  color: var(--gold); width: 32px; height: 32px;
-  cursor: pointer; font-size: 20px;
-  display: flex; align-items: center; justify-content: center;
-}
-.prof-close:hover { background: #aa6633; }
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.mod-card{animation:fadeUp .5s cubic-bezier(.4,0,.2,1) both}
+.mod-card:nth-child(1){animation-delay:.02s}.mod-card:nth-child(2){animation-delay:.05s}
+.mod-card:nth-child(3){animation-delay:.08s}.mod-card:nth-child(4){animation-delay:.11s}
+.mod-card:nth-child(5){animation-delay:.14s}.mod-card:nth-child(6){animation-delay:.17s}
+.mod-card:nth-child(7){animation-delay:.2s}.mod-card:nth-child(8){animation-delay:.23s}
+.mod-card:nth-child(9){animation-delay:.26s}.mod-card:nth-child(10){animation-delay:.29s}
 
-/* --- STATUS BAR (bottom) --- */
-#status-bar {
-  height: 26px; min-height: 26px;
-  background: linear-gradient(180deg, rgba(10,6,2,0.95) 0%, rgba(3,1,8,0.98) 100%);
-  border-top: 1px solid rgba(255,170,0,0.15);
-  display: flex; align-items: center;
-  padding: 0 14px;
-  font-size: 13px;
-  color: #776622;
-  z-index: 10000;
-  gap: 20px;
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  #nav{height:46px;min-height:46px;padding:0 8px;gap:2px}
+  .nav-logo{font-size:10px;letter-spacing:2px;margin-right:4px}
+  .nav-logo span{display:none}
+  .n-btn{padding:5px 10px;font-size:12px}
+  .nav-hud{gap:8px;padding-left:6px}
+  .hud-chip .val{font-size:11px}
+  .hud-chip .lbl{font-size:9px}
+  #welcome{padding:12px 10px 30px}
+  .hero-sub{font-size:13px;line-height:1.5}
+  .nasa-row{flex-direction:column}
+  .mod-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .mod-card{padding:12px}
+  .mod-card .ic{font-size:22px;margin-bottom:4px}
+  .mod-card .nm{font-size:8px}
+  .mod-card .ds{font-size:12px}
+  #profile{width:100%;right:-100%}
+  #status{height:24px;min-height:24px;font-size:11px}
+  .ticker{height:28px}
 }
-#status-msg { flex: 1; transition: color .3s; }
-#status-loc { color: #cc8800; }
-@keyframes status-flash {
-  0% { color: #88ff88; text-shadow: 0 0 8px #88ff88; }
-  100% { color: #886622; text-shadow: none; }
+@media(max-width:480px){
+  .mod-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .n-btn{padding:4px 8px;font-size:11px}
+  .nav-hud .hud-chip:last-child{display:none}
 }
-#status-msg.flash { animation: status-flash 1s ease; }
-
-/* ═══ MOBILE / iPHONE ═══ */
-@media (max-width: 768px) {
-  #nav-bar {
-    height: auto; min-height: 40px; flex-wrap: wrap; padding: 4px 6px; gap: 3px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .nav-title { font-size: 8px; margin-right: 6px; }
-  .nav-btn { padding: 4px 8px; font-size: 12px; letter-spacing: 0; }
-  #hud-bar { gap: 6px; padding-left: 6px; border-left: none; flex-wrap: wrap; }
-  .hud-label { font-size: 10px; } .hud-val { font-size: 12px; }
-
-  #welcome-screen { padding: 12px 10px; overflow-y: auto; justify-content: flex-start; padding-top: 20px; }
-  .welcome-title { font-size: 14px; margin-bottom: 12px; }
-  .welcome-sub { font-size: 15px; margin-bottom: 16px; line-height: 1.4; }
-  .welcome-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-  .welcome-card { padding: 10px; }
-  .welcome-card .icon { font-size: 24px; margin-bottom: 4px; }
-  .welcome-card .name { font-size: 7px; }
-  .welcome-card .desc { font-size: 12px; }
-
-  #nasa-apod.loaded { flex-direction: column; }
-  #nasa-apod img, #nasa-apod iframe { width: 100%; min-height: 150px; border-right: none; border-bottom: 1px solid #334455; }
-  #nasa-apod-info { max-height: 120px; }
-  .neo-item { font-size: 11px; padding: 4px 6px; }
-
-  #profile-panel { width: 100%; right: -100%; }
-  #profile-panel.open { right: 0; }
-  #profile-panel { padding: 12px; font-size: 14px; }
-  #profile-panel h2 { font-size: 10px; }
-  .prof-section { padding: 8px; }
-  .skill-tree { grid-template-columns: 1fr; }
-
-  #status-bar { height: 22px; min-height: 22px; font-size: 11px; padding: 0 6px; gap: 8px; }
-  #status-loc { font-size: 10px; }
-
-  .game-tooltip { display: none !important; }
-  .news-ticker-wrap { height: 28px; }
-  .news-content { font-size: 13px; }
-}
-
-@media (max-width: 480px) {
-  .welcome-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .welcome-card .name { font-size: 6px; }
-  .nav-btn { padding: 3px 5px; font-size: 11px; }
-  .nav-title { font-size: 7px; }
-  #hud-bar .hud-item:nth-child(3) { display: none; }
-}
-
-/* iOS safe areas */
-@supports (padding-top: env(safe-area-inset-top)) {
-  #nav-bar { padding-top: env(safe-area-inset-top); }
-  #status-bar { padding-bottom: env(safe-area-inset-bottom); }
+@supports(padding:env(safe-area-inset-top)){
+  #nav{padding-top:env(safe-area-inset-top)}
+  #status{padding-bottom:env(safe-area-inset-bottom)}
 }
 </style>
 </head>
 <body>
 
-<div id="crt-overlay"></div>
+<canvas id="bg-canvas"></canvas>
+<div id="bg-grad"></div>
 
-<!-- NAVIGATION BAR -->
-<div id="nav-bar">
-  <span class="nav-title" id="logo-btn">ELITE: DARK FRONTIER</span>
-  <button class="nav-btn active" data-module="welcome">ГЛАВНАЯ</button>
-  <button class="nav-btn" data-module="modules/starmap.html">КАРТА НЕБА</button>
-  <button class="nav-btn" data-module="modules/constructors.html">ВЕРФЬ</button>
-  <button class="nav-btn" data-module="modules/mining.html">ДОБЫЧА</button>
-  <button class="nav-btn" data-module="modules/asteroid.html">АСТЕРОИД</button>
-  <button class="nav-btn" data-module="modules/planetarium.html">ПЛАНЕТАРИЙ</button>
-  <button class="nav-btn" data-module="modules/rover.html">РОВЕР</button>
-  <button class="nav-btn" data-module="modules/terraforming.html">СКАНЕР</button>
-  <button class="nav-btn" data-module="modules/market.html">РЫНОК</button>
-  <button class="nav-btn" data-module="modules/changelog.html">ЖУРНАЛ</button>
-  <div id="hud-bar">
-    <div class="hud-item"><span class="hud-label">CR:</span><span class="hud-val" id="hud-credits">50,000</span></div>
-    <div class="hud-item"><span class="hud-label">FUEL:</span><span class="hud-val" id="hud-fuel">7.0</span></div>
-    <div class="hud-item"><span class="hud-label">CARGO:</span><span class="hud-val" id="hud-cargo">0/20</span></div>
-    <button class="nav-btn" id="profile-btn" style="margin-left:8px;">ПИЛОТ</button>
+<nav id="nav">
+  <div class="nav-logo" id="logo">ELITE<span>DARK FRONTIER</span></div>
+  <div id="nav-scroll">
+    <button class="n-btn act" data-m="welcome">Главная</button>
+    <button class="n-btn" data-m="modules/starmap.html">Карта неба</button>
+    <button class="n-btn" data-m="modules/constructors.html">Верфь</button>
+    <button class="n-btn" data-m="modules/mining.html">Добыча</button>
+    <button class="n-btn" data-m="modules/asteroid.html">Астероид</button>
+    <button class="n-btn" data-m="modules/planetarium.html">Планетарий</button>
+    <button class="n-btn" data-m="modules/rover.html">Ровер</button>
+    <button class="n-btn" data-m="modules/terraforming.html">Сканер</button>
+    <button class="n-btn" data-m="modules/market.html">Рынок</button>
+    <button class="n-btn" data-m="modules/changelog.html">Журнал</button>
   </div>
-</div>
+  <div class="nav-hud">
+    <div class="hud-chip"><span class="lbl">CR</span><span class="val" id="h-cr">50 000</span></div>
+    <div class="hud-chip"><span class="lbl">Топливо</span><span class="val" id="h-fuel">7.0</span></div>
+    <div class="hud-chip"><span class="lbl">Груз</span><span class="val" id="h-cargo">0/20</span></div>
+    <button class="n-btn" id="btn-pilot">Пилот</button>
+  </div>
+</nav>
 
-<!-- MODULE FRAME (iframes) -->
-<div id="module-container">
-  <div id="welcome-screen">
-    <div class="welcome-title">ELITE: DARK FRONTIER</div>
-    <div class="welcome-sub">
-      2847 год. Тёмный Фронтир — рубеж освоенного космоса.<br>
-      Во Вселенной ≈2 трлн галактик и ≈200 млрд трлн звёзд (2×10²³).<br>
-      Только в Млечном Пути — 100–400 млрд звёзд и ~1 трлн планет.<br>
-      Подтверждено 5 700+ экзопланет (NASA, 2024). Ты — вольный промышленник Тёмного Фронтира.<br>
-      Добывай, торгуй, исследуй. Каждая звезда здесь — реальная из каталога HIP.
-    </div>
-    <div id="nasa-apod">
-      <img id="apod-img" src="" alt="NASA APOD">
-      <div id="nasa-apod-info">
-        <div class="apod-title">🔭 NASA — АСТРОНОМИЧЕСКОЕ ФОТО ДНЯ</div>
-        <div class="apod-date" id="apod-date"></div>
-        <div class="apod-desc" id="apod-desc"></div>
-        <div class="apod-source">Источник: NASA Astronomy Picture of the Day (api.nasa.gov)</div>
+<div id="main">
+  <div id="welcome">
+    <section class="hero">
+      <h1 class="hero-title">ELITE: DARK FRONTIER</h1>
+      <p class="hero-sub">
+        <b>2847 год.</b> Тёмный Фронтир — рубеж освоенного космоса.<br>
+        Во Вселенной <b>≈2 трлн галактик</b> и <b>200 млрд трлн звёзд</b>.<br>
+        В Млечном Пути — <b>400 млрд звёзд</b> и <b>~1 трлн планет</b>.<br>
+        Каждая звезда здесь — реальная из каталога <b>Hipparcos</b>.
+      </p>
+    </section>
+
+    <div class="nasa-row">
+      <div class="nasa-card" id="apod-card" style="display:none">
+        <img id="apod-img" src="" alt="NASA APOD">
+        <div class="nasa-body">
+          <div class="nasa-tag">NASA &bull; Фото дня</div>
+          <div class="nasa-title" id="apod-title"></div>
+          <div class="nasa-desc" id="apod-desc"></div>
+        </div>
+      </div>
+      <div class="nasa-card" id="neo-card" style="display:none">
+        <div class="nasa-body">
+          <div class="nasa-tag">NASA NEO &bull; Околоземные объекты</div>
+        </div>
+        <div class="neo-list" id="neo-list"></div>
       </div>
     </div>
-    <div id="nasa-neo">
-      <div class="neo-title">☄️ ОКОЛОЗЕМНЫЕ ОБЪЕКТЫ СЕГОДНЯ (NASA NEO)</div>
-      <div class="neo-list" id="neo-list"></div>
-    </div>
-    <div class="welcome-grid">
-      <div class="welcome-card" data-module="modules/starmap.html">
-        <div class="icon">🌌</div>
-        <div class="name">КАРТА НЕБА</div>
-        <div class="desc">5000+ звёзд · Полёт · Торговые маршруты · Солнечная система · Планеты</div>
+
+    <div class="grid-title">— МОДУЛИ —</div>
+    <div class="mod-grid">
+      <div class="mod-card" data-m="modules/starmap.html">
+        <div class="ic">🌌</div><div class="nm">КАРТА НЕБА</div>
+        <div class="ds">5000+ реальных звёзд, торговля, маршруты, Солнечная система</div>
       </div>
-      <div class="welcome-card" data-module="modules/constructors.html">
-        <div class="icon">🚀</div>
-        <div class="name">ВЕРФЬ</div>
-        <div class="desc">14 кораблей, 7 транспортов, 14 станций — wireframe конструктор</div>
+      <div class="mod-card" data-m="modules/constructors.html">
+        <div class="ic">🚀</div><div class="nm">ВЕРФЬ</div>
+        <div class="ds">14 кораблей, 7 транспортов, 14 станций — конструктор</div>
       </div>
-      <div class="welcome-card" data-module="modules/mining.html">
-        <div class="icon">⛏️</div>
-        <div class="name">ДОБЫЧА</div>
-        <div class="desc">Полёт на корабле, лазерная стрельба по астероидам, сбор ресурсов</div>
+      <div class="mod-card" data-m="modules/mining.html">
+        <div class="ic">⛏️</div><div class="nm">ДОБЫЧА</div>
+        <div class="ds">Полёт, лазерная стрельба по астероидам, сбор ресурсов</div>
       </div>
-      <div class="welcome-card" data-module="modules/asteroid.html">
-        <div class="icon">🪨</div>
-        <div class="name">АСТЕРОИД</div>
-        <div class="desc">7 стадий скульптинга с 10 математическими градиентами</div>
+      <div class="mod-card" data-m="modules/asteroid.html">
+        <div class="ic">🪨</div><div class="nm">АСТЕРОИД</div>
+        <div class="ds">7 стадий скульптинга, 10 математических градиентов</div>
       </div>
-      <div class="welcome-card" data-module="modules/planetarium.html">
-        <div class="icon">🪐</div>
-        <div class="name">ПЛАНЕТАРИЙ</div>
-        <div class="desc">Perlin-генерация планет, 84 ресурса, орбитальные станции</div>
+      <div class="mod-card" data-m="modules/planetarium.html">
+        <div class="ic">🪐</div><div class="nm">ПЛАНЕТАРИЙ</div>
+        <div class="ds">Perlin-генерация, 84 ресурса, атмосферы и кольца</div>
       </div>
-      <div class="welcome-card" data-module="modules/rover.html">
-        <div class="icon">🤖</div>
-        <div class="name">РОВЕР</div>
-        <div class="desc">6-колёсный ровер на процедурном терренe, разведка ресурсов</div>
+      <div class="mod-card" data-m="modules/rover.html">
+        <div class="ic">🤖</div><div class="nm">РОВЕР</div>
+        <div class="ds">6-колёсный ровер на процедурной планете, разведка</div>
       </div>
-      <div class="welcome-card" data-module="modules/terraforming.html">
-        <div class="icon">🛰️</div>
-        <div class="name">СКАНЕР</div>
-        <div class="desc">Спутниковое сканирование терренов, 8 палитр, WebGL шейдеры</div>
+      <div class="mod-card" data-m="modules/terraforming.html">
+        <div class="ic">🛰️</div><div class="nm">СКАНЕР</div>
+        <div class="ds">Спутниковое сканирование, 8 биомов, WebGL шейдеры</div>
       </div>
-      <div class="welcome-card" data-module="modules/market.html">
-        <div class="icon">📈</div>
-        <div class="name">РЫНОК</div>
-        <div class="desc">5 секторов, CoinGecko API, спарклайны, корпорации</div>
+      <div class="mod-card" data-m="modules/market.html">
+        <div class="ic">📈</div><div class="nm">РЫНОК</div>
+        <div class="ds">5 секторов, CoinGecko API, спарклайны, акции</div>
       </div>
-      <div class="welcome-card" data-module="modules/changelog.html">
-        <div class="icon">📋</div>
-        <div class="name">ЖУРНАЛ</div>
-        <div class="desc">Бортовой журнал разработки — все обновления, патчи, hot news</div>
+      <div class="mod-card" data-m="modules/changelog.html">
+        <div class="ic">📋</div><div class="nm">ЖУРНАЛ</div>
+        <div class="ds">Бортовой журнал разработки — обновления, патчи</div>
       </div>
-      <div class="welcome-card" id="card-profile">
-        <div class="icon">👨‍🚀</div>
-        <div class="name">КАБИНЕТ ПИЛОТА</div>
-        <div class="desc">Статистика, достижения, репутация, инвентарь</div>
+      <div class="mod-card" id="card-pilot">
+        <div class="ic">👨‍🚀</div><div class="nm">КАБИНЕТ ПИЛОТА</div>
+        <div class="ds">Статистика, навыки, репутация, инвентарь</div>
       </div>
     </div>
-    <div class="news-ticker-wrap">
-      <div class="news-label">НОВОСТИ</div>
-      <div class="news-scroll">
-        <div class="news-content" id="welcome-news"></div>
-      </div>
+
+    <div class="ticker">
+      <div class="ticker-tag">НОВОСТИ</div>
+      <div class="ticker-scroll"><div class="ticker-text" id="ticker"></div></div>
     </div>
   </div>
-  <iframe id="module-frame" class="hidden-frame"></iframe>
+
+  <iframe id="frame" class="hide" src="about:blank"></iframe>
 </div>
 
-<!-- PROFILE PANEL -->
-<div id="profile-panel">
-  <button class="prof-close" id="profile-close">✕</button>
-  <h2>КАБИНЕТ КОМАНДОРА</h2>
-  <div id="profile-content"></div>
-</div>
+<aside id="profile">
+  <button class="p-close" id="p-close">&times;</button>
+  <div class="p-title">КАБИНЕТ КОМАНДОРА</div>
+  <div id="p-body"></div>
+</aside>
 
-<!-- TOOLTIP -->
-<div class="game-tooltip" id="game-tooltip"></div>
-
-<!-- STATUS BAR -->
-<div id="status-bar">
+<footer id="status">
   <span id="status-msg">Системы активны. Готов к вылету.</span>
-  <span id="status-loc">СЕК: Sol | СИСТЕМА: —</span>
-</div>
+  <span id="status-loc">Сектор: Sol</span>
+</footer>
+
+<div id="toast"></div>
 
 <script>
-// ============================================================
-// GAME STATE — единая экономика, сохраняется в localStorage
-// ============================================================
-const DEFAULT_STATE = {
-  pilot: { name: 'Дружинин Евгений', rank: 'Новобранец', faction: 'Независимые' },
-  credits: 50000,
-  fuel: 7.0,
-  maxFuel: 7.0,
-  cargo: [],
-  maxCargo: 20,
-  ships: [{ name: 'КОБРА MK-I', level: 1 }],
-  currentShip: 0,
-  stations: [],
-  transporters: [],
-  location: { system: 'Sol', body: null },
-  stats: {
-    jumps: 0,
-    trades: 0,
-    mined: 0,
-    sculpted: 0,
-    planetsScanned: 0,
-    roversDeployed: 0,
-    stockTrades: 0,
-    totalProfit: 0,
-    distanceLY: 0
-  },
-  achievements: [],
-  portfolio: {},
-  reputation: { traders: 0, miners: 0, explorers: 0, military: 0 },
-  savedAt: null
-};
-
-function loadGameState() {
-  try {
-    const raw = localStorage.getItem('elite_df_state');
-    if (raw) {
-      const s = JSON.parse(raw);
-      return { ...DEFAULT_STATE, ...s, stats: { ...DEFAULT_STATE.stats, ...s.stats }, reputation: { ...DEFAULT_STATE.reputation, ...s.reputation } };
+// ══════════════════════════════════════════════
+//  STAR FIELD (Canvas 2D)
+// ══════════════════════════════════════════════
+(function initStars(){
+  const cv=document.getElementById('bg-canvas'),ctx=cv.getContext('2d');
+  let W,H;
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  resize(); addEventListener('resize',resize);
+  const N=180;
+  const stars=Array.from({length:N},()=>({
+    x:Math.random()*2000,y:Math.random()*2000,
+    r:Math.random()*1.4+.3,a:Math.random(),da:(Math.random()-.5)*.015
+  }));
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(const s of stars){
+      s.a+=s.da;
+      if(s.a>1||s.a<.05)s.da=-s.da;
+      const sx=s.x%W,sy=s.y%H;
+      ctx.globalAlpha=s.a;
+      ctx.fillStyle='#ffd8a0';
+      ctx.beginPath();ctx.arc(sx,sy,s.r,0,6.28);ctx.fill();
     }
-  } catch(e) {}
-  return { ...DEFAULT_STATE };
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ══════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════
+const DEF={
+  pilot:{name:'Командор',rank:'Новобранец',faction:'Независимые'},
+  credits:50000,fuel:7,maxFuel:7,cargo:[],maxCargo:20,
+  ships:[{name:'КОБРА MK-I',level:1}],currentShip:0,
+  location:{system:'Sol',body:null},
+  stats:{jumps:0,trades:0,mined:0,sculpted:0,planetsScanned:0,roversDeployed:0,stockTrades:0,totalProfit:0,distanceLY:0},
+  achievements:[],portfolio:{},
+  reputation:{traders:0,miners:0,explorers:0,military:0},savedAt:null
+};
+function loadGS(){
+  try{const r=localStorage.getItem('elite_df_state');
+    if(r){const s=JSON.parse(r);return{...DEF,...s,stats:{...DEF.stats,...s.stats},reputation:{...DEF.reputation,...s.reputation}};}
+  }catch(e){}
+  return{...DEF};
 }
+function saveGS(){gs.savedAt=Date.now();localStorage.setItem('elite_df_state',JSON.stringify(gs));}
+let gs=loadGS();
+setInterval(saveGS,30000);
 
-function saveGameState() {
-  gameState.savedAt = Date.now();
-  localStorage.setItem('elite_df_state', JSON.stringify(gameState));
-}
-
-let gameState = loadGameState();
-
-function updateHUD() {
-  document.getElementById('hud-credits').textContent = gameState.credits.toLocaleString('ru-RU');
-  document.getElementById('hud-fuel').textContent = gameState.fuel.toFixed(1);
-  document.getElementById('hud-cargo').textContent = `${gameState.cargo.length}/${gameState.maxCargo}`;
+function updateHUD(){
+  document.getElementById('h-cr').textContent=gs.credits.toLocaleString('ru-RU');
+  document.getElementById('h-fuel').textContent=gs.fuel.toFixed(1);
+  document.getElementById('h-cargo').textContent=gs.cargo.length+'/'+gs.maxCargo;
 }
 updateHUD();
 
-// News content
-const GAME_NEWS = [
-  '📜 [ЛОР] 2847 год. Человечество колонизировало 47 звёздных систем. 3 корпорации делят Тёмный Фронтир.',
-  '🔭 [ФАКТ] Во Вселенной ≈2 трлн галактик (Conselice et al., 2016). Наблюдаемая Вселенная: 93 млрд световых лет в диаметре.',
-  '⚡ [ЛОР] AXIOM Corp захватила сектор Delta-7 — залежи He-3 обеспечат флот на 200 лет.',
-  '🌟 [ФАКТ] В Млечном Пути 100–400 млрд звёзд. Ближайшая — Проксима Центавра (4.24 св. года).',
-  '🪐 [ФАКТ] NASA подтвердило 5 700+ экзопланет (2024). TRAPPIST-1 имеет 7 планет размером с Землю.',
-  '🛰️ [ЛОР] Спутник «Зоркий-14» завершил картографию Kepler-442b. 18 месторождений редкоземов.',
-  '🌍 [ФАКТ] В обитаемой зоне Млечного Пути может быть до 40 млрд планет земного типа (Petigura, 2013).',
-  '💎 [ФАКТ] Планета 55 Cancri e — реальный «алмазный мир». Масса 8.6 масс Земли, 40 св. лет от нас.',
-  '☀️ [ФАКТ] Солнце — жёлтый карлик G2V, возраст 4.6 млрд лет. Через 5 млрд лет станет красным гигантом.',
-  '🤖 [ЛОР] Роверы «Кирилл» обнаружили подземный океан на Европе-9. На реальной Европе — 100 км льда.',
-  '🧊 [ФАКТ] Спутник Юпитера Европа: подлёдный океан глубиной до 100 км. Возможна жизнь.',
-  '⛏️ [ФАКТ] Астероид Психея (16 Psyche) содержит металлов на ~$10 квинтиллионов. Миссия NASA: 2029.',
-  '📊 [ФАКТ] Нейтронные звёзды: плотность 10¹⁷ кг/м³. Чайная ложка весит ~6 млрд тонн.',
-  '🔬 [ФАКТ] Водород — 73% массы Вселенной, гелий — 25%. Все остальные элементы — лишь 2%.',
-  '🌌 [ФАКТ] Млечный Путь — спиральная галактика, диаметр ~100 000 св. лет. Солнце — в 27 000 св. лет от центра.',
-  '🔴 [ЛОР] Астероид S-47 на встречном курсе с конвоем «Орион». В реальности 1.1 млн астероидов известно.',
-  '🏭 [ЛОР] Станция «Олимп» — 14 модулей, 3000 жителей. МКС реально весит 420 тонн и вмещает 6 человек.',
-  '🚀 [ФАКТ] Скорость света — 299 792 км/с. До Проксимы Центавра свет летит 4.24 года.',
-  '⚔️ [ЛОР] Пиратский флот «Тёмный Коготь» атаковал конвой у Wolf 359 (7.86 св. лет от Солнца — реальная звезда).',
-  '🏗️ [ФАКТ] В Солнечной системе 8 планет, 5 карликовых планет, 290+ спутников, 1.1 млн астероидов.',
-];
-const newsEl = document.getElementById('welcome-news');
-if (newsEl) {
-  newsEl.textContent = GAME_NEWS.join('   ●   ');
-  const newsScroll = newsEl.parentElement;
-  let newsOffset = newsScroll ? newsScroll.clientWidth || 900 : 900;
-  function tickNews() {
-    const tw = newsEl.scrollWidth || 3000;
-    const sw = newsScroll ? newsScroll.clientWidth || 900 : 900;
-    newsOffset -= 1.2;
-    if (newsOffset < -tw) newsOffset = sw;
-    newsEl.style.left = 'auto';
-    newsEl.style.transform = 'translateY(-50%) translateX(' + newsOffset + 'px)';
-    requestAnimationFrame(tickNews);
-  }
-  tickNews();
+function flashEl(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'),800);
+}
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-// Auto-save every 30s
-setInterval(() => { saveGameState(); }, 30000);
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+const frame=document.getElementById('frame');
+const welcome=document.getElementById('welcome');
+let curMod='welcome';
 
-// ============================================================
-// NASA REAL DATA (cached per day + fallback)
-// ============================================================
-const NASA_KEY = 'DEMO_KEY';
-const APOD_FALLBACK_INDEX = [
- {title:'Pillars of Creation',date:'Hubble Heritage',media_type:'image',
-  explanation:'One of the most iconic images from the Hubble Space Telescope: the Pillars of Creation in the Eagle Nebula (M16), 6500 light-years away. Columns of interstellar gas and dust where new stars are born.',
-  url:'https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg'},
- {title:'Pale Blue Dot',date:'Voyager 1, 1990',media_type:'image',
-  explanation:'Voyager 1 looked back at Earth from 6 billion km away. Our planet appears as a tiny bright pixel. Carl Sagan: "Look again at that dot. That is here. That is home. That is us."',
-  url:'https://apod.nasa.gov/apod/image/2002/PaleBlueDotRevisited_Voyager1_960.jpg'},
- {title:'Andromeda Galaxy',date:'Hubble/Subaru',media_type:'image',
-  explanation:'M31 is the nearest large galaxy, 2.5 million light-years away, containing roughly a trillion stars. It is approaching the Milky Way at 110 km/s.',
-  url:'https://apod.nasa.gov/apod/image/2309/M31_HubbleSubaru_960.jpg'},
-];
-const NEO_FALLBACK_INDEX = [
- {name:'99942 Apophis',size:370,miss:31000,danger:true},
- {name:'101955 Bennu',size:490,miss:7500000,danger:true},
- {name:'4179 Toutatis',size:4500,miss:7000000,danger:false},
- {name:'3200 Phaethon',size:5100,miss:12000000,danger:false},
-];
-
-function nasaCacheKeyIdx(){return 'nasa_idx_'+new Date().toISOString().slice(0,10);}
-
-(async function loadNasaAPOD() {
-  const ck = nasaCacheKeyIdx();
-  let d = null;
-  const cached = localStorage.getItem(ck+'_apod');
-  if(cached){try{d=JSON.parse(cached);}catch(e){}}
-  if(!d){
-    try {
-      const r = await fetch('https://api.nasa.gov/planetary/apod?api_key=' + NASA_KEY);
-      if (r.ok) { d = await r.json(); try{localStorage.setItem(ck+'_apod',JSON.stringify(d));}catch(e){} }
-    } catch(e) {}
-  }
-  if(!d) d = APOD_FALLBACK_INDEX[Math.floor(Math.random()*APOD_FALLBACK_INDEX.length)];
-  const img = document.getElementById('apod-img');
-  const block = document.getElementById('nasa-apod');
-  if (d.media_type === 'image') {
-    img.src = d.hdurl || d.url;
-    img.onerror = function(){this.src='https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg';};
-  } else if (d.media_type === 'video') {
-    const ifr = document.createElement('iframe');
-    ifr.src = d.url; ifr.allow = 'autoplay'; ifr.style.border = 'none';
-    ifr.width = 320; ifr.height = 200;
-    img.replaceWith(ifr);
-  }
-  document.getElementById('apod-date').textContent = d.date || '';
-  const desc = d.explanation || '';
-  document.getElementById('apod-desc').textContent = desc.length > 400 ? desc.slice(0, 400) + '...' : desc;
-  block.classList.add('loaded');
-})();
-
-(async function loadNasaNEO() {
-  const ck = nasaCacheKeyIdx();
-  let neos = null;
-  const cached = localStorage.getItem(ck+'_neo');
-  if(cached){try{neos=JSON.parse(cached);}catch(e){}}
-  if(!neos){
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const r = await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date=' + today + '&end_date=' + today + '&api_key=' + NASA_KEY);
-      if (r.ok) {
-        const d = await r.json();
-        neos = d.near_earth_objects[today] || [];
-        try{localStorage.setItem(ck+'_neo',JSON.stringify(neos.slice(0,8)));}catch(e){}
-      }
-    } catch(e) {}
-  }
-  const list = document.getElementById('neo-list');
-  if(!neos || !neos.length){
-    list.innerHTML = NEO_FALLBACK_INDEX.map(n =>
-      '<div class="neo-item"><span class="neo-name">\u2604 ' + n.name + '</span><br>' +
-      '\u00D8 ' + n.size + ' m \u00B7 ' + Number(n.miss).toLocaleString() + ' km' +
-      (n.danger ? ' <span class="neo-danger">\u26A0 HAZARDOUS</span>' : '') + '</div>'
-    ).join('');
-    document.getElementById('nasa-neo').classList.add('loaded');
+function goTo(mod){
+  document.querySelectorAll('.n-btn[data-m]').forEach(b=>b.classList.toggle('act',b.dataset.m===mod));
+  if(mod==='welcome'){
+    welcome.classList.remove('out');
+    frame.classList.add('hide');frame.src='about:blank';
+    curMod='welcome';
+    document.getElementById('status-msg').textContent='Системы активны. Готов к вылету.';
     return;
   }
-  const top8 = neos.slice(0, 8);
-  list.innerHTML = top8.map(n => {
-    const km = n.close_approach_data && n.close_approach_data[0] ? parseFloat(n.close_approach_data[0].miss_distance.kilometers).toLocaleString('ru-RU', {maximumFractionDigits: 0}) : '?';
-    const diam = n.estimated_diameter ? n.estimated_diameter.meters : {estimated_diameter_min:0,estimated_diameter_max:0};
-    const size = ((diam.estimated_diameter_min + diam.estimated_diameter_max) / 2).toFixed(0);
-    const danger = n.is_potentially_hazardous_asteroid;
-    return '<div class="neo-item">' +
-      '<span class="neo-name">\u2604 ' + n.name.replace(/[()]/g,'') + '</span><br>' +
-      '\u00D8 ' + size + ' \u043C \u00B7 ' + km + ' \u043A\u043C' +
-      (danger ? ' <span class="neo-danger">\u26A0 \u041E\u041F\u0410\u0421\u041D\u042B\u0419</span>' : '') +
-      '</div>';
-  }).join('');
-  document.getElementById('nasa-neo').classList.add('loaded');
-})();
-
-// ============================================================
-// NAVIGATION
-// ============================================================
-const navBtns = document.querySelectorAll('.nav-btn[data-module]');
-const welcomeCards = document.querySelectorAll('.welcome-card[data-module]');
-const welcomeScreen = document.getElementById('welcome-screen');
-const moduleFrame = document.getElementById('module-frame');
-let currentModule = 'welcome';
-
-function navigateTo(module) {
-  navBtns.forEach(b => b.classList.remove('active'));
-  const target = document.querySelector(`.nav-btn[data-module="${module}"]`);
-  if (target) target.classList.add('active');
-
-  if (module === 'welcome') {
-    welcomeScreen.classList.remove('hidden');
-    moduleFrame.style.display = 'none';
-    moduleFrame.src = 'about:blank';
-    currentModule = 'welcome';
-    document.getElementById('status-msg').textContent = 'Системы активны. Готов к вылету.';
-    return;
-  }
-
-  welcomeScreen.classList.add('hidden');
-  moduleFrame.style.display = 'block';
-  moduleFrame.src = module;
-  currentModule = module;
-
-  const names = {
-    'modules/starmap.html': 'КАРТА НЕБА',
-    'modules/constructors.html': 'ВЕРФЬ',
-    'modules/mining.html': 'ДОБЫЧА',
-    'modules/asteroid.html': 'АСТЕРОИД',
-    'modules/planetarium.html': 'ПЛАНЕТАРИЙ',
-    'modules/rover.html': 'РОВЕР',
-    'modules/terraforming.html': 'СКАНЕР',
-    'modules/market.html': 'РЫНОК',
-    'modules/changelog.html': 'ЖУРНАЛ'
-  };
-  document.getElementById('status-msg').textContent = `Модуль: ${names[module] || module}`;
+  welcome.classList.add('out');
+  frame.classList.remove('hide');
+  frame.src=mod;curMod=mod;
+  const names={'modules/starmap.html':'Карта неба','modules/constructors.html':'Верфь',
+    'modules/mining.html':'Добыча','modules/asteroid.html':'Астероид',
+    'modules/planetarium.html':'Планетарий','modules/rover.html':'Ровер',
+    'modules/terraforming.html':'Сканер','modules/market.html':'Рынок',
+    'modules/changelog.html':'Журнал'};
+  document.getElementById('status-msg').textContent='Модуль: '+(names[mod]||mod);
 }
 
-navBtns.forEach(btn => {
-  btn.addEventListener('click', () => navigateTo(btn.dataset.module));
+document.querySelectorAll('[data-m]').forEach(el=>{
+  el.addEventListener('click',()=>goTo(el.dataset.m));
 });
-welcomeCards.forEach(card => {
-  card.addEventListener('click', () => navigateTo(card.dataset.module));
-});
-document.getElementById('logo-btn').addEventListener('click', () => navigateTo('welcome'));
+document.getElementById('logo').addEventListener('click',()=>goTo('welcome'));
 
-// ============================================================
-// PROFILE PANEL
-// ============================================================
-const profilePanel = document.getElementById('profile-panel');
-const profileContent = document.getElementById('profile-content');
+// ══════════════════════════════════════════════
+//  PROFILE
+// ══════════════════════════════════════════════
+const prof=document.getElementById('profile');
+document.getElementById('btn-pilot').addEventListener('click',()=>{prof.classList.toggle('open');if(prof.classList.contains('open'))renderProfile();});
+document.getElementById('p-close').addEventListener('click',()=>prof.classList.remove('open'));
+document.getElementById('card-pilot').addEventListener('click',()=>{prof.classList.add('open');renderProfile();});
 
-document.getElementById('profile-btn').addEventListener('click', () => {
-  profilePanel.classList.toggle('open');
-  if (profilePanel.classList.contains('open')) renderProfile();
-});
-document.getElementById('profile-close').addEventListener('click', () => {
-  profilePanel.classList.remove('open');
-});
-document.getElementById('card-profile').addEventListener('click', () => {
-  profilePanel.classList.add('open');
-  renderProfile();
-});
-
-function calcSkills(s) {
-  const skills = {
-    navigation: { name: 'Навигация', icon: '🧭', xp: s.stats.jumps * 10 + s.stats.distanceLY * 2 },
-    trade: { name: 'Торговля', icon: '💰', xp: s.stats.trades * 15 + s.stats.stockTrades * 10 },
-    mining: { name: 'Добыча', icon: '⛏️', xp: s.stats.mined * 12 + (s.stats.sculpted || 0) * 5 },
-    exploration: { name: 'Разведка', icon: '🔭', xp: s.stats.planetsScanned * 20 + s.stats.roversDeployed * 15 },
-    engineering: { name: 'Инженерия', icon: '🔧', xp: Math.floor(s.credits / 1000) + s.cargo.length * 5 },
-    combat: { name: 'Боевые', icon: '⚔️', xp: s.stats.mined * 3 + s.stats.jumps * 2 },
+function calcSkills(s){
+  const sk={
+    navigation:{nm:'Навигация',ic:'🧭',xp:s.stats.jumps*10+s.stats.distanceLY*2},
+    trade:{nm:'Торговля',ic:'💰',xp:s.stats.trades*15+s.stats.stockTrades*10},
+    mining:{nm:'Добыча',ic:'⛏️',xp:s.stats.mined*12+(s.stats.sculpted||0)*5},
+    exploration:{nm:'Разведка',ic:'🔭',xp:s.stats.planetsScanned*20+s.stats.roversDeployed*15},
+    engineering:{nm:'Инженерия',ic:'🔧',xp:Math.floor(s.credits/1000)+s.cargo.length*5},
+    combat:{nm:'Боевые',ic:'⚔️',xp:s.stats.mined*3+s.stats.jumps*2},
   };
-  Object.values(skills).forEach(sk => {
-    sk.level = Math.min(50, Math.floor(Math.sqrt(sk.xp / 10)));
-    sk.nextXP = Math.pow(sk.level + 1, 2) * 10;
-    sk.pct = sk.nextXP > 0 ? Math.min(100, (sk.xp / sk.nextXP) * 100) : 100;
+  Object.values(sk).forEach(s=>{
+    s.level=Math.min(50,Math.floor(Math.sqrt(s.xp/10)));
+    s.next=Math.pow(s.level+1,2)*10;
+    s.pct=s.next>0?Math.min(100,s.xp/s.next*100):100;
   });
-  return skills;
+  return sk;
 }
 
-function renderProfile() {
-  const s = gameState;
-  const cargoWeight = s.cargo.reduce((sum, c) => sum + (c.qty || 1), 0);
-  const ranks = ['Новобранец','Пилот','Навигатор','Капитан','Коммандер','Адмирал','Элита'];
-  const skills = calcSkills(s);
-  const totalLevel = Object.values(skills).reduce((sum, sk) => sum + sk.level, 0);
-  const rankIdx = Math.min(ranks.length - 1, Math.floor(totalLevel / 10));
-  s.pilot.rank = ranks[rankIdx];
-  const xp = Object.values(skills).reduce((sum, sk) => sum + sk.xp, 0);
-  const nextRankXP = (rankIdx + 1) * 600;
-  const pct = Math.min(100, (xp / nextRankXP) * 100);
+function renderProfile(){
+  const s=gs,cw=s.cargo.reduce((a,c)=>a+(c.qty||1),0);
+  const ranks=['Новобранец','Пилот','Навигатор','Капитан','Коммандер','Адмирал','Элита'];
+  const sk=calcSkills(s);
+  const tl=Object.values(sk).reduce((a,s)=>a+s.level,0);
+  const ri=Math.min(ranks.length-1,Math.floor(tl/10));
+  s.pilot.rank=ranks[ri];
+  const xp=Object.values(sk).reduce((a,s)=>a+s.xp,0);
+  const nxp=(ri+1)*600;
+  const pct=Math.min(100,xp/nxp*100);
 
-  let html = `
-    <div class="prof-row"><span class="prof-label">ИМЯ:</span><span class="prof-val">${s.pilot.name}</span></div>
-    <div class="prof-row"><span class="prof-label">РАНГ:</span><span class="prof-val">${s.pilot.rank} <span class="level-badge">LV ${totalLevel}</span></span></div>
-    <div class="prof-row"><span class="prof-label">ФРАКЦИЯ:</span><span class="prof-val">${s.pilot.faction}</span></div>
-    <div class="prof-bar-wrap"><span class="prof-label" style="width:60px">XP:</span><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${pct}%"></div></div><span class="prof-val">${xp}/${nextRankXP}</span></div>
+  document.getElementById('p-body').innerHTML=`
+    <div class="p-row"><span class="lbl">Имя</span><span class="val">${s.pilot.name}</span></div>
+    <div class="p-row"><span class="lbl">Ранг</span><span class="val">${s.pilot.rank} <span class="lvl-badge">LV ${tl}</span></span></div>
+    <div class="p-row"><span class="lbl">Фракция</span><span class="val">${s.pilot.faction}</span></div>
+    <div class="p-bar"><div class="p-bar-fill" style="width:${pct}%"></div></div>
+    <div style="text-align:right;font-size:11px;color:var(--text-dd);font-family:var(--mono)">${xp}/${nxp} XP</div>
 
-    <div class="prof-section">
-      <div class="prof-section-title">НАВЫКИ</div>
-      <div class="skill-tree">
-        ${Object.entries(skills).map(([k, sk]) => `
-          <div class="skill-item ${sk.level > 0 ? 'unlocked' : ''}">
-            <div style="font-size:20px;">${sk.icon}</div>
-            <div class="skill-name">${sk.name}</div>
-            <div class="skill-level">LV ${sk.level}</div>
-            <div class="skill-bar"><div class="skill-fill" style="width:${sk.pct}%"></div></div>
-            <div style="font-size:11px;color:#886622;">${sk.xp}/${sk.nextXP} XP</div>
+    <div class="p-section">
+      <div class="p-section-t">НАВЫКИ</div>
+      <div class="skill-grid">
+        ${Object.values(sk).map(s=>`
+          <div class="skill-card ${s.level>0?'on':''}">
+            <div class="ic">${s.ic}</div><div class="nm">${s.nm}</div>
+            <div class="lv">${s.level}</div>
+            <div class="p-bar"><div class="p-bar-fill" style="width:${s.pct}%"></div></div>
           </div>
         `).join('')}
       </div>
     </div>
 
-    <div class="prof-section">
-      <div class="prof-section-title">ФИНАНСЫ</div>
-      <div class="prof-row"><span class="prof-label">Кредиты:</span><span class="prof-val">${s.credits.toLocaleString('ru-RU')} CR</span></div>
-      <div class="prof-row"><span class="prof-label">Общая прибыль:</span><span class="prof-val">${s.stats.totalProfit.toLocaleString('ru-RU')} CR</span></div>
+    <div class="p-section">
+      <div class="p-section-t">КОРАБЛЬ</div>
+      <div class="p-row"><span class="lbl">Модель</span><span class="val">${s.ships[s.currentShip]?.name||'—'}</span></div>
+      <div class="p-row"><span class="lbl">Топливо</span><span class="val">${s.fuel.toFixed(1)} / ${s.maxFuel}</span></div>
+      <div class="p-bar"><div class="p-bar-fill" style="width:${(s.fuel/s.maxFuel*100).toFixed(0)}%;background:linear-gradient(90deg,var(--red),var(--c1),var(--grn))"></div></div>
+      <div class="p-row"><span class="lbl">Груз</span><span class="val">${cw} / ${s.maxCargo} т</span></div>
+      <div class="p-bar"><div class="p-bar-fill" style="width:${(cw/s.maxCargo*100).toFixed(0)}%"></div></div>
     </div>
 
-    <div class="prof-section">
-      <div class="prof-section-title">КОРАБЛЬ</div>
-      <div class="prof-row"><span class="prof-label">Модель:</span><span class="prof-val">${s.ships[s.currentShip]?.name || '—'}</span></div>
-      <div class="prof-row"><span class="prof-label">Топливо:</span><span class="prof-val">${s.fuel.toFixed(1)} / ${s.maxFuel.toFixed(1)}</span></div>
-      <div class="prof-bar-wrap"><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${(s.fuel/s.maxFuel*100).toFixed(0)}%; background: linear-gradient(90deg, #ff4444, #ffaa00, #88ff88)"></div></div></div>
-      <div class="prof-row"><span class="prof-label">Груз:</span><span class="prof-val">${cargoWeight} / ${s.maxCargo} т</span></div>
-      <div class="prof-bar-wrap"><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${(cargoWeight/s.maxCargo*100).toFixed(0)}%"></div></div></div>
+    <div class="p-section">
+      <div class="p-section-t">СТАТИСТИКА</div>
+      <div class="p-row"><span class="lbl">Кредиты</span><span class="val">${s.credits.toLocaleString('ru-RU')} CR</span></div>
+      <div class="p-row"><span class="lbl">Прыжков</span><span class="val">${s.stats.jumps}</span></div>
+      <div class="p-row"><span class="lbl">Дистанция</span><span class="val">${s.stats.distanceLY.toFixed(1)} св.лет</span></div>
+      <div class="p-row"><span class="lbl">Торговых сделок</span><span class="val">${s.stats.trades}</span></div>
+      <div class="p-row"><span class="lbl">Добыто руды</span><span class="val">${s.stats.mined}</span></div>
+      <div class="p-row"><span class="lbl">Планет просканировано</span><span class="val">${s.stats.planetsScanned}</span></div>
+      <div class="p-row"><span class="lbl">Общая прибыль</span><span class="val">${s.stats.totalProfit.toLocaleString('ru-RU')} CR</span></div>
     </div>
 
-    <div class="prof-section">
-      <div class="prof-section-title">СТАТИСТИКА</div>
-      <div class="prof-row"><span class="prof-label">Прыжков:</span><span class="prof-val">${s.stats.jumps}</span></div>
-      <div class="prof-row"><span class="prof-label">Дистанция:</span><span class="prof-val">${s.stats.distanceLY.toFixed(1)} LY</span></div>
-      <div class="prof-row"><span class="prof-label">Торговых сделок:</span><span class="prof-val">${s.stats.trades}</span></div>
-      <div class="prof-row"><span class="prof-label">Добыто руды:</span><span class="prof-val">${s.stats.mined}</span></div>
-      <div class="prof-row"><span class="prof-label">Планет сканировано:</span><span class="prof-val">${s.stats.planetsScanned}</span></div>
-      <div class="prof-row"><span class="prof-label">Роверов развёрнуто:</span><span class="prof-val">${s.stats.roversDeployed}</span></div>
-      <div class="prof-row"><span class="prof-label">Сделок на бирже:</span><span class="prof-val">${s.stats.stockTrades}</span></div>
-    </div>
-
-    <div class="prof-section">
-      <div class="prof-section-title">РЕПУТАЦИЯ</div>
-      ${Object.entries(s.reputation).map(([k, v]) => {
-        const names = { traders:'Торговцы', miners:'Шахтёры', explorers:'Исследователи', military:'Военные' };
-        const rpct = Math.min(100, Math.max(0, v));
-        return `<div class="prof-row"><span class="prof-label">${names[k]||k}:</span><span class="prof-val">${v}</span></div>
-        <div class="prof-bar-wrap"><div class="prof-bar-bg"><div class="prof-bar-fill" style="width:${rpct}%"></div></div></div>`;
+    <div class="p-section">
+      <div class="p-section-t">РЕПУТАЦИЯ</div>
+      ${Object.entries(s.reputation).map(([k,v])=>{
+        const nm={traders:'Торговцы',miners:'Шахтёры',explorers:'Исследователи',military:'Военные'};
+        return`<div class="p-row"><span class="lbl">${nm[k]||k}</span><span class="val">${v}</span></div>
+        <div class="p-bar"><div class="p-bar-fill" style="width:${Math.min(100,Math.max(0,v))}%"></div></div>`;
       }).join('')}
     </div>
 
-    <div class="prof-section">
-      <div class="prof-section-title">ГРУЗ</div>
-      ${s.cargo.length === 0 ? '<div style="color:#886622;text-align:center;">Трюм пуст</div>' :
-        s.cargo.map(c => `<div class="prof-row"><span class="prof-label">${c.name}:</span><span class="prof-val">${c.qty || 1} т</span></div>`).join('')}
+    <div class="p-section">
+      <div class="p-section-t">ГРУЗ</div>
+      ${s.cargo.length===0?'<div style="color:var(--text-dd);text-align:center;padding:8px">Трюм пуст</div>':
+        s.cargo.map(c=>`<div class="p-row"><span class="lbl">${c.name}</span><span class="val">${c.qty||1} т</span></div>`).join('')}
     </div>
   `;
-  profileContent.innerHTML = html;
 }
 
-// ============================================================
-// CROSS-MODULE COMMUNICATION (postMessage)
-// ============================================================
-window.addEventListener('message', (e) => {
-  if (!e.data || !e.data.type) return;
-  const msg = e.data;
+// ══════════════════════════════════════════════
+//  NASA (кеш на день + fallback)
+// ══════════════════════════════════════════════
+const NASA_KEY='DEMO_KEY';
+const APOD_FB=[
+ {title:'Столпы Творения',explanation:'Одно из самых знаковых изображений телескопа Хаббл: Столпы Творения в туманности Орла (M16), 6500 световых лет. Колонны межзвёздного газа, где рождаются новые звёзды.',url:'https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg',media_type:'image',date:'Hubble Heritage'},
+ {title:'Бледная голубая точка',explanation:'Вояджер-1 обернулся назад с расстояния 6 млрд км. Наша планета — крошечный пиксель в луче света. Карл Саган: «Взгляните ещё раз на эту точку. Это здесь. Это дом. Это мы.»',url:'https://apod.nasa.gov/apod/image/2002/PaleBlueDotRevisited_Voyager1_960.jpg',media_type:'image',date:'Voyager 1, 1990'},
+ {title:'Галактика Андромеды',explanation:'M31 — ближайшая крупная галактика, 2.5 млн световых лет. Содержит примерно триллион звёзд. Приближается к Млечному Пути со скоростью 110 км/с.',url:'https://apod.nasa.gov/apod/image/2309/M31_HubbleSubaru_960.jpg',media_type:'image',date:'Hubble/Subaru'},
+];
+const NEO_FB=[
+ {name:'Апофис (99942)',size:370,speed:31,miss:31000,danger:true},
+ {name:'Бенну (101955)',size:490,speed:28,miss:7500000,danger:true},
+ {name:'Тутатис (4179)',size:4500,speed:35,miss:7000000,danger:false},
+ {name:'Фаэтон (3200)',size:5100,speed:36,miss:12000000,danger:false},
+];
 
-  switch (msg.type) {
-    case 'credits_change':
-      gameState.credits += msg.amount;
-      if (msg.amount > 0) gameState.stats.totalProfit += msg.amount;
-      updateHUD(); saveGameState();
-      flashHUD('hud-credits');
-      break;
-    case 'fuel_change':
-      gameState.fuel = Math.max(0, Math.min(gameState.maxFuel, gameState.fuel + msg.amount));
-      updateHUD(); saveGameState();
-      flashHUD('hud-fuel');
-      break;
-    case 'cargo_add':
-      if (gameState.cargo.length < gameState.maxCargo) {
-        gameState.cargo.push({ name: msg.name, qty: msg.qty || 1, price: msg.price || 0 });
-        updateHUD(); saveGameState();
-        flashHUD('hud-cargo');
-      }
-      break;
-    case 'cargo_sell':
-      const idx = gameState.cargo.findIndex(c => c.name === msg.name);
-      if (idx >= 0) {
-        const item = gameState.cargo.splice(idx, 1)[0];
-        gameState.credits += msg.price || item.price || 0;
-        gameState.stats.trades++;
-        gameState.stats.totalProfit += msg.price || item.price || 0;
-        updateHUD(); saveGameState();
-      }
-      break;
-    case 'stat_increment':
-      if (gameState.stats[msg.stat] !== undefined) {
-        gameState.stats[msg.stat] += msg.amount || 1;
-        saveGameState();
-      }
-      break;
-    case 'ship_upgrade':
-      if (msg.shipName) {
-        gameState.ships[gameState.currentShip].name = msg.shipName;
-        gameState.ships[gameState.currentShip].level = msg.level || 1;
-        saveGameState();
-      }
-      break;
-    case 'location_update':
-      gameState.location.system = msg.system || gameState.location.system;
-      gameState.location.body = msg.body || null;
-      document.getElementById('status-loc').textContent = `СЕК: ${gameState.location.system} | ${msg.body || '—'}`;
-      saveGameState();
-      break;
-    case 'get_state':
-      moduleFrame.contentWindow.postMessage({ type: 'game_state', state: gameState }, '*');
-      break;
-    case 'status_msg':
-      const smEl = document.getElementById('status-msg');
-      smEl.textContent = msg.text;
-      smEl.classList.remove('flash');
-      void smEl.offsetWidth;
-      smEl.classList.add('flash');
-      break;
+function nck(){return'nasa6_'+new Date().toISOString().slice(0,10);}
+
+(async function loadNASA(){
+  const ck=nck();
+  let apod=null;
+  try{const c=localStorage.getItem(ck+'_a');if(c)apod=JSON.parse(c);}catch(e){}
+  if(!apod){
+    try{const r=await fetch('https://api.nasa.gov/planetary/apod?api_key='+NASA_KEY);
+      if(r.ok){apod=await r.json();try{localStorage.setItem(ck+'_a',JSON.stringify(apod));}catch(e){}}
+    }catch(e){}
+  }
+  if(!apod)apod=APOD_FB[Math.floor(Math.random()*APOD_FB.length)];
+  const card=document.getElementById('apod-card');
+  const img=document.getElementById('apod-img');
+  if(apod.media_type==='video'){
+    const ifr=document.createElement('iframe');ifr.src=apod.url;ifr.allow='autoplay';
+    img.replaceWith(ifr);
+  }else{
+    img.src=apod.hdurl||apod.url;
+    img.onerror=function(){this.src='https://apod.nasa.gov/apod/image/2401/EagleNebula_Hubble_960.jpg';};
+  }
+  document.getElementById('apod-title').textContent=apod.title||'';
+  document.getElementById('apod-desc').textContent=(apod.explanation||'').slice(0,250)+'...';
+  card.style.display='';
+
+  let neos=null;
+  try{const c=localStorage.getItem(ck+'_n');if(c)neos=JSON.parse(c);}catch(e){}
+  if(!neos){
+    try{const today=new Date().toISOString().slice(0,10);
+      const r=await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date='+today+'&api_key='+NASA_KEY);
+      if(r.ok){const d=await r.json();neos=(Object.values(d.near_earth_objects||{}).flat()||[]).slice(0,8);
+        try{localStorage.setItem(ck+'_n',JSON.stringify(neos));}catch(e){}}
+    }catch(e){}
+  }
+  const list=document.getElementById('neo-list');
+  const neoCard=document.getElementById('neo-card');
+  if(!neos||!neos.length){
+    list.innerHTML=NEO_FB.map(n=>`<div class="neo-chip"><span class="name">${n.name}</span><br><span class="info">⌀ ${n.size} м · ${Number(n.miss).toLocaleString()} км</span>${n.danger?' <span class="danger">⚠ ОПАСНЫЙ</span>':''}</div>`).join('');
+  }else{
+    list.innerHTML=neos.map(n=>{
+      const sz=n.estimated_diameter?Math.round((n.estimated_diameter.meters.estimated_diameter_min+n.estimated_diameter.meters.estimated_diameter_max)/2):0;
+      const km=n.close_approach_data&&n.close_approach_data[0]?Math.round(parseFloat(n.close_approach_data[0].miss_distance.kilometers)):0;
+      const dng=n.is_potentially_hazardous_asteroid;
+      return`<div class="neo-chip"><span class="name">${n.name.replace(/[()]/g,'')}</span><br><span class="info">⌀ ${sz} м · ${km.toLocaleString()} км</span>${dng?' <span class="danger">⚠</span>':''}</div>`;
+    }).join('');
+  }
+  neoCard.style.display='';
+})();
+
+// ══════════════════════════════════════════════
+//  NEWS TICKER
+// ══════════════════════════════════════════════
+const NEWS=[
+  '📜 2847 год. Человечество колонизировало 47 звёздных систем. 3 корпорации делят Тёмный Фронтир.',
+  '🔭 Во Вселенной ≈2 трлн галактик (Conselice, 2016). Наблюдаемая Вселенная: 93 млрд св. лет.',
+  '⚡ AXIOM Corp захватила сектор Delta-7 — залежи He-3 обеспечат флот на 200 лет.',
+  '🌟 В Млечном Пути 100–400 млрд звёзд. Ближайшая — Проксима Центавра (4.24 св. года).',
+  '🪐 NASA: 5 700+ подтверждённых экзопланет. TRAPPIST-1: 7 планет размером с Землю.',
+  '💎 55 Cancri e — «алмазный мир». Масса 8.6 масс Земли, 40 св. лет от нас.',
+  '☀️ Солнце — жёлтый карлик G2V, 4.6 млрд лет. Через 5 млрд лет станет красным гигантом.',
+  '🧊 Европа (Юпитер): подлёдный океан до 100 км. Возможна жизнь.',
+  '⛏️ Астероид Психея: металлов на $10 квинтиллионов. Миссия NASA: 2029.',
+  '📊 Нейтронные звёзды: плотность 10¹⁷ кг/м³. Чайная ложка = 6 млрд тонн.',
+  '🚀 Скорость света — 299 792 км/с. До Проксимы Центавра свет летит 4.24 года.',
+  '🏗️ МКС весит 420 тонн, вмещает 6 человек. Станция «Олимп» в игре — 14 модулей, 3000 жителей.',
+];
+(function initTicker(){
+  const el=document.getElementById('ticker');
+  el.textContent=NEWS.join('   ●   ');
+  const wrap=el.parentElement;
+  let off=wrap?wrap.clientWidth||900:900;
+  function tick(){
+    const tw=el.scrollWidth||3000,sw=wrap?wrap.clientWidth||900:900;
+    off-=1;if(off<-tw)off=sw;
+    el.style.transform='translateY(-50%) translateX('+off+'px)';
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// ══════════════════════════════════════════════
+//  CROSS-MODULE COMMUNICATION
+// ══════════════════════════════════════════════
+addEventListener('message',e=>{
+  if(!e.data||!e.data.type)return;
+  const m=e.data;
+  switch(m.type){
+    case'credits_change':
+      gs.credits+=m.amount;if(m.amount>0)gs.stats.totalProfit+=m.amount;
+      updateHUD();saveGS();flashEl('h-cr');break;
+    case'fuel_change':
+      gs.fuel=Math.max(0,Math.min(gs.maxFuel,gs.fuel+m.amount));
+      updateHUD();saveGS();flashEl('h-fuel');break;
+    case'cargo_add':
+      if(gs.cargo.length<gs.maxCargo){gs.cargo.push({name:m.name,qty:m.qty||1,price:m.price||0});
+        updateHUD();saveGS();flashEl('h-cargo');}break;
+    case'cargo_sell':
+      const i=gs.cargo.findIndex(c=>c.name===m.name);
+      if(i>=0){const it=gs.cargo.splice(i,1)[0];gs.credits+=m.price||it.price||0;
+        gs.stats.trades++;gs.stats.totalProfit+=m.price||it.price||0;updateHUD();saveGS();}break;
+    case'stat_increment':
+      if(gs.stats[m.stat]!==undefined){gs.stats[m.stat]+=m.amount||1;saveGS();}break;
+    case'ship_upgrade':
+      if(m.shipName){gs.ships[gs.currentShip].name=m.shipName;gs.ships[gs.currentShip].level=m.level||1;saveGS();}break;
+    case'location_update':
+      gs.location.system=m.system||gs.location.system;gs.location.body=m.body||null;
+      document.getElementById('status-loc').textContent='Сектор: '+gs.location.system+(m.body?' | '+m.body:'');
+      saveGS();break;
+    case'get_state':
+      frame.contentWindow.postMessage({type:'game_state',state:gs},'*');break;
+    case'status_msg':
+      const el=document.getElementById('status-msg');el.textContent=m.text;
+      el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');break;
+  }
+});
+frame.addEventListener('load',()=>{
+  if(frame.src&&frame.src!=='about:blank'){
+    setTimeout(()=>{try{frame.contentWindow.postMessage({type:'game_state',state:gs},'*');}catch(e){}},500);
   }
 });
 
-// Send state to iframe when it loads
-moduleFrame.addEventListener('load', () => {
-  if (moduleFrame.src && moduleFrame.src !== 'about:blank') {
-    setTimeout(() => {
-      try {
-        moduleFrame.contentWindow.postMessage({ type: 'game_state', state: gameState }, '*');
-      } catch(e) {}
-    }, 500);
-  }
-});
-
-// ============================================================
-// HUD FLASH
-// ============================================================
-function flashHUD(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.remove('flash');
-  void el.offsetWidth;
-  el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 600);
-}
-
-// ============================================================
-// TOOLTIP SYSTEM
-// ============================================================
-const tooltipEl = document.getElementById('game-tooltip');
-const TIPS = {
-  'modules/starmap.html': 'Карта 5000+ звёзд. ЛКМ-тянуть — вращение, ПКМ-тянуть — пан, колесо — зум. WASD — полёт. 2xклик по звезде — перелёт. Клик по планете — информация. Справа: снаряжение, миссии, маршрутизация.',
-  'modules/constructors.html': 'Верфь: 3 конструктора (корабль, транспорт, станция). ➕ — добавить модуль (до 14), ✖ — сброс. Тянуть мышью — вращать. Модели крутятся автоматически. Каждый модуль даёт статы.',
-  'modules/mining.html': 'Добыча: ➕ — добавить модуль кораблю, ⛏ — режим стрельбы (кликай по астероидам). ✖ — сброс. 14 уничтоженных = руда в трюм. Ресурсы идут на рынок.',
-  'modules/asteroid.html': 'Скульптинг: ЛКМ — обработка (7 стадий), Ctrl+мышь — кисть 150px. Справа — 10 градиентов. 2xклик по соседнему астероиду — выбрать. Клик «уровень» — следующий.',
-  'modules/planetarium.html': 'Планетарий: 8 типов планет (внизу). Каждая с атмосферой, кольцами, уникальными ресурсами. Генерация процедурная. Добыча ресурсов привязана к экономике.',
-  'modules/rover.html': 'Ровер на процедурной планете. WASD — движение. ➕ — новый ровер, ➖ — удалить, 🚀 — запуск ресурсов на орбиту, 🎲 — новый мир. Ресурсы появляются при движении.',
-  'modules/terraforming.html': 'Спутниковый сканер: тянуть мышью — прокрутка карты, колесо — зум. 🎲 — новый скан планеты. ⛏ — разведка (добыть ресурс в трюм). 8 биомов.',
-  'modules/market.html': 'Биржа: 5 секторов (добыча, энергия, био, хайтек, роскошь). Спарклайны — динамика цен. Покупай/продавай акции. Цены обновляются. Связано с добычей.',
-  'modules/changelog.html': 'Бортовой журнал разработки. Все обновления, патчи и новые фичи в стиле hot news. Фильтры по категориям, таймлайн версий.'
-};
-
-document.querySelectorAll('.nav-btn[data-module], .welcome-card[data-module]').forEach(el => {
-  el.addEventListener('mouseenter', (e) => {
-    const mod = el.dataset.module;
-    if (!TIPS[mod]) return;
-    tooltipEl.textContent = TIPS[mod];
-    tooltipEl.classList.add('visible');
-    const rect = el.getBoundingClientRect();
-    tooltipEl.style.left = Math.min(rect.left, window.innerWidth - 290) + 'px';
-    tooltipEl.style.top = (rect.bottom + 8) + 'px';
-  });
-  el.addEventListener('mouseleave', () => {
-    tooltipEl.classList.remove('visible');
-  });
-});
-
-// ============================================================
-// KEYBOARD SHORTCUTS
-// ============================================================
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (profilePanel.classList.contains('open')) {
-      profilePanel.classList.remove('open');
-    } else if (currentModule !== 'welcome') {
-      navigateTo('welcome');
-    }
+// ══════════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════════
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(prof.classList.contains('open'))prof.classList.remove('open');
+    else if(curMod!=='welcome')goTo('welcome');
   }
 });
 </script>
