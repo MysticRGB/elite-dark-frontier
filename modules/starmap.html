@@ -308,7 +308,7 @@ let traveling=false,travelTo=null,travelFrom=null,travelT=0;
 let routeActive=false,routeStart=null,routeEnd=null,routeCalcing=false,routeStopped=false;
 let routeLines=[],routeBest=null,routeAll=[],selRings=[],nameLabels=[];
 const MAX_PATHS=10;
-let nasaData={apod:null,neo:[]};
+let nasaData={apod:null,neo:[],apodError:null,neoError:null};
 let activeTab='info';
 
 // ============================================================
@@ -602,7 +602,7 @@ function renderShip(){
  h+=`<div class="d-title" style="margin-top:14px">SHOP</div>`;
  player.equipment.forEach(eq=>{
   if(!eq.equipped)h+=`<div class="d-row"><span>${eq.name} (${eq.cost} Cr)</span>
-  <button class="trade-btns" style="display:inline"><button onclick="buyEquip(${eq.id})" style="background:rgba(240,160,48,.08);border:1px solid rgba(240,160,48,.2);color:var(--pri);padding:2px 8px;cursor:pointer;font-family:var(--font);font-size:11px;border-radius:3px">BUY</button></div></div>`;
+  <span class="trade-btns"><button onclick="buyEquip(${eq.id})">BUY</button></span></div>`;
  });
  return h;
 }
@@ -620,19 +620,33 @@ function renderRoute(){
  return h;
 }
 function renderNasa(){
- let h='<div class="d-title">NASA LIVE DATA</div>';
+ let h='<div class="d-title">NASA ASTRONOMY PICTURE OF THE DAY</div>';
  if(nasaData.apod){
-  h+=`<img class="nasa-img" src="${nasaData.apod.url}" alt="APOD">
-  <div style="color:var(--pri-b);font-weight:bold;margin-bottom:4px">${nasaData.apod.title}</div>
-  <div style="font-size:12px;color:var(--pri-d);margin-bottom:12px">${(nasaData.apod.explanation||'').slice(0,200)}...</div>`;
- }else h+='<p style="color:var(--pri-d)">Loading APOD...</p>';
- h+='<div class="d-title" style="margin-top:14px">NEAR-EARTH OBJECTS</div>';
+  if(nasaData.apod.media_type==='video'){
+   h+=`<iframe src="${nasaData.apod.url}" style="width:100%;height:200px;border:1px solid rgba(240,160,48,.1);border-radius:4px;margin-bottom:8px" allowfullscreen></iframe>`;
+  }else{
+   const imgUrl=nasaData.apod.hdurl||nasaData.apod.url;
+   h+=`<img class="nasa-img" src="${imgUrl}" alt="APOD" onerror="this.style.display='none'">`;
+  }
+  h+=`<div style="color:var(--pri-b);font-weight:bold;margin-bottom:4px">${nasaData.apod.title||''}</div>
+  <div style="font-size:12px;color:var(--pri-d);margin-bottom:12px;line-height:1.5">${(nasaData.apod.explanation||'').slice(0,300)}...</div>
+  <div style="font-size:11px;color:var(--pri-d)">${nasaData.apod.date||''}</div>`;
+ }else if(nasaData.apodError){
+  h+=`<p style="color:var(--red);font-size:12px">${nasaData.apodError}</p>`;
+ }else{
+  h+='<p style="color:var(--pri-d)">Loading APOD...</p>';
+ }
+ h+='<div class="d-title" style="margin-top:16px">NEAR-EARTH OBJECTS TODAY</div>';
  if(nasaData.neo.length){
   nasaData.neo.forEach(n=>{
    h+=`<div class="neo-item"><div class="neo-name">${n.name}</div>
-   <div class="neo-info">Size: ${n.size} m | Speed: ${n.speed} km/s | Miss: ${n.miss} km</div></div>`;
+   <div class="neo-info">\u2300 ${n.size} m &bull; ${n.speed} km/s &bull; miss: ${Number(n.miss).toLocaleString()} km</div></div>`;
   });
- }else h+='<p style="color:var(--pri-d)">Loading NEO data...</p>';
+ }else if(nasaData.neoError){
+  h+=`<p style="color:var(--red);font-size:12px">${nasaData.neoError}</p>`;
+ }else{
+  h+='<p style="color:var(--pri-d)">Loading NEO data...</p>';
+ }
  return h;
 }
 function refreshDrawer(){
@@ -699,8 +713,14 @@ window.selectRoute=function(i){
 async function fetchNASA(){
  try{
   const r=await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
-  if(r.ok){nasaData.apod=await r.json();if(activeTab==='nasa')refreshDrawer();}
- }catch(e){}
+  if(r.ok){
+   nasaData.apod=await r.json();
+  }else{
+   const err=await r.json().catch(()=>({}));
+   nasaData.apodError='APOD: '+(err.error?.message||'API limit reached. Try later.');
+  }
+ }catch(e){nasaData.apodError='APOD: Network error';}
+ if(activeTab==='nasa')refreshDrawer();
  try{
   const today=new Date().toISOString().split('T')[0];
   const r=await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date='+today+'&api_key=DEMO_KEY');
@@ -713,9 +733,11 @@ async function fetchNASA(){
     speed:Math.round(o.close_approach_data?.[0]?.relative_velocity?.kilometers_per_second||0),
     miss:Math.round(o.close_approach_data?.[0]?.miss_distance?.kilometers||0)
    }));
-   if(activeTab==='nasa')refreshDrawer();
+  }else{
+   nasaData.neoError='NEO: API limit reached. Try later.';
   }
- }catch(e){}
+ }catch(e){nasaData.neoError='NEO: Network error';}
+ if(activeTab==='nasa')refreshDrawer();
 }
 
 // ============================================================
@@ -880,11 +902,12 @@ document.getElementById('search-input').addEventListener('input',e=>{
  const q=e.target.value.trim().toLowerCase();
  const box=document.getElementById('search-results');
  if(!q){box.innerHTML='';return;}
- const hits=starData.filter((s,i)=>{
-  const name=starName(i).toLowerCase();return name.includes(q);
- }).slice(0,20);
- box.innerHTML=hits.map((s,i)=>{
-  const idx=starData.indexOf(s);
+ const hits=[];
+ for(let i=0;i<starData.length&&hits.length<20;i++){
+  if(starName(i).toLowerCase().includes(q))hits.push(i);
+ }
+ box.innerHTML=hits.map(idx=>{
+  const s=starData[idx];
   return`<div class="sr-item" onclick="searchGo(${idx})"><div class="sr-name">${starName(idx)}</div>
   <div class="sr-sub">${s.econName} | Tech ${s.tech} | ${s.planetType}</div></div>`;
  }).join('');
@@ -1061,7 +1084,7 @@ async function init(){
  document.getElementById('act-panel').onclick=()=>{
   document.getElementById('drawer').classList.contains('open')?closeDrawer():openDrawer();};
  document.getElementById('act-search').onclick=toggleSearch;
- document.getElementById('act-nasa').onclick=()=>openDrawer('nasa');
+ document.getElementById('act-nasa').onclick=()=>{openDrawer('nasa');if(!nasaData.apod&&!nasaData.apodError)fetchNASA();};
  document.getElementById('act-save').onclick=()=>{saveProgress();};
  document.getElementById('drawer-close').onclick=closeDrawer;
  document.querySelectorAll('.dtab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
