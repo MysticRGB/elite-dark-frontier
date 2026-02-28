@@ -2,1407 +2,1124 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Elite: Dark Frontier — Карта неба</title>
+<title>Elite: Dark Frontier — Star Map</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-:root {
-  --amber: #ffaa00; --gold: #ffdd99; --dim: rgba(60,35,15,0.7);
-  --panel-bg: linear-gradient(160deg, rgba(12,8,3,0.92) 0%, rgba(5,3,10,0.94) 100%);
-  --panel-border: 1px solid rgba(255,170,0,0.35);
-  --glow: 0 4px 20px rgba(255,140,0,0.12), 0 0 1px rgba(255,170,0,0.3);
-  --font-title: 'Press Start 2P', cursive;
-  --font-body: 'VT323', monospace;
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+:root{
+ --pri:#f0a030;--pri-b:#ffe088;--pri-d:#8a5a10;
+ --bg:#08060e;--glass:rgba(12,8,20,.88);
+ --grn:#40ff80;--red:#ff5050;--blu:#40a0ff;--cyn:#00e8ff;
+ --font:'Share Tech Mono',monospace;--font-t:'Orbitron',sans-serif;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { overflow:hidden; font-family:var(--font-body); background:#050510; color:var(--gold); }
-canvas { display:block; }
-
-/* CRT overlay */
-#crt { position:fixed; inset:0; pointer-events:none; z-index:9999;
-  background:repeating-linear-gradient(0deg,rgba(255,200,100,.02) 0px,rgba(0,0,0,.08) 2px,transparent 3px);
-  mix-blend-mode:multiply; }
-
-/* Panels base */
-.panel { position:absolute; padding:14px 18px; border:var(--panel-border);
-  box-shadow:var(--glow); background:var(--panel-bg); backdrop-filter:blur(8px);
-  font-size:14px; z-index:2000; border-radius:4px; }
-.panel h3, .panel h4 { font-family:var(--font-title); font-size:10px; color:#ffee88;
-  margin-bottom:10px; letter-spacing:1px; text-shadow:0 0 8px rgba(255,200,0,0.25); }
-.panel .lbl { color:#aa7722; } .panel .val { color:#ffee88; font-weight:bold; text-shadow:0 0 6px rgba(255,200,0,0.15); }
-
-/* Buttons */
-.btn { background:var(--dim); border:1px solid rgba(255,170,0,0.4); color:var(--gold);
-  padding:7px 11px; cursor:pointer; font-family:var(--font-title); font-size:8px;
-  text-transform:uppercase; transition:all .2s ease; border-radius:3px;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.5); }
-.btn:hover { background:rgba(160,90,30,0.7); box-shadow:0 0 12px rgba(255,140,0,0.25); border-color:var(--amber); }
-.btn.active { background:rgba(160,90,30,0.7); box-shadow:0 0 12px rgba(255,140,0,0.25); }
-.btn:disabled { opacity:.35; cursor:not-allowed; }
-.btn-full { width:100%; }
-.btn-green { background:rgba(40,100,40,0.7); border-color:rgba(85,170,85,0.5); color:#ccffcc; }
-.btn-green:hover { background:rgba(50,120,50,0.8); box-shadow:0 0 12px rgba(80,200,80,0.2); }
-.btn-red { background:rgba(100,40,40,0.7); border-color:rgba(170,85,85,0.5); color:#ffcccc; }
-.btn-red:hover { background:rgba(120,50,50,0.8); }
-
-/* Info panel (top-left) */
-#info { top:16px; left:16px; min-width:200px; }
-#info h2 { font-family:var(--font-title); font-size:10px; color:#ffee88; margin-bottom:8px;
-  letter-spacing:2px; text-shadow:0 0 12px rgba(255,170,0,0.4); }
-
-/* Controls panel (top-right) */
-#controls { top:16px; right:16px; width:250px; max-height:90vh; overflow-y:auto;
-  scrollbar-width:thin; scrollbar-color:var(--amber) transparent; }
-#controls::-webkit-scrollbar { width:4px; }
-#controls::-webkit-scrollbar-thumb { background:var(--amber); border-radius:2px; }
-#controls label { display:block; margin:10px 0 3px; font-size:13px; color:#aa7722; }
-#controls input[type=range] { width:100%; accent-color:var(--amber); height:4px; }
-
-/* HUD (bottom) */
-#hud { position:absolute; bottom:20px; left:16px; right:16px; display:flex; gap:8px; z-index:2000; pointer-events:none; }
-.hud-block { flex:1; padding:10px 14px; border:var(--panel-border); box-shadow:var(--glow);
-  background:var(--panel-bg); backdrop-filter:blur(8px); border-radius:4px;
-  font-family:var(--font-title); font-size:9px; line-height:1.8; text-transform:uppercase; }
-
-/* Hover tooltip */
-#hover-info { position:absolute; background:rgba(5,3,10,0.95); color:var(--gold); padding:12px 14px;
-  border:1px solid rgba(255,170,0,0.4); font-size:13px; pointer-events:none; max-width:300px;
-  transform:translate(-50%,-110%); z-index:3000; display:none;
-  border-radius:4px; box-shadow:0 4px 20px rgba(255,140,0,0.12); backdrop-filter:blur(6px); }
-
-/* Travel message */
-#travel-msg { position:absolute; bottom:160px; left:16px; background:rgba(5,3,10,0.92); color:var(--amber);
-  padding:10px 18px; border:1px solid rgba(255,170,0,0.3); border-radius:4px;
-  font-size:15px; pointer-events:none;
-  opacity:0; transition:opacity .3s; z-index:2000;
-  box-shadow:0 4px 16px rgba(255,140,0,0.1); backdrop-filter:blur(6px); }
-
-/* Quick travel */
-#quicktravel { bottom:220px; left:16px; max-width:300px; }
-.wp-btn { background:rgba(40,25,10,0.6); border:1px solid rgba(255,170,0,0.3); color:var(--gold);
-  padding:5px 10px; margin:2px; font-size:11px; cursor:pointer; border-radius:3px; transition:all .2s; }
-.wp-btn:hover { background:rgba(160,90,30,0.5); border-color:var(--amber); }
-.wp-btn.locked { border-color:rgba(255,100,0,0.5); background:rgba(80,40,12,0.6); }
-
-/* Modal panels (trade, equip, missions) */
-.modal-panel { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-  background:linear-gradient(160deg, rgba(12,8,3,0.97) 0%, rgba(5,3,10,0.98) 100%);
-  border:2px solid rgba(255,170,0,0.4); border-radius:6px;
-  padding:22px; color:var(--gold);
-  width:680px; max-height:80vh; overflow-y:auto; display:none; z-index:3000; font-size:15px;
-  box-shadow:0 8px 40px rgba(0,0,0,0.5), 0 0 1px rgba(255,170,0,0.4);
-  backdrop-filter:blur(10px); }
-.modal-panel h3 { font-family:var(--font-title); font-size:12px; color:#ffee88; margin-bottom:14px;
-  text-shadow:0 0 8px rgba(255,200,0,0.2); letter-spacing:1px; }
-.close-modal { width:100%; margin-top:14px; }
-
-/* Route panel */
-#route-panel { top:100px; left:16px; width:420px; max-height:75vh; overflow-y:auto; display:none;
-  scrollbar-width:thin; scrollbar-color:var(--amber) transparent; }
-#route-panel::-webkit-scrollbar { width:4px; }
-#route-panel::-webkit-scrollbar-thumb { background:var(--amber); border-radius:2px; }
-.route-progress { width:100%; height:10px; background:rgba(20,10,0,0.8); border:1px solid rgba(255,170,0,0.3);
-  margin:8px 0; border-radius:3px; overflow:hidden; }
-.route-fill { height:100%; background:linear-gradient(90deg,#cc7700,var(--amber),#ffdd66); width:0%; transition:width .5s ease;
-  box-shadow:0 0 8px rgba(255,170,0,0.3); border-radius:3px; }
-.route-stats { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0; }
-.route-stat { text-align:center; padding:6px; background:rgba(255,170,0,.04); border:1px solid rgba(255,170,0,0.12); border-radius:3px; }
-.route-stat .lbl { font-size:9px; color:#aa7722; } .route-stat .val { font-size:14px; color:#ffee88; text-shadow:0 0 6px rgba(255,200,0,0.15); }
-.route-item { display:flex; align-items:center; gap:8px; padding:7px; margin:3px 0;
-  border:1px solid rgba(255,170,0,0.1); cursor:pointer; font-size:12px; background:rgba(255,170,0,.03);
-  border-radius:3px; transition:all .15s; }
-.route-item:hover { background:rgba(255,170,0,.1); border-color:rgba(255,170,0,0.3); }
-.route-dot { width:10px; height:10px; border-radius:50%; border:1px solid rgba(255,255,255,0.6); flex-shrink:0;
-  box-shadow:0 0 4px rgba(255,255,255,0.2); }
-
-/* Star selection */
-#star-select { top:16px; left:50%; transform:translateX(-50%); text-align:center; display:none; }
-.sel-pt { display:inline-block; padding:4px 12px; margin:0 4px; border:1px solid rgba(255,170,0,0.3);
-  font-size:11px; border-radius:3px; background:rgba(255,170,0,0.04); }
-.sel-pt.start { background:rgba(100,150,50,.3); border-color:#88cc44; }
-.sel-pt.end { background:rgba(50,100,150,.3); border-color:#4488cc; }
-
-/* Fuel panel */
-#fuel-panel { top:420px; left:16px; width:320px; border-color:rgba(0,255,136,0.5); color:#00ff88; display:none; }
-#fuel-panel h4 { color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.3); }
-#fuel-panel .lbl { color:#77bb66; } #fuel-panel .val { color:#88ffaa; text-shadow:0 0 6px rgba(0,255,136,0.2); }
-.fuel-row { display:flex; justify-content:space-between; margin:4px 0; }
-
-/* News */
-#news-widget { position:absolute; bottom:20px; right:300px; width:280px; z-index:2000; }
-#news-widget h4 { cursor:pointer; }
-.news-tick { max-height:110px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--amber) transparent; }
-.news-tick::-webkit-scrollbar { width:4px; }
-.news-tick::-webkit-scrollbar-thumb { background:var(--amber); border-radius:2px; }
-.news-item-sm { border-bottom:1px solid rgba(255,170,0,0.1); padding:4px 0; font-size:12px; color:#aa7722;
-  cursor:pointer; transition:color .15s; }
-.news-item-sm:hover { color:var(--amber); }
-#news-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-  width:720px; max-height:80vh; overflow-y:auto; padding:22px; display:none;
-  background:linear-gradient(160deg, rgba(10,6,3,0.97) 0%, rgba(5,3,10,0.98) 100%);
-  border:2px solid rgba(255,170,0,0.4); border-radius:6px; z-index:4000;
-  box-shadow:0 8px 40px rgba(0,0,0,0.5); backdrop-filter:blur(10px); }
-
-/* Star name labels */
-.star-label { font-family:var(--font-body); font-size:11px; color:#66ffaa;
-  text-shadow:0 0 6px rgba(0,255,136,0.4); background:rgba(0,30,15,.75); border:1px solid rgba(0,255,136,0.4);
-  padding:2px 7px; white-space:nowrap; pointer-events:none; border-radius:2px; }
-
-/* Static ships */
-.ship-tag { font-family:var(--font-body); font-size:11px; color:#ffeeaa;
-  text-shadow:0 0 4px rgba(255,136,0,0.3); background:rgba(25,12,0,.85); border:1px solid rgba(255,170,0,0.4);
-  padding:2px 6px; white-space:nowrap; pointer-events:none; border-radius:2px; }
-
-/* Help overlay */
-#help { position:fixed; inset:0; background:rgba(3,1,10,.92); z-index:50000;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  cursor:pointer; gap:18px; backdrop-filter:blur(4px); }
-#help .title { font-family:var(--font-title); font-size:16px; color:#ffee88;
-  text-shadow:0 0 24px rgba(255,170,0,0.6), 0 0 60px rgba(255,100,0,0.2); letter-spacing:3px; }
-#help .body { color:var(--gold); font-size:19px; max-width:560px; text-align:center; line-height:1.7; }
-#help .key { color:#88ff88; text-shadow:0 0 4px rgba(100,255,100,0.2); }
-#help .hint { color:#776622; font-size:15px; animation:blink 1.5s ease-in-out infinite; letter-spacing:2px; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
-
-/* Context menu */
-#ctx-menu { position:absolute; background:rgba(8,4,2,0.96); border:1px solid rgba(255,170,0,0.4); padding:5px;
-  display:none; min-width:140px; z-index:5000; border-radius:4px; backdrop-filter:blur(8px);
-  box-shadow:0 4px 20px rgba(0,0,0,0.5); }
-#ctx-menu button { display:block; width:100%; background:rgba(40,25,10,0.5); border:1px solid rgba(255,170,0,0.2);
-  color:var(--gold); padding:6px 10px; margin:2px 0; cursor:pointer; font-size:12px; text-align:left;
-  border-radius:3px; transition:all .15s; }
-#ctx-menu button:hover { background:rgba(160,90,30,0.5); border-color:rgba(255,170,0,0.4); }
-
-/* Mobile touch button */
-#mobile-controls { display:none; position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
-  z-index:3000; gap:6px; flex-wrap:wrap; justify-content:center; }
-.touch-btn { width:48px; height:48px; background:rgba(255,170,0,.1); border:1px solid rgba(255,170,0,0.4);
-  color:var(--gold); font-size:18px; display:flex; align-items:center; justify-content:center;
-  border-radius:10px; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-  user-select:none; transition:all .15s; backdrop-filter:blur(4px); }
-.touch-btn:active { background:rgba(255,170,0,.35); border-color:var(--amber); box-shadow:0 0 10px rgba(255,170,0,0.2); }
-#mobile-toggle { display:none; position:absolute; top:10px; right:10px; z-index:3001;
-  background:rgba(0,0,0,.8); border:2px solid var(--amber); color:var(--gold);
-  padding:6px 10px; font-size:20px; border-radius:6px; cursor:pointer; }
-
-/* ═══ MOBILE / iPHONE ═══ */
-@media (max-width: 768px) {
-  #info { top:8px; left:8px; padding:8px 10px; font-size:12px; max-width:55%; }
-  #info h2 { font-size:9px; }
-
-  #controls { display:none; top:8px; right:8px; width:200px; padding:8px; font-size:11px; }
-  #controls.mob-open { display:block; }
-  #controls h3 { font-size:8px; }
-  #controls .btn { padding:4px 6px; font-size:7px; margin:2px 1px; }
-  #controls label { font-size:11px; margin:4px 0 1px; }
-
-  #hud { bottom:70px; left:8px; right:8px; gap:4px; }
-  .hud-block { padding:6px 8px; font-size:7px; line-height:1.5; }
-
-  #quicktravel { display:none; }
-  #news-widget { display:none; }
-  #news-modal { width:95vw !important; max-height:70vh; padding:12px; }
-  #hover-info { display:none !important; }
-
-  .modal-panel { width:95vw; max-height:70vh; padding:12px; font-size:13px; }
-  .modal-panel h3 { font-size:10px; }
-  #equip-slots { grid-template-columns:repeat(3,1fr) !important; }
-
-  #route-panel { top:60px; left:6px; width:calc(100vw - 12px); max-height:60vh; padding:8px; }
-  #star-select { top:60px; width:90vw; left:5vw; transform:none; padding:10px; }
-  #fuel-panel { top:auto; bottom:80px; left:6px; width:calc(100vw - 12px); }
-
-  #help .title { font-size:13px; }
-  #help .body { font-size:15px; max-width:90vw; }
-  #help .hint { font-size:14px; }
-
-  #mobile-controls { display:flex; }
-  #mobile-toggle { display:block; }
-
-  .star-label { font-size:10px; padding:1px 4px; }
-  .ship-tag { font-size:10px; }
-}
-
-@media (max-width: 480px) {
-  #info { max-width:60%; }
-  #info h2 { font-size:8px; }
-  .hud-block { font-size:6px; padding:4px 6px; }
-  #hud { bottom:65px; }
-  .touch-btn { width:42px; height:42px; font-size:16px; }
-}
-
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  #mobile-controls { padding-bottom: env(safe-area-inset-bottom); }
-  #hud { bottom: calc(70px + env(safe-area-inset-bottom)); }
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:var(--bg);font-family:var(--font);color:#d0c090}
+canvas{display:block}
+#crt{position:fixed;inset:0;pointer-events:none;z-index:99999;
+ background:repeating-linear-gradient(0deg,rgba(255,200,100,.012) 0px,rgba(0,0,0,.05) 1px,transparent 2px);
+ mix-blend-mode:multiply}
+#hud-top{position:fixed;top:0;left:0;right:0;height:42px;z-index:8000;
+ display:flex;align-items:center;padding:0 16px;gap:12px;
+ background:linear-gradient(180deg,rgba(8,6,14,.95),rgba(8,6,14,.7));
+ border-bottom:1px solid rgba(240,160,48,.15);backdrop-filter:blur(12px)}
+.hud-left{display:flex;align-items:center;gap:10px}
+.logo{font-family:var(--font-t);font-size:11px;font-weight:700;color:var(--pri-b);
+ letter-spacing:3px;text-shadow:0 0 16px rgba(240,160,48,.5)}
+#star-count{font-size:11px;color:var(--pri-d);letter-spacing:1px}
+.hud-center{flex:1;text-align:center;font-family:var(--font-t);font-size:12px;
+ color:var(--pri-b);letter-spacing:2px;text-shadow:0 0 10px rgba(240,160,48,.3)}
+.hud-right{display:flex;align-items:center;gap:16px}
+.hud-stat{display:flex;align-items:center;gap:5px}
+.hud-stat .lab{font-size:10px;color:var(--pri-d);letter-spacing:1px}
+.hud-stat .val{font-size:14px;color:var(--pri-b);font-weight:bold;text-shadow:0 0 8px rgba(255,200,0,.2)}
+#drawer{position:fixed;top:42px;right:-380px;width:370px;height:calc(100vh - 42px);
+ background:var(--glass);border-left:1px solid rgba(240,160,48,.15);
+ backdrop-filter:blur(16px);z-index:7000;transition:right .35s cubic-bezier(.4,0,.2,1);
+ display:flex;flex-direction:column}
+#drawer.open{right:0}
+.dtabs{display:flex;border-bottom:1px solid rgba(240,160,48,.1);overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.dtabs::-webkit-scrollbar{display:none}
+.dtab{background:none;border:none;color:var(--pri-d);padding:10px 12px;font-family:var(--font);
+ font-size:12px;cursor:pointer;white-space:nowrap;letter-spacing:1px;text-transform:uppercase;
+ transition:all .2s;border-bottom:2px solid transparent}
+.dtab:hover{color:var(--pri)}
+.dtab.act{color:var(--pri-b);border-bottom-color:var(--pri);text-shadow:0 0 8px rgba(240,160,48,.3)}
+#drawer-body{flex:1;overflow-y:auto;padding:14px;font-size:14px;scrollbar-width:thin;scrollbar-color:var(--pri) transparent}
+#drawer-body::-webkit-scrollbar{width:4px}
+#drawer-body::-webkit-scrollbar-thumb{background:var(--pri);border-radius:2px}
+.d-close{position:absolute;top:6px;right:10px;background:none;border:none;color:var(--pri-d);
+ font-size:20px;cursor:pointer;z-index:2;transition:color .2s}
+.d-close:hover{color:var(--pri)}
+.d-title{font-family:var(--font-t);font-size:11px;color:var(--pri-b);letter-spacing:2px;
+ margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(240,160,48,.1)}
+.d-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(240,160,48,.04)}
+.d-row .lab{color:var(--pri-d)} .d-row .val{color:var(--pri-b);font-weight:bold}
+.d-btn{background:rgba(240,160,48,.1);border:1px solid rgba(240,160,48,.3);color:var(--pri-b);
+ padding:8px 14px;cursor:pointer;font-family:var(--font);font-size:13px;border-radius:4px;
+ transition:all .2s;text-transform:uppercase;letter-spacing:1px;width:100%;margin-top:6px}
+.d-btn:hover{background:rgba(240,160,48,.2);border-color:var(--pri)}
+.d-btn:disabled{opacity:.3;cursor:not-allowed}
+.d-btn-grn{border-color:rgba(64,255,128,.3);color:var(--grn)}
+.d-btn-red{border-color:rgba(255,80,80,.3);color:var(--red)}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.d-card{background:rgba(240,160,48,.03);border:1px solid rgba(240,160,48,.08);
+ border-radius:4px;padding:8px;text-align:center}
+.d-card .num{font-size:18px;color:var(--pri-b)} .d-card .lab{font-size:10px;color:var(--pri-d)}
+.trade-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;
+ border-bottom:1px solid rgba(240,160,48,.05)}
+.trade-btns{display:flex;gap:4px}
+.trade-btns button{background:rgba(240,160,48,.08);border:1px solid rgba(240,160,48,.2);
+ color:var(--pri);padding:3px 8px;cursor:pointer;font-family:var(--font);font-size:11px;
+ border-radius:3px;transition:all .15s}
+.trade-btns button:hover{background:rgba(240,160,48,.2)}
+.nasa-img{width:100%;border-radius:4px;margin-bottom:8px;border:1px solid rgba(240,160,48,.1)}
+.neo-item{padding:6px 0;border-bottom:1px solid rgba(240,160,48,.04)}
+.neo-name{color:var(--pri-b);font-weight:bold} .neo-info{font-size:12px;color:var(--pri-d)}
+#actions{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:6000;
+ display:flex;gap:6px;padding:6px 10px;background:var(--glass);
+ border:1px solid rgba(240,160,48,.12);border-radius:24px;backdrop-filter:blur(12px)}
+.act-btn{width:40px;height:40px;border-radius:50%;background:rgba(240,160,48,.06);
+ border:1px solid rgba(240,160,48,.2);color:var(--pri);font-size:16px;cursor:pointer;
+ display:flex;align-items:center;justify-content:center;transition:all .2s}
+.act-btn:hover{background:rgba(240,160,48,.15);border-color:var(--pri);box-shadow:0 0 12px rgba(240,160,48,.15)}
+.act-btn.active{background:rgba(240,160,48,.2);border-color:var(--pri)}
+#search{position:fixed;inset:0;background:rgba(8,6,14,.85);z-index:9000;
+ display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;
+ backdrop-filter:blur(8px);transition:opacity .2s}
+#search.hidden{opacity:0;pointer-events:none}
+.search-box{width:90%;max-width:500px}
+#search-input{width:100%;background:var(--glass);border:1px solid rgba(240,160,48,.3);
+ color:var(--pri-b);padding:14px 18px;font-family:var(--font);font-size:16px;
+ border-radius:8px;outline:none;letter-spacing:1px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#search-input:focus{border-color:var(--pri)}
+#search-input::placeholder{color:var(--pri-d)}
+#search-results{max-height:40vh;overflow-y:auto;margin-top:4px;border-radius:8px;
+ background:var(--glass);border:1px solid rgba(240,160,48,.1)}
+.sr-item{padding:10px 16px;cursor:pointer;border-bottom:1px solid rgba(240,160,48,.05);
+ transition:background .15s;font-size:14px}
+.sr-item:hover{background:rgba(240,160,48,.08)}
+.sr-item .sr-name{color:var(--pri-b)} .sr-item .sr-sub{color:var(--pri-d);font-size:11px}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9500;
+ background:var(--glass);border:1px solid rgba(240,160,48,.2);border-radius:8px;
+ padding:10px 20px;color:var(--pri-b);font-size:14px;backdrop-filter:blur(12px);
+ transition:all .3s;white-space:nowrap}
+#toast.hidden{opacity:0;transform:translateX(-50%) translateY(20px);pointer-events:none}
+#route-sel{position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:6500;
+ background:var(--glass);border:1px solid rgba(240,160,48,.2);border-radius:8px;
+ padding:16px 20px;text-align:center;backdrop-filter:blur(12px);min-width:300px;transition:all .3s}
+#route-sel.hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(-20px)}
+#route-sel h3{font-family:var(--font-t);font-size:11px;color:var(--pri-b);letter-spacing:2px;margin-bottom:8px}
+.rp{display:inline-block;padding:4px 12px;border:1px solid rgba(240,160,48,.2);border-radius:4px;margin:4px;font-size:12px}
+.rp.start{border-color:rgba(64,255,128,.3);color:var(--grn)}
+.rp.end{border-color:rgba(64,160,255,.3);color:var(--blu)}
+#route-sel .d-btn{margin-top:8px;width:auto;display:inline-block;padding:6px 16px}
+#hover{position:fixed;pointer-events:none;z-index:7500;background:var(--glass);
+ border:1px solid rgba(240,160,48,.2);border-radius:6px;padding:10px 14px;max-width:280px;
+ font-size:13px;backdrop-filter:blur(10px);opacity:0;transition:opacity .15s}
+#hover.show{opacity:1}
+#hover .h-name{font-family:var(--font-t);font-size:11px;color:var(--pri-b);letter-spacing:1px;margin-bottom:4px}
+#help{position:fixed;inset:0;background:rgba(8,6,14,.94);z-index:50000;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
+ backdrop-filter:blur(6px)}
+#help h1{font-family:var(--font-t);font-size:20px;color:var(--pri-b);
+ text-shadow:0 0 30px rgba(240,160,48,.6);letter-spacing:5px;margin-bottom:12px}
+#help p{color:#a09070;font-size:17px;text-align:center;max-width:500px;line-height:1.6}
+#help .keys{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0;max-width:500px}
+#help .keys span{background:rgba(240,160,48,.06);border:1px solid rgba(240,160,48,.15);
+ padding:6px 12px;border-radius:4px;font-size:13px;color:#b0a080}
+#help .keys b{color:var(--pri-b)}
+#help .hint{color:var(--pri-d);font-size:14px;animation:blink 1.5s ease-in-out infinite;letter-spacing:2px;margin-top:20px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#mob-toggle{display:none;position:fixed;top:50px;right:8px;z-index:6000;width:36px;height:36px;
+ border-radius:50%;background:var(--glass);border:1px solid rgba(240,160,48,.2);
+ color:var(--pri);font-size:16px;cursor:pointer}
+#mob-controls{display:none;position:fixed;bottom:10px;left:50%;transform:translateX(-50%);
+ z-index:6000;gap:6px;flex-wrap:wrap;justify-content:center}
+.touch-btn{width:44px;height:44px;background:rgba(240,160,48,.08);
+ border:1px solid rgba(240,160,48,.25);color:var(--pri);font-size:16px;
+ display:flex;align-items:center;justify-content:center;border-radius:10px;
+ -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:all .15s}
+.touch-btn:active{background:rgba(240,160,48,.3);border-color:var(--pri)}
+.star-label{font-family:var(--font);font-size:11px;color:var(--grn);
+ text-shadow:0 0 6px rgba(64,255,128,.3);background:rgba(0,30,15,.7);
+ border:1px solid rgba(64,255,128,.3);padding:2px 7px;white-space:nowrap;pointer-events:none;border-radius:3px}
+.ship-tag{font-family:var(--font);font-size:10px;color:#ffe8a0;
+ background:rgba(20,12,0,.8);border:1px solid rgba(240,160,48,.3);
+ padding:2px 6px;white-space:nowrap;pointer-events:none;border-radius:3px}
+@media(max-width:768px){
+ .logo{font-size:9px;letter-spacing:1px}
+ #star-count,.hud-center{display:none}
+ #drawer{width:100%;right:-100%}
+ #actions{bottom:60px;gap:4px;padding:4px 8px}
+ .act-btn{width:36px;height:36px;font-size:14px}
+ #mob-toggle{display:flex;align-items:center;justify-content:center}
+ #help h1{font-size:14px}
+ #route-sel{min-width:90vw}
 }
 </style>
 </head>
 <body>
+
 <div id="crt"></div>
-
-<!-- HELP OVERLAY -->
+<div id="hud-top">
+ <div class="hud-left"><span class="logo">ELITE: DARK FRONTIER</span><span id="star-count">...</span></div>
+ <div class="hud-center" id="sys-display">SOL SYSTEM</div>
+ <div class="hud-right">
+  <div class="hud-stat"><span class="lab">CR</span><span class="val" id="h-cr">10000</span></div>
+  <div class="hud-stat"><span class="lab">FUEL</span><span class="val" id="h-fuel">7.0</span></div>
+  <div class="hud-stat"><span class="lab">CARGO</span><span class="val"><span id="h-cargo">0</span>/<span id="h-cmax">22</span></span></div>
+  <div class="hud-stat"><span class="lab">RANK</span><span class="val" id="h-rank">Harmless</span></div>
+ </div>
+</div>
+<div id="drawer">
+ <button class="d-close" id="drawer-close">&times;</button>
+ <div class="dtabs">
+  <button class="dtab act" data-tab="info">&#x2139; SYSTEM</button>
+  <button class="dtab" data-tab="trade">&#x1F4B0; TRADE</button>
+  <button class="dtab" data-tab="ship">&#x1F680; SHIP</button>
+  <button class="dtab" data-tab="route">&#x1F4CD; ROUTE</button>
+  <button class="dtab" data-tab="nasa">&#x1F6F0; NASA</button>
+ </div>
+ <div id="drawer-body"></div>
+</div>
+<div id="actions">
+ <button class="act-btn" id="act-solar">&#9788;</button>
+ <button class="act-btn" id="act-trade">&#9889;</button>
+ <button class="act-btn" id="act-route">&#128205;</button>
+ <button class="act-btn" id="act-panel">&#9776;</button>
+ <button class="act-btn" id="act-search">&#128269;</button>
+ <button class="act-btn" id="act-nasa">&#128752;</button>
+ <button class="act-btn" id="act-save">&#128190;</button>
+</div>
+<div id="search" class="hidden">
+ <div class="search-box">
+  <input id="search-input" placeholder="Search HIP stars..." autocomplete="off">
+  <div id="search-results"></div>
+ </div>
+</div>
+<div id="toast" class="hidden"></div>
+<div id="route-sel" class="hidden">
+ <h3>ROUTE PLANNER</h3>
+ <div id="route-status">RMB on star = start point</div>
+ <div><span class="rp start" id="rp-start">START: &mdash;</span><span class="rp end" id="rp-end">END: &mdash;</span></div>
+ <button class="d-btn" id="route-calc" disabled>CALCULATE</button>
+ <button class="d-btn d-btn-red" id="route-cancel">CANCEL</button>
+</div>
+<div id="hover"><div class="h-name" id="hv-name"></div><div id="hv-body"></div></div>
 <div id="help">
-  <div class="title">КАРТА ЗВЁЗДНОГО НЕБА</div>
-  <div class="body">
-    <div style="color:#88ccff;font-size:15px;margin-bottom:10px;">Каждая звезда — реальная из каталога HIP (Hipparcos).<br>Во Вселенной ~2×10²³ звёзд. Здесь 5000 ближайших.</div>
-    <div><span class="key">ЛКМ + тянуть</span> — вращение</div>
-    <div><span class="key">ПКМ + тянуть</span> — панорамирование</div>
-    <div><span class="key">Колесо</span> — зум</div>
-    <div><span class="key">WASD / Q / E</span> — полёт</div>
-    <div><span class="key">Shift</span> — ускорение ×3</div>
-    <div><span class="key">Двойной клик</span> — перелёт к звезде</div>
-  </div>
-  <div class="hint">[ КЛИКНИТЕ ЧТОБЫ НАЧАТЬ ]</div>
+ <h1>ELITE: DARK FRONTIER</h1>
+ <p>5000 real Hipparcos stars &bull; NASA live data &bull; trade &amp; explore</p>
+ <div class="keys">
+  <span><b>WASD</b> move</span><span><b>Q/E</b> up/down</span>
+  <span><b>Shift</b> boost</span><span><b>DblClick</b> fly to</span>
+  <span><b>RMB</b> route point</span><span><b>/</b> search</span>
+ </div>
+ <p class="hint">[ CLICK TO START ]</p>
 </div>
-
-<!-- INFO -->
-<div id="info" class="panel">
-  <h2>✨ ELITE: DARK FRONTIER</h2>
-  <div id="star-count">Загрузка...</div>
-  <div>СИСТЕМА: <span id="cur-sys" class="val">—</span></div>
-</div>
-
-<!-- CONTROLS -->
-<div id="controls" class="panel">
-  <h3>⚙ УПРАВЛЕНИЕ</h3>
-  <button class="btn btn-full" id="btn-solar">🪐 СОЛНЕЧНАЯ СИСТЕМА</button>
-  <button class="btn" id="btn-sun">☀ СОЛНЦЕ</button>
-  <button class="btn" id="btn-lines">🔗 ЛИНИИ МАССИВНЫХ</button>
-  <button class="btn btn-full" id="btn-trade">🚀 ТОРГОВЫЕ МАРШРУТЫ</button>
-  <button class="btn btn-full" id="btn-route">🧮 ПРОСЧЁТ МАРШРУТА</button>
-  <button class="btn btn-full" id="btn-save">💾 СОХРАНИТЬ</button>
-  <button class="btn btn-full" id="btn-load">📂 ЗАГРУЗИТЬ</button>
-  <button class="btn" id="btn-equip">🛠 СНАРЯЖЕНИЕ</button>
-  <button class="btn" id="btn-missions">📋 МИССИИ</button>
-  <label>⭐ Размер звёзд <span id="v-size" class="val">13</span></label>
-  <input type="range" id="sl-size" min="1" max="30" step="0.5" value="13">
-  <label>🚀 Скорость <span id="v-speed" class="val">200</span></label>
-  <input type="range" id="sl-speed" min="1" max="10000" step="1" value="200">
-  <label>🔆 Яркость <span id="v-bright" class="val">1.0</span></label>
-  <input type="range" id="sl-bright" min="0.2" max="2.0" step="0.1" value="1.0">
-  <p style="font-size:11px;color:#886622;margin-top:8px;">WASD — полёт · Q/E — вверх/вниз · Shift — ×3</p>
-</div>
-
-<!-- HUD -->
-<div id="hud">
-  <div class="hud-block">
-    <div><span class="lbl">КРЕДИТЫ:</span> <span class="val" id="h-cred">10000</span></div>
-    <div><span class="lbl">ТОПЛИВО:</span> <span class="val" id="h-fuel">7.0</span>/7.0 т</div>
-    <div><span class="lbl">ГРУЗ:</span> <span class="val" id="h-cargo">0</span>/<span id="h-cmax">22</span> т</div>
-    <div><span class="lbl">ПОЛЁТОВ:</span> <span class="val" id="h-flights">0</span></div>
-  </div>
-  <div class="hud-block" style="text-align:center;">
-    <div><span class="lbl">РЕЙТИНГ:</span> <span class="val" id="h-rank">Harmless</span></div>
-    <div><span class="lbl">МОРАЛЬ:</span> <span class="val" id="h-morale">НОРМА</span></div>
-  </div>
-  <div class="hud-block" style="text-align:right;">
-    <div><span class="lbl">СИСТЕМА:</span> <span class="val" id="h-sys">—</span></div>
-    <div><span class="lbl">ПЛАНЕТА:</span> <span class="val" id="h-planet">—</span></div>
-    <div><span class="lbl">ЭКОНОМИКА:</span> <span class="val" id="h-econ">—</span></div>
-  </div>
-</div>
-
-<!-- QUICK TRAVEL -->
-<div id="quicktravel" class="panel">
-  <h4>⚡ БЫСТРЫЙ ПЕРЕЛЁТ</h4>
-  <div id="wp-list"></div>
-  <button class="btn btn-green" id="btn-addwp" style="margin-top:6px;">+ МЕТКА</button>
-</div>
-
-<!-- TRAVEL MESSAGE -->
-<div id="travel-msg"></div>
-
-<!-- HOVER INFO -->
-<div id="hover-info"></div>
-
-<!-- NEWS WIDGET -->
-<div id="news-widget" class="panel">
-  <h4 id="news-toggle">📰 НОВОСТИ ГАЛАКТИКИ ▼</h4>
-  <div class="news-tick" id="news-tick"></div>
-</div>
-
-<!-- NEWS MODAL -->
-<div id="news-modal">
-  <h3 style="font-family:var(--font-title);font-size:14px;color:#ffff88;text-align:center;">📰 ГАЛАКТИЧЕСКИЕ НОВОСТИ</h3>
-  <div id="news-full" style="margin-top:12px;"></div>
-  <button class="btn btn-full" id="news-close" style="margin-top:12px;">ЗАКРЫТЬ</button>
-</div>
-
-<!-- TRADE PANEL -->
-<div class="modal-panel" id="trade-panel">
-  <h3>СТАНЦИЯ: <span id="st-name"></span></h3>
-  <div id="trade-items"></div>
-  <button class="btn close-modal" id="close-trade">ЗАКРЫТЬ</button>
-</div>
-
-<!-- EQUIPMENT PANEL -->
-<div class="modal-panel" id="equip-panel">
-  <h3>🛠 СНАРЯЖЕНИЕ</h3>
-  <div id="equip-slots" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;"></div>
-  <button class="btn close-modal" id="close-equip">ЗАКРЫТЬ</button>
-</div>
-
-<!-- MISSIONS PANEL -->
-<div class="modal-panel" id="missions-panel">
-  <h3>📋 МИССИИ</h3>
-  <div id="missions-list"><p style="color:#886622;">Нет доступных миссий в этой системе.</p></div>
-  <button class="btn close-modal" id="close-missions">ЗАКРЫТЬ</button>
-</div>
-
-<!-- ROUTE PANEL -->
-<div id="route-panel" class="panel">
-  <h3>🧮 ПРОСЧЁТ МАРШРУТА</h3>
-  <div style="margin:6px 0;">
-    <div>Вход: <span id="r-start" style="color:#88cc44;">—</span></div>
-    <div>Выход: <span id="r-end" style="color:#4488cc;">—</span></div>
-  </div>
-  <div class="route-progress"><div class="route-fill" id="r-fill"></div></div>
-  <div class="route-stats">
-    <div class="route-stat"><div class="lbl">ПУТЕЙ</div><div class="val" id="r-count">0/10</div></div>
-    <div class="route-stat"><div class="lbl">ЛУЧШИЙ</div><div class="val" id="r-best">—</div></div>
-    <div class="route-stat"><div class="lbl">РАССТОЯНИЕ</div><div class="val" id="r-dist">—</div></div>
-    <div class="route-stat"><div class="lbl">ЗВЁЗД</div><div class="val" id="r-stars">—</div></div>
-  </div>
-  <div id="route-list"></div>
-  <button class="btn btn-full" id="close-route" style="margin-top:6px;">СКРЫТЬ</button>
-  <button class="btn btn-red btn-full" id="stop-route" style="margin-top:4px;">⛔ ОСТАНОВИТЬ</button>
-</div>
-
-<!-- STAR SELECTION -->
-<div id="star-select" class="panel">
-  <h4>ВЫБОР ЗВЁЗД ДЛЯ МАРШРУТА</h4>
-  <div style="margin:8px 0;">
-    <span class="sel-pt start">🟢 ПКМ = ВХОД</span>
-    <span class="sel-pt end">🔵 ПКМ = ВЫХОД</span>
-  </div>
-  <div id="sel-status">Выберите точку входа (ПКМ по звезде)</div>
-  <button class="btn btn-green" id="sel-calc" disabled>ПРОСЧИТАТЬ</button>
-  <button class="btn" id="sel-cancel">ОТМЕНА</button>
-</div>
-
-<!-- FUEL PANEL -->
-<div id="fuel-panel" class="panel">
-  <h4>⛽ ТОПЛИВО</h4>
-  <div class="fuel-row"><span class="lbl">Расстояние:</span><span class="val" id="f-dist">—</span></div>
-  <div class="fuel-row"><span class="lbl">Нужно:</span><span class="val" id="f-need">—</span></div>
-  <div class="fuel-row"><span class="lbl">Есть:</span><span class="val" id="f-have">—</span></div>
-  <div class="fuel-row"><span class="lbl">Статус:</span><span class="val" id="f-status">—</span></div>
-  <button class="btn btn-full" id="close-fuel" style="margin-top:6px;">ЗАКРЫТЬ</button>
-</div>
-
-<!-- MOBILE CONTROLS -->
-<button id="mobile-toggle">⚙</button>
-<div id="mobile-controls">
-  <button class="touch-btn" data-act="fwd">▲</button>
-  <button class="touch-btn" data-act="left">◀</button>
-  <button class="touch-btn" data-act="back">▼</button>
-  <button class="touch-btn" data-act="right">▶</button>
-  <button class="touch-btn" data-act="up">⬆</button>
-  <button class="touch-btn" data-act="down">⬇</button>
-  <button class="touch-btn" data-act="solar">🪐</button>
-  <button class="touch-btn" data-act="fast">⚡</button>
-</div>
-
-<!-- CONTEXT MENU -->
-<div id="ctx-menu">
-  <button id="ctx-rename">✏ Переименовать</button>
-  <button id="ctx-lock">🔒 Заблокировать</button>
-  <button id="ctx-unlock">🔓 Разблокировать</button>
-  <button id="ctx-delete">🗑 Удалить</button>
+<button id="mob-toggle">&#9881;</button>
+<div id="mob-controls">
+ <button class="touch-btn" data-act="fwd">&#9650;</button>
+ <button class="touch-btn" data-act="left">&#9664;</button>
+ <button class="touch-btn" data-act="back">&#9660;</button>
+ <button class="touch-btn" data-act="right">&#9654;</button>
+ <button class="touch-btn" data-act="up">&#11014;</button>
+ <button class="touch-btn" data-act="down">&#11015;</button>
+ <button class="touch-btn" data-act="solar">&#9788;</button>
+ <button class="touch-btn" data-act="fast">&#9889;</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/renderers/CSS2DRenderer.js"></script>
 <script>
-// ═══════════════════════════════════════════════════
-//  GAME DATA
-// ═══════════════════════════════════════════════════
-const ECON = ["Poor Agri","Avg Agri","Rich Agri","Poor Ind","Avg Ind","Rich Ind","Poor Common","Avg Common"];
-const GOV  = ["Anarchy","Feudal","Multi-gov","Dictatorship","Confederacy","Democracy","Corporate","Satori","Communist"];
-const PTYPES = ["rocky","gas_giant","ice","jungle","desert","ocean","dead","artificial","ruins","fungal","insectoid","cyber","magic"];
-const GOODS = [
-  {id:0,name:"Food",base:13,unit:4},{id:1,name:"Textiles",base:27,unit:4},
-  {id:2,name:"Radioactives",base:1600,unit:1},{id:3,name:"Slaves",base:180,unit:4,illegal:true},
-  {id:4,name:"Liquor",base:55,unit:4},{id:5,name:"Luxuries",base:150,unit:1},
-  {id:6,name:"Narcotics",base:1000,unit:1,illegal:true},{id:7,name:"Computers",base:500,unit:1},
-  {id:8,name:"Machinery",base:400,unit:2},{id:9,name:"Alloys",base:170,unit:4},
-  {id:10,name:"Firearms",base:290,unit:2,illegal:true},{id:11,name:"Furs",base:220,unit:2},
-  {id:12,name:"Minerals",base:53,unit:4},{id:13,name:"Gold",base:660,unit:1},
-  {id:14,name:"Platinum",base:550,unit:1},{id:15,name:"Gem-Stones",base:2500,unit:1},
-  {id:16,name:"Alien Items",base:192,unit:1}
+// ============================================================
+//  DATA
+// ============================================================
+const ECON=["Poor Agri","Avg Agri","Rich Agri","Poor Ind","Avg Ind","Rich Ind","Poor Common","Avg Common"];
+const GOV=["Anarchy","Feudal","Multi-gov","Dictatorship","Confederacy","Democracy","Corporate","Satori","Communist"];
+const PTYPES=["rocky","gas_giant","ice","jungle","desert","ocean","dead","artificial","ruins","fungal","insectoid","cyber","magic"];
+const GOODS=[
+ {id:0,name:"Food",base:13,unit:4},{id:1,name:"Textiles",base:27,unit:4},
+ {id:2,name:"Radioactives",base:1600,unit:1},{id:3,name:"Slaves",base:180,unit:4,illegal:true},
+ {id:4,name:"Liquor",base:55,unit:4},{id:5,name:"Luxuries",base:150,unit:1},
+ {id:6,name:"Narcotics",base:1000,unit:1,illegal:true},{id:7,name:"Computers",base:500,unit:1},
+ {id:8,name:"Machinery",base:400,unit:2},{id:9,name:"Alloys",base:170,unit:4},
+ {id:10,name:"Firearms",base:290,unit:2,illegal:true},{id:11,name:"Furs",base:220,unit:2},
+ {id:12,name:"Minerals",base:53,unit:4},{id:13,name:"Gold",base:660,unit:1},
+ {id:14,name:"Platinum",base:550,unit:1},{id:15,name:"Gem-Stones",base:2500,unit:1},
+ {id:16,name:"Alien Items",base:192,unit:1}
 ];
-const EQUIPMENT = [
-  {id:1,name:"Pulse Lasers",cost:4000,effect:"улучшенные лазеры"},
-  {id:2,name:"Beam Lasers",cost:10000,effect:"лучевые лазеры"},
-  {id:3,name:"E.C.M.",cost:6000,effect:"защита от ракет"},
-  {id:4,name:"Fuel Scoops",cost:5250,effect:"сбор топлива"},
-  {id:5,name:"Escape Pod",cost:10000,effect:"спасение"},
-  {id:6,name:"Energy Bomb",cost:9000,effect:"энергобомба"},
-  {id:7,name:"Energy Unit",cost:15000,effect:"регенерация"},
-  {id:8,name:"Dock Computer",cost:10000,effect:"автостыковка"},
-  {id:9,name:"Galactic Drive",cost:50000,effect:"межгалактический прыжок"},
-  {id:10,name:"Bio Update",cost:20000,effect:"снижает психоз"}
+const EQUIPMENT=[
+ {id:1,name:"Pulse Lasers",cost:4000,effect:"improved lasers"},
+ {id:2,name:"Beam Lasers",cost:10000,effect:"beam lasers"},
+ {id:3,name:"E.C.M.",cost:6000,effect:"missile defense"},
+ {id:4,name:"Fuel Scoops",cost:5250,effect:"fuel scooping"},
+ {id:5,name:"Escape Pod",cost:10000,effect:"survival"},
+ {id:6,name:"Energy Bomb",cost:9000,effect:"energy bomb"},
+ {id:7,name:"Energy Unit",cost:15000,effect:"regen"},
+ {id:8,name:"Dock Computer",cost:10000,effect:"auto-dock"},
+ {id:9,name:"Galactic Drive",cost:50000,effect:"intergalactic jump"},
+ {id:10,name:"Bio Update",cost:20000,effect:"reduce psychosis"}
+];
+const NEWS=[
+ {t:'AXIOM captured Delta-7',d:'Corporation AXIOM seized sector Delta-7. He-3 deposits will power the fleet for 200 years.',s:'Delta-7'},
+ {t:'Miner Strike',d:'Independent Miners Alliance shut 40% of Barnard mines.',s:'Barnard'},
+ {t:'[FACT] 2 trillion galaxies',d:'Conselice et al. (2016): ~2 trillion galaxies in the observable universe.',s:'Universe'},
+ {t:'Diamond planet 55 Cancri e',d:'Mass 8.6 Earths, 40 ly. Diamond mantle suspected.',s:'55 Cancri'},
+ {t:'[FACT] 5700+ exoplanets',d:'NASA confirmed 5700+ exoplanets. TRAPPIST-1: 7 Earth-sized.',s:'TRAPPIST-1'},
+ {t:'Pirates at Wolf 359',d:'"Dark Claw" attacked a convoy. Wolf 359 is a red dwarf at 7.86 ly.',s:'Wolf 359'},
+ {t:'[FACT] Milky Way',d:'Spiral galaxy ~100,000 ly diameter, 100-400 billion stars, ~1 trillion planets.',s:'Milky Way'},
+ {t:'Kepler-442b: 18 deposits',d:'Scout "Hawk-14" mapped 18 rare-earth deposits.',s:'Kepler-442'},
+ {t:'[FACT] Neutron stars',d:'Density 10^17 kg/m3. A teaspoon weighs ~6 billion tons. Diameter ~20 km.',s:'Pulsar'},
+ {t:'Ocean under Europa-9 ice',d:'Rovers found a sub-ice ocean. Real Europa: up to 100 km of ice.',s:'Europa-9'},
+];
+const PLANETS_DATA=[
+ {name:'Mercury',r:5,sz:.4,col:0x8c8c8c,spd:.04,desc:'4879 km, -173/+427C'},
+ {name:'Venus',r:7,sz:.6,col:0xe6b800,spd:.015,desc:'12104 km, 92 atm, +462C'},
+ {name:'Earth',r:9,sz:.65,col:0x2288ff,spd:.01,desc:'12742 km, 71% water'},
+ {name:'Mars',r:11,sz:.5,col:0xff6600,spd:.008,desc:'6779 km, Olympus 21.9 km'},
+ {name:'Jupiter',r:15,sz:1.4,col:0xd2b48c,spd:.002,desc:'139820 km, 318 Earth masses'},
+ {name:'Saturn',r:19,sz:1.2,col:0xf0d58c,spd:.0009,ring:true,desc:'116460 km, rings 99.9% ice'},
+ {name:'Uranus',r:23,sz:1,col:0x4fd0e7,spd:.0004,desc:'50724 km, axis tilt 98'},
+ {name:'Neptune',r:27,sz:1,col:0x4169e1,spd:.0002,desc:'49244 km, winds 2100 km/h'}
 ];
 
-const NEWS = [
-  {title:'AXIOM захватила Delta-7',text:'Корпорация AXIOM заняла сектор Delta-7. Залежи He-3 обеспечат флот на 200 лет.',sys:'Delta-7'},
-  {title:'Забастовка шахтёров',text:'Альянс Независимых Шахтёров остановил 40% рудников в секторе Barnard.',sys:'Barnard'},
-  {title:'[ФАКТ] 2 трлн галактик',text:'По данным Conselice et al. (2016), во Вселенной ≈2 трлн галактик.',sys:'Вселенная'},
-  {title:'Алмазная планета 55 Cancri e',text:'Масса 8.6 Земель, 40 св.лет. Предполагается алмазная мантия.',sys:'55 Cancri'},
-  {title:'[ФАКТ] 5700+ экзопланет',text:'NASA подтвердило 5700+ экзопланет (2024). TRAPPIST-1: 7 планет размером с Землю.',sys:'TRAPPIST-1'},
-  {title:'Пираты у Wolf 359',text:'«Тёмный Коготь» атаковал конвой. Wolf 359 — красный карлик, 7.86 св.лет.',sys:'Wolf 359'},
-  {title:'[ФАКТ] Млечный Путь',text:'Спиральная галактика, Ø ~100 000 св.лет, 100–400 млрд звёзд, ~1 трлн планет.',sys:'Milky Way'},
-  {title:'Kepler-442b: 18 месторождений',text:'Спутник «Зоркий-14» завершил картографию. 18 месторождений редкоземов.',sys:'Kepler-442'},
-  {title:'[ФАКТ] Нейтронные звёзды',text:'Плотность 10¹⁷ кг/м³. Чайная ложка ~6 млрд тонн. Ø ~20 км.',sys:'Pulsar'},
-  {title:'Подлёдный океан Европы-9',text:'Роверы «Кирилл» обнаружили океан. Реальная Европа: до 100 км льда.',sys:'Europa-9'},
-];
+// ============================================================
+//  PLAYER
+// ============================================================
+const player={credits:10000,fuel:7,maxFuel:7,
+ cargo:new Array(GOODS.length).fill(0),cargoMax:22,
+ kills:0,rank:'Harmless',psychosis:0,morale:100,
+ equipment:EQUIPMENT.map(e=>({...e,equipped:false})),
+ slots:new Array(5).fill(null),currentSystem:null,docked:false,flights:0};
 
-// ═══════════════════════════════════════════════════
-//  PLAYER STATE
-// ═══════════════════════════════════════════════════
-const player = {
-  credits:10000, fuel:7, maxFuel:7,
-  cargo: new Array(GOODS.length).fill(0), cargoMax:22,
-  kills:0, rank:'Harmless', psychosis:0, morale:100,
-  equipment: EQUIPMENT.map(e=>({...e,equipped:false})),
-  slots: new Array(5).fill(null),
-  currentSystem:null, docked:false, flights:0,
-  position: null
-};
-
-// ═══════════════════════════════════════════════════
+// ============================================================
 //  THREE.JS GLOBALS
-// ═══════════════════════════════════════════════════
-let scene, camera, renderer, labelRenderer, controls;
-let starsMesh, starsMat, starData = [];
-let clock = new THREE.Clock();
-let solarGroup, planets = [], sunMesh;
-let massiveStars = [], massiveRings = [], massiveLines = null, showMassive = false;
-let tradeVisible = false, tradeLines = [], tradeCurves = [], dynPoints = null, dynData = [], shipLabels = [];
-let speed = 200;
-let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
-let traveling=false, travelTo=null, travelFrom=null, travelT=0;
-let solarMode = true;
-let waypoints = [], wpCount = 0;
+// ============================================================
+let scene,camera,renderer,labelRenderer,controls;
+let starsMesh,glowMesh,starData=[];
+let clock=new THREE.Clock();
+let solarGroup,planets=[],sunMesh,solarMode=true;
+let massiveStars=[],tradeVisible=false,tradeCurves=[],tradeLines=[],dynPoints=null,dynData=[],shipLabels=[];
+let speed=200;
+let moveF=0,moveB=0,moveL=0,moveR=0,moveU=0,moveD=0;
+let traveling=false,travelTo=null,travelFrom=null,travelT=0;
+let routeActive=false,routeStart=null,routeEnd=null,routeCalcing=false,routeStopped=false;
+let routeLines=[],routeBest=null,routeAll=[],selRings=[],nameLabels=[];
+const MAX_PATHS=10;
+let nasaData={apod:null,neo:[]};
+let activeTab='info';
 
-// Route calculation
-const MAX_PATHS = 10;
-let routeActive=false, routeStart=null, routeEnd=null, routeCalcing=false, routeStopped=false;
-let routeLines=[], routeBest=null, routeAll=[], selRings=[], nameLabels=[];
-
-// DOM refs
-const $hover = document.getElementById('hover-info');
-const $travelMsg = document.getElementById('travel-msg');
-
-// ═══════════════════════════════════════════════════
-//  STAR LOADING
-// ═══════════════════════════════════════════════════
-async function loadStars() {
-  try {
-    const r = await fetch('../stars.json');
-    if (!r.ok) throw new Error(r.status);
-    return await r.json();
-  } catch(e) {
-    console.warn('stars.json не найден, генерирую:', e.message);
-    return genSynth(5000);
-  }
+// ============================================================
+//  UTILS
+// ============================================================
+function toast(msg,warn=false,ms=3000){
+ const t=document.getElementById('toast');
+ t.textContent=msg;t.style.borderColor=warn?'rgba(255,80,80,.3)':'rgba(240,160,48,.2)';
+ t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),ms);
+}
+function starName(i){const s=starData[i];return s&&s.hip?'HIP '+s.hip:'Star '+i;}
+function systemProps(star,i){
+ let s=i*75+74;s=(s*75+74)%65536;const econ=Math.floor(s/8192)%8;
+ s=(s*75+74)%65536;const gov=Math.floor(s/7281)%9;
+ s=(s*75+74)%65536;const tech=Math.min(14,Math.floor(s/4681)+(econ<3?2:4));
+ s=(s*75+74)%65536;const pt=PTYPES[Math.floor(s/5041)%PTYPES.length];
+ const prices=GOODS.map(g=>{let p=g.base+(tech-7)*5;if(econ>=3&&econ<=5)p=Math.floor(p*.9);return Math.max(1,p);});
+ return{economy:econ,econName:ECON[econ],govName:GOV[gov],tech,planetType:pt,prices};
+}
+function starColor(mag){
+ const bf=Math.max(.15,1-(mag+5)/20);
+ const hue=.15+bf*.45;
+ return new THREE.Color().setHSL(hue,.7,bf*.85);
 }
 
-function genSynth(n) {
-  const out = [];
-  for (let i=0;i<n;i++) {
-    const r=5000*Math.cbrt(Math.random()), th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
-    out.push({x:r*Math.sin(ph)*Math.cos(th), y:r*Math.sin(ph)*Math.sin(th), z:r*Math.cos(ph), mag:Math.random()*10-2, bv:Math.random()*1.5-.3, hip:i+1});
+// ============================================================
+//  SPRITE TEXTURES
+// ============================================================
+function makeSprite(soft=false){
+ const c=document.createElement('canvas');c.width=64;c.height=64;
+ const x=c.getContext('2d');
+ const g=x.createRadialGradient(32,32,0,32,32,32);
+ if(soft){
+  g.addColorStop(0,'rgba(255,255,255,.6)');
+  g.addColorStop(.3,'rgba(255,220,140,.3)');
+  g.addColorStop(.6,'rgba(200,150,80,.1)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+ }else{
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(.25,'rgba(255,240,200,.8)');
+  g.addColorStop(.5,'rgba(255,200,100,.3)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+ }
+ x.fillStyle=g;x.fillRect(0,0,64,64);
+ return new THREE.CanvasTexture(c);
+}
+
+// ============================================================
+//  NEBULA
+// ============================================================
+function addNebulae(){
+ const configs=[
+  {r:100,g:50,b:160,px:2000,py:500,pz:-1500,sz:4000},
+  {r:30,g:80,b:140,px:-1500,py:-800,pz:2000,sz:3500},
+  {r:160,g:70,b:30,px:500,py:1200,pz:3000,sz:5000},
+ ];
+ configs.forEach(cfg=>{
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const ctx=c.getContext('2d');
+  for(let i=0;i<300;i++){
+   const x=Math.random()*256,y=Math.random()*256,rad=Math.random()*60+20;
+   const gr=ctx.createRadialGradient(x,y,0,x,y,rad);
+   const a=(Math.random()*.025).toFixed(4);
+   gr.addColorStop(0,`rgba(${cfg.r},${cfg.g},${cfg.b},${a})`);
+   gr.addColorStop(1,'transparent');
+   ctx.fillStyle=gr;ctx.fillRect(0,0,256,256);
+  }
+  const tex=new THREE.CanvasTexture(c);
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:.5,
+   side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(cfg.sz,cfg.sz),mat);
+  mesh.position.set(cfg.px,cfg.py,cfg.pz);
+  mesh.rotation.set(Math.random(),Math.random(),0);
+  scene.add(mesh);
+ });
+}
+
+// ============================================================
+//  BACKGROUND TEXTURE
+// ============================================================
+function makeBgTexture(){
+ const c=document.createElement('canvas');c.width=1024;c.height=1024;
+ const ctx=c.getContext('2d');
+ const g=ctx.createRadialGradient(512,512,0,512,512,700);
+ g.addColorStop(0,'#0c0818');g.addColorStop(.5,'#080612');g.addColorStop(1,'#040308');
+ ctx.fillStyle=g;ctx.fillRect(0,0,1024,1024);
+ for(let i=0;i<800;i++){
+  const x=Math.random()*1024,y=Math.random()*1024;
+  const s=Math.random()*1.5+.5;
+  const a=Math.random()*.4+.1;
+  ctx.fillStyle=`rgba(200,180,150,${a})`;
+  ctx.fillRect(x,y,s,s);
+ }
+ return new THREE.CanvasTexture(c);
+}
+
+// ============================================================
+//  STAR LOADING
+// ============================================================
+async function loadStars(){
+ try{const r=await fetch('../stars.json');if(!r.ok)throw new Error(r.status);return await r.json();}
+ catch(e){
+  console.warn('stars.json not found, generating synthetic:',e.message);
+  const out=[];
+  for(let i=0;i<5000;i++){
+   const r=5000*Math.cbrt(Math.random()),th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+   out.push({x:r*Math.sin(ph)*Math.cos(th),y:r*Math.sin(ph)*Math.sin(th),z:r*Math.cos(ph),mag:Math.random()*10-2,hip:i+1});
   }
   return out;
+ }
 }
 
-function starColor(bv, mag) {
-  if (bv===undefined||isNaN(bv)) {
-    const bf = Math.max(.1, 1-(mag+5)/25);
-    return new THREE.Color().setHSL(.6-bf*.3,.8,bf*.8);
-  }
-  const t=Math.max(-.4,Math.min(2,bv));
-  let r,g,b;
-  if (t<0){r=.8+t*.5;g=.9+t*.3;b=1;}
-  else if(t<.6){r=1;g=1-t*.3;b=.9-t*.5;}
-  else{r=1;g=.7-(t-.6)*.5;b=Math.max(0,.4-(t-.6)*.3);}
-  const br=Math.max(.3,1-(mag+5)/20);
-  return new THREE.Color(r*br,g*br,b*br);
-}
-
-function systemProps(star, i) {
-  let s=i*75+74;
-  s=(s*75+74)%65536; const econ=Math.floor(s/8192)%8;
-  s=(s*75+74)%65536; const gov=Math.floor(s/7281)%9;
-  s=(s*75+74)%65536; const tech=Math.min(14,Math.floor(s/4681)+(econ<3?2:4));
-  s=(s*75+74)%65536; const pt=PTYPES[Math.floor(s/5041)%PTYPES.length];
-  const prices=GOODS.map(g=>{
-    let p=g.base+(tech-7)*5;
-    if(econ>=3&&econ<=5) p=Math.floor(p*.9);
-    return Math.max(1,p);
-  });
-  return {economy:econ, econName:ECON[econ], govName:GOV[gov], tech, planetType:pt, prices};
-}
-
-function starName(idx) {
-  const s=starData[idx];
-  return s.hip?`HIP ${s.hip}`:`Звезда ${idx}`;
-}
-
-// ═══════════════════════════════════════════════════
-//  SPRITE TEXTURE
-// ═══════════════════════════════════════════════════
-function makeSprite() {
-  const c=document.createElement('canvas'); c.width=64; c.height=64;
-  const x=c.getContext('2d');
-  const g=x.createRadialGradient(32,32,0,32,32,32);
-  g.addColorStop(0,'rgba(255,255,255,1)');
-  g.addColorStop(.4,'rgba(255,255,200,.9)');
-  g.addColorStop(.7,'rgba(200,200,100,.5)');
-  g.addColorStop(1,'rgba(255,255,255,0)');
-  x.fillStyle=g; x.fillRect(0,0,64,64);
-  return new THREE.CanvasTexture(c);
-}
-
-// ═══════════════════════════════════════════════════
-//  HUD UPDATE
-// ═══════════════════════════════════════════════════
-function updateHUD() {
-  document.getElementById('h-cred').textContent = player.credits;
-  document.getElementById('h-fuel').textContent = player.fuel.toFixed(1);
-  const used = player.cargo.reduce((a,b)=>a+b,0);
-  document.getElementById('h-cargo').textContent = used;
-  document.getElementById('h-cmax').textContent = player.cargoMax;
-  document.getElementById('h-flights').textContent = player.flights;
-  document.getElementById('h-rank').textContent = player.rank;
-  document.getElementById('h-morale').textContent = player.morale>80?'ВЫСОКИЙ':player.morale<30?'НИЗКИЙ':'НОРМА';
-  if (player.currentSystem!==null && starData[player.currentSystem]) {
-    const s=starData[player.currentSystem];
-    document.getElementById('h-sys').textContent = s.hip?`HIP ${s.hip}`:'SYN';
-    document.getElementById('h-planet').textContent = s.planetType||'—';
-    document.getElementById('h-econ').textContent = s.econName||'—';
-    document.getElementById('cur-sys').textContent = s.hip?`HIP ${s.hip}`:'SYN';
-  }
-}
-
-// ═══════════════════════════════════════════════════
-//  SAVE / LOAD
-// ═══════════════════════════════════════════════════
-function saveProgress() {
-  const d={player:{credits:player.credits,fuel:player.fuel,cargo:player.cargo,rank:player.rank,
-    psychosis:player.psychosis,morale:player.morale,flights:player.flights},waypoints,wpCount};
-  localStorage.setItem('elite_progress',JSON.stringify(d));
-  showMsg('Прогресс сохранён!');
-}
-function loadProgress() {
-  const raw=localStorage.getItem('elite_progress');
-  if(!raw){showMsg('Нет сохранений');return;}
-  try {
-    const d=JSON.parse(raw);
-    if(d.player){Object.assign(player,d.player);}
-    if(d.waypoints){waypoints=d.waypoints;wpCount=d.wpCount||0;waypoints.forEach(addWPButton);}
-    updateHUD();showMsg('Загружено!');
-  }catch(e){showMsg('Ошибка загрузки',true);}
-}
-
-// ═══════════════════════════════════════════════════
-//  TRAVEL & MESSAGES
-// ═══════════════════════════════════════════════════
-function flyTo(pos, offset=50) {
-  if(traveling) return;
-  const dir=new THREE.Vector3().subVectors(pos,camera.position).normalize();
-  travelFrom=camera.position.clone();
-  travelTo=offset>0?pos.clone().sub(dir.multiplyScalar(offset)):pos.clone();
-  travelT=0; traveling=true; player.flights++; updateHUD();
-}
-
-function showMsg(txt, warn=false, ms=3000) {
-  $travelMsg.style.opacity='1';
-  $travelMsg.style.color=warn?'#ff6666':'#ffaa00';
-  $travelMsg.textContent=txt;
-  setTimeout(()=>{$travelMsg.style.opacity='0';},ms);
-}
-
-// ═══════════════════════════════════════════════════
+// ============================================================
 //  SOLAR SYSTEM
-// ═══════════════════════════════════════════════════
-const PLANETS_DATA = [
-  {name:'Меркурий',r:5,sz:.4,col:0x8c8c8c,spd:.04,
-   desc:'☿ Ø 4879 км. T: -173/+427°C. Нет атмосферы.'},
-  {name:'Венера',r:7,sz:.6,col:0xe6b800,spd:.015,
-   desc:'♀ Ø 12104 км. Давление 92 атм. T: +462°C.'},
-  {name:'Земля',r:9,sz:.65,col:0x2288ff,spd:.01,
-   desc:'♁ Ø 12742 км. 71% вода. 8 млрд чел.'},
-  {name:'Марс',r:11,sz:.5,col:0xff6600,spd:.008,
-   desc:'♂ Ø 6779 км. T: -87°C. Олимп 21.9 км.'},
-  {name:'Юпитер',r:15,sz:1.4,col:0xd2b48c,spd:.002,
-   desc:'♃ Ø 139820 км. 318 масс Земли. 95 спутников.'},
-  {name:'Сатурн',r:19,sz:1.2,col:0xf0d58c,spd:.0009,ring:true,
-   desc:'♄ Ø 116460 км. Кольца: 99.9% лёд. Плотность < воды.'},
-  {name:'Уран',r:23,sz:1,col:0x4fd0e7,spd:.0004,
-   desc:'⛢ Ø 50724 км. Наклон оси 98°.'},
-  {name:'Нептун',r:27,sz:1,col:0x4169e1,spd:.0002,
-   desc:'♆ Ø 49244 км. Ветры до 2100 км/ч.'}
-];
-
-function createSolarSystem() {
-  sunMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(2,32,32),
-    new THREE.MeshBasicMaterial({color:0xffcc44})
-  );
-  scene.add(sunMesh);
-
-  solarGroup = new THREE.Group();
-  PLANETS_DATA.forEach(d => {
-    // orbit line
-    const pts=[];
-    for(let i=0;i<=128;i++){const a=i/128*Math.PI*2;pts.push(new THREE.Vector3(d.r*Math.cos(a),0,d.r*Math.sin(a)));}
-    solarGroup.add(new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineBasicMaterial({color:0xffaa00,opacity:.3,transparent:true})
-    ));
-    // planet
-    const mesh=new THREE.Mesh(
-      new THREE.SphereGeometry(d.sz,16,16),
-      new THREE.MeshBasicMaterial({color:d.col})
-    );
-    mesh.userData={name:d.name,radius:d.r,speed:d.spd,angle:Math.random()*6.28,desc:d.desc};
-    solarGroup.add(mesh); planets.push(mesh);
-    // ring
-    if(d.ring){
-      const rp=[];
-      for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;rp.push(new THREE.Vector3(d.sz*1.8*Math.cos(a),0,d.sz*1.8*Math.sin(a)));}
-      mesh.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(rp),new THREE.LineBasicMaterial({color:0xffaa00})));
-    }
-  });
-  solarGroup.visible=false;
-  scene.add(solarGroup);
-}
-
-function enterSolar(){solarMode=true;document.getElementById('btn-solar').classList.add('active');solarGroup.visible=true;controls.target.set(0,0,0);speed=10;document.getElementById('sl-speed').value=10;document.getElementById('v-speed').textContent='10';}
-function exitSolar(){solarMode=false;document.getElementById('btn-solar').classList.remove('active');solarGroup.visible=false;}
-
-// ═══════════════════════════════════════════════════
-//  MASSIVE STARS & TRADE ROUTES
-// ═══════════════════════════════════════════════════
-function makeRing(r,col){
-  const p=[];for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;p.push(new THREE.Vector3(r*Math.cos(a),0,r*Math.sin(a)));}
-  return new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:col}));
-}
-
-function highlightMassive() {
-  if(!starData.length)return;
-  massiveStars=[...starData].sort((a,b)=>(a.mag||0)-(b.mag||0)).slice(0,100);
-  massiveRings.forEach(r=>scene.remove(r));massiveRings=[];
-  massiveStars.forEach(s=>{const ring=makeRing(30,0xffaa00);ring.position.copy(s.position);scene.add(ring);massiveRings.push(ring);});
-}
-
-function toggleMassiveLines(){
-  showMassive=!showMassive;
-  if(showMassive){
-    if(massiveLines)scene.remove(massiveLines);
-    const pos=[];
-    for(let i=0;i<massiveStars.length-1;i++){
-      const a=massiveStars[i].position,b=massiveStars[i+1].position;
-      pos.push(a.x,a.y,a.z,b.x,b.y,b.z);
-    }
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    massiveLines=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xffaa00,opacity:.5,transparent:true}));
-    scene.add(massiveLines);
-  } else { if(massiveLines){scene.remove(massiveLines);massiveLines=null;} }
-}
-
-function bezier(p1,p2,off=.3){
-  const dir=new THREE.Vector3().subVectors(p2,p1),len=dir.length();
-  const mid=new THREE.Vector3().addVectors(p1,p2).multiplyScalar(.5);
-  const perp=new THREE.Vector3(-dir.y,dir.x,dir.z).normalize();
-  if(perp.length()<.1)perp.set(0,0,1);
-  const ofs=perp.multiplyScalar(len*off*(Math.random()*.5+.5));
-  return new THREE.CubicBezierCurve3(p1,new THREE.Vector3().lerpVectors(p1,mid,.3).add(ofs),new THREE.Vector3().lerpVectors(p2,mid,.3).add(ofs),p2);
-}
-
-function buildTradeRoutes(){
-  tradeLines.forEach(l=>scene.remove(l));if(dynPoints)scene.remove(dynPoints);
-  shipLabels.forEach(s=>scene.remove(s));
-  tradeLines=[];tradeCurves=[];dynData=[];shipLabels=[];
-  if(!massiveStars.length)return;
-  const sun=new THREE.Vector3(0,0,0);
-  massiveStars.forEach(s=>tradeCurves.push(bezier(sun,s.position,.4)));
-  for(let i=0;i<massiveStars.length-1;i++) tradeCurves.push(bezier(massiveStars[i].position,massiveStars[i+1].position,.3));
-
-  const COLORS=[new THREE.Color(1,1,1),new THREE.Color(1,.9,.5),new THREE.Color(1,.5,.5),new THREE.Color(.5,.8,1)];
-  tradeCurves.forEach(c=>{
-    const col=COLORS[Math.floor(Math.random()*COLORS.length)];
-    const pts=c.getPoints(50);
-    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:col,opacity:.25,transparent:true}));
-    line.visible=tradeVisible;scene.add(line);tradeLines.push(line);
-  });
-
-  const N=800;
-  const pos=new Float32Array(N*3),cols=new Float32Array(N*3);
-  for(let i=0;i<N;i++){
-    const ci=Math.floor(Math.random()*tradeCurves.length),t=Math.random();
-    const col=COLORS[Math.floor(Math.random()*COLORS.length)];
-    const p=tradeCurves[ci].getPoint(t);
-    pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;
-    cols[i*3]=col.r;cols[i*3+1]=col.g;cols[i*3+2]=col.b;
-    dynData.push({curve:tradeCurves[ci],t,speed:(.03+Math.random()*.05)*.001});
+// ============================================================
+function createSolarSystem(){
+ sunMesh=new THREE.Mesh(new THREE.SphereGeometry(2,32,32),
+  new THREE.MeshBasicMaterial({color:0xffcc44}));
+ scene.add(sunMesh);
+ solarGroup=new THREE.Group();
+ PLANETS_DATA.forEach(d=>{
+  const pts=[];
+  for(let i=0;i<=128;i++){const a=i/128*Math.PI*2;pts.push(new THREE.Vector3(d.r*Math.cos(a),0,d.r*Math.sin(a)));}
+  solarGroup.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
+   new THREE.LineBasicMaterial({color:0xf0a030,opacity:.2,transparent:true})));
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(d.sz,16,16),new THREE.MeshBasicMaterial({color:d.col}));
+  mesh.userData={name:d.name,radius:d.r,speed:d.spd,angle:Math.random()*6.28,desc:d.desc};
+  solarGroup.add(mesh);planets.push(mesh);
+  if(d.ring){
+   const rp=[];
+   for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;rp.push(new THREE.Vector3(d.sz*1.8*Math.cos(a),0,d.sz*1.8*Math.sin(a)));}
+   mesh.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(rp),new THREE.LineBasicMaterial({color:0xf0a030})));
   }
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-  dynPoints=new THREE.Points(geo,new THREE.PointsMaterial({size:2,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
-  dynPoints.visible=tradeVisible;scene.add(dynPoints);
-
-  massiveStars.forEach(star=>{
-    const cnt=3+Math.floor(Math.random()*8);
-    for(let j=0;j<cnt;j++){
-      const off=new THREE.Vector3((Math.random()-.5)*80,(Math.random()-.5)*80,(Math.random()-.5)*80);
-      const div=document.createElement('div');div.className='ship-tag';
-      div.textContent=`⛴ ${Math.floor(Math.random()*9000+1000)}`;
-      const lbl=new THREE.CSS2DObject(div);lbl.position.copy(star.position).add(off);
-      lbl.visible=tradeVisible;scene.add(lbl);shipLabels.push(lbl);
-    }
-  });
+ });
+ solarGroup.visible=false;scene.add(solarGroup);
 }
+function enterSolar(){solarMode=true;document.getElementById('act-solar').classList.add('active');
+ solarGroup.visible=true;controls.target.set(0,0,0);speed=10;}
+function exitSolar(){solarMode=false;document.getElementById('act-solar').classList.remove('active');solarGroup.visible=false;}
 
+// ============================================================
+//  MASSIVE STARS & TRADE ROUTES
+// ============================================================
+function highlightMassive(){
+ if(!starData.length)return;
+ massiveStars=[...starData].sort((a,b)=>(a.mag||0)-(b.mag||0)).slice(0,80);
+}
+function bezier(p1,p2,off=.3){
+ const dir=new THREE.Vector3().subVectors(p2,p1),len=dir.length();
+ const mid=new THREE.Vector3().addVectors(p1,p2).multiplyScalar(.5);
+ const perp=new THREE.Vector3(-dir.y,dir.x,dir.z).normalize();
+ if(perp.length()<.1)perp.set(0,0,1);
+ perp.multiplyScalar(len*off*(Math.random()*.5+.5));
+ return new THREE.CubicBezierCurve3(p1,
+  new THREE.Vector3().lerpVectors(p1,mid,.3).add(perp),
+  new THREE.Vector3().lerpVectors(p2,mid,.3).add(perp),p2);
+}
+function buildTradeRoutes(){
+ tradeLines.forEach(l=>scene.remove(l));if(dynPoints)scene.remove(dynPoints);
+ shipLabels.forEach(s=>scene.remove(s));
+ tradeLines=[];tradeCurves=[];dynData=[];shipLabels=[];
+ if(!massiveStars.length)return;
+ const sun=new THREE.Vector3(0,0,0);
+ massiveStars.forEach(s=>tradeCurves.push(bezier(sun,s.position,.4)));
+ for(let i=0;i<massiveStars.length-1;i++)tradeCurves.push(bezier(massiveStars[i].position,massiveStars[i+1].position,.3));
+ const COLS=[new THREE.Color(1,1,1),new THREE.Color(1,.9,.5),new THREE.Color(1,.5,.5),new THREE.Color(.5,.8,1)];
+ tradeCurves.forEach(c=>{
+  const col=COLS[Math.floor(Math.random()*COLS.length)];
+  const pts=c.getPoints(50);
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+   new THREE.LineBasicMaterial({color:col,opacity:.2,transparent:true}));
+  line.visible=tradeVisible;scene.add(line);tradeLines.push(line);
+ });
+ const N=600;const pos=new Float32Array(N*3),cols=new Float32Array(N*3);
+ for(let i=0;i<N;i++){
+  const ci=Math.floor(Math.random()*tradeCurves.length),t=Math.random();
+  const col=COLS[Math.floor(Math.random()*COLS.length)];
+  const p=tradeCurves[ci].getPoint(t);
+  pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;
+  cols[i*3]=col.r;cols[i*3+1]=col.g;cols[i*3+2]=col.b;
+  dynData.push({curve:tradeCurves[ci],t,speed:(.03+Math.random()*.05)*.001});
+ }
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+ dynPoints=new THREE.Points(geo,new THREE.PointsMaterial({size:2,vertexColors:true,transparent:true,
+  blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+ dynPoints.visible=tradeVisible;scene.add(dynPoints);
+ massiveStars.forEach(star=>{
+  const cnt=2+Math.floor(Math.random()*5);
+  for(let j=0;j<cnt;j++){
+   const off=new THREE.Vector3((Math.random()-.5)*80,(Math.random()-.5)*80,(Math.random()-.5)*80);
+   const div=document.createElement('div');div.className='ship-tag';
+   div.textContent='\u26F4 '+Math.floor(Math.random()*9000+1000);
+   const lbl=new THREE.CSS2DObject(div);lbl.position.copy(star.position).add(off);
+   lbl.visible=tradeVisible;scene.add(lbl);shipLabels.push(lbl);
+  }
+ });
+}
 function toggleTrade(){
-  tradeVisible=!tradeVisible;
-  tradeLines.forEach(l=>l.visible=tradeVisible);
-  if(dynPoints)dynPoints.visible=tradeVisible;
-  shipLabels.forEach(s=>s.visible=tradeVisible);
+ tradeVisible=!tradeVisible;
+ document.getElementById('act-trade').classList.toggle('active',tradeVisible);
+ tradeLines.forEach(l=>l.visible=tradeVisible);
+ if(dynPoints)dynPoints.visible=tradeVisible;
+ shipLabels.forEach(s=>s.visible=tradeVisible);
 }
 
-// ═══════════════════════════════════════════════════
-//  QUICK TRAVEL & WAYPOINTS
-// ═══════════════════════════════════════════════════
-function initQuickTravel(){
-  const box=document.getElementById('wp-list');box.innerHTML='';
-  const sorted=[...starData].sort((a,b)=>a.position.length()-b.position.length());
-  sorted.slice(0,8).forEach((s,i)=>{
-    const btn=document.createElement('button');btn.className='wp-btn';
-    btn.textContent=s.hip?`HIP ${s.hip}`:`Star ${i+1}`;
-    btn.onclick=()=>flyTo(s.position,50);
-    box.appendChild(btn);
+// ============================================================
+//  TRAVEL
+// ============================================================
+function flyTo(pos,offset=50){
+ if(traveling)return;
+ const dir=new THREE.Vector3().subVectors(pos,camera.position).normalize();
+ travelFrom=camera.position.clone();
+ travelTo=offset>0?pos.clone().sub(dir.multiplyScalar(offset)):pos.clone();
+ travelT=0;traveling=true;player.flights++;updateHUD();
+}
+
+// ============================================================
+//  HUD
+// ============================================================
+function updateHUD(){
+ document.getElementById('h-cr').textContent=player.credits;
+ document.getElementById('h-fuel').textContent=player.fuel.toFixed(1);
+ document.getElementById('h-cargo').textContent=player.cargo.reduce((a,b)=>a+b,0);
+ document.getElementById('h-cmax').textContent=player.cargoMax;
+ document.getElementById('h-rank').textContent=player.rank;
+ if(player.currentSystem!==null&&starData[player.currentSystem]){
+  const s=starData[player.currentSystem];
+  document.getElementById('sys-display').textContent=s.hip?'HIP '+s.hip:'SYSTEM';
+ }
+}
+
+// ============================================================
+//  SAVE / LOAD
+// ============================================================
+function saveProgress(){
+ const d={player:{credits:player.credits,fuel:player.fuel,cargo:player.cargo,rank:player.rank,
+  psychosis:player.psychosis,morale:player.morale,flights:player.flights}};
+ localStorage.setItem('elite_progress',JSON.stringify(d));toast('Progress saved!');
+}
+function loadProgress(){
+ const raw=localStorage.getItem('elite_progress');
+ if(!raw){toast('No saves found',true);return;}
+ try{const d=JSON.parse(raw);if(d.player)Object.assign(player,d.player);updateHUD();toast('Loaded!');}
+ catch(e){toast('Load error',true);}
+}
+
+// ============================================================
+//  DRAWER CONTENT RENDERERS
+// ============================================================
+function renderInfo(idx){
+ if(idx===null||!starData[idx])return'<p style="color:var(--pri-d)">No system selected. Double-click a star.</p>';
+ const s=starData[idx];
+ return`<div class="d-title">${starName(idx)}</div>
+ <div class="d-grid">
+  <div class="d-card"><div class="num">${s.econName||'—'}</div><div class="lab">ECONOMY</div></div>
+  <div class="d-card"><div class="num">${s.govName||'—'}</div><div class="lab">GOVERNMENT</div></div>
+  <div class="d-card"><div class="num">${s.tech||'—'}</div><div class="lab">TECH LEVEL</div></div>
+  <div class="d-card"><div class="num">${s.planetType||'—'}</div><div class="lab">PLANET TYPE</div></div>
+ </div>
+ <div class="d-row"><span class="lab">Distance</span><span class="val">${s.distance_pc?(s.distance_pc*3.26).toFixed(1)+' ly':'—'}</span></div>
+ <div class="d-row"><span class="lab">Magnitude</span><span class="val">${s.mag!==undefined?s.mag.toFixed(3):'—'}</span></div>
+ <button class="d-btn d-btn-grn" onclick="openTrade(${idx})">DOCK &amp; TRADE</button>
+ <button class="d-btn" onclick="openEquipTab()">EQUIPMENT</button>`;
+}
+function renderTrade(idx){
+ if(!player.docked||idx===null)return'<p style="color:var(--pri-d)">Dock at a station first (select system &rarr; DOCK).</p>';
+ const s=starData[idx];
+ let h=`<div class="d-title">STATION: ${starName(idx)}</div>`;
+ GOODS.forEach((g,i)=>{
+  h+=`<div class="trade-row"><span>${g.name}</span><span style="color:var(--pri-b)">${s.prices[i]} Cr</span>
+  <div class="trade-btns"><button onclick="buyG(${i},${s.prices[i]})">BUY</button>
+  <button onclick="sellG(${i},${s.prices[i]})">SELL</button></div>
+  <span style="color:var(--cyn);min-width:20px;text-align:right">[${player.cargo[i]}]</span></div>`;
+ });
+ return h;
+}
+function renderShip(){
+ let h=`<div class="d-title">SHIP STATUS</div>
+ <div class="d-grid">
+  <div class="d-card"><div class="num">${player.credits}</div><div class="lab">CREDITS</div></div>
+  <div class="d-card"><div class="num">${player.fuel.toFixed(1)}</div><div class="lab">FUEL</div></div>
+  <div class="d-card"><div class="num">${player.cargo.reduce((a,b)=>a+b,0)}/${player.cargoMax}</div><div class="lab">CARGO</div></div>
+  <div class="d-card"><div class="num">${player.flights}</div><div class="lab">FLIGHTS</div></div>
+ </div><div class="d-title" style="margin-top:14px">EQUIPMENT SLOTS</div>`;
+ for(let i=0;i<5;i++){
+  const eq=player.slots[i]?player.equipment.find(e=>e.id===player.slots[i]):null;
+  h+=`<div class="d-row"><span class="lab">Slot ${i+1}</span><span class="val">${eq?eq.name:'— empty —'}</span></div>`;
+ }
+ h+=`<div class="d-title" style="margin-top:14px">SHOP</div>`;
+ player.equipment.forEach(eq=>{
+  if(!eq.equipped)h+=`<div class="d-row"><span>${eq.name} (${eq.cost} Cr)</span>
+  <button class="trade-btns" style="display:inline"><button onclick="buyEquip(${eq.id})" style="background:rgba(240,160,48,.08);border:1px solid rgba(240,160,48,.2);color:var(--pri);padding:2px 8px;cursor:pointer;font-family:var(--font);font-size:11px;border-radius:3px">BUY</button></div></div>`;
+ });
+ return h;
+}
+function renderRoute(){
+ if(!routeAll.length)return'<p style="color:var(--pri-d)">No routes calculated. Use the route button.</p>';
+ let h=`<div class="d-title">ROUTES FOUND: ${routeAll.length}</div>`;
+ if(routeBest)h+=`<div class="d-row"><span class="lab">Best distance</span><span class="val">${routeBest.totalDist.toFixed(1)} units</span></div>
+  <div class="d-row"><span class="lab">Stars</span><span class="val">${routeBest.path.length}</span></div>
+  <div class="d-row"><span class="lab">Fuel needed</span><span class="val">${(routeBest.totalDist*3.26*.5).toFixed(1)} t</span></div>`;
+ routeAll.forEach((r,i)=>{
+  h+=`<div class="d-row" style="cursor:pointer" onclick="selectRoute(${i})">
+  <span style="color:${r.color}">#${i+1}</span>
+  <span class="val">${r.totalDist.toFixed(1)} u / ${r.path.length} stars</span></div>`;
+ });
+ return h;
+}
+function renderNasa(){
+ let h='<div class="d-title">NASA LIVE DATA</div>';
+ if(nasaData.apod){
+  h+=`<img class="nasa-img" src="${nasaData.apod.url}" alt="APOD">
+  <div style="color:var(--pri-b);font-weight:bold;margin-bottom:4px">${nasaData.apod.title}</div>
+  <div style="font-size:12px;color:var(--pri-d);margin-bottom:12px">${(nasaData.apod.explanation||'').slice(0,200)}...</div>`;
+ }else h+='<p style="color:var(--pri-d)">Loading APOD...</p>';
+ h+='<div class="d-title" style="margin-top:14px">NEAR-EARTH OBJECTS</div>';
+ if(nasaData.neo.length){
+  nasaData.neo.forEach(n=>{
+   h+=`<div class="neo-item"><div class="neo-name">${n.name}</div>
+   <div class="neo-info">Size: ${n.size} m | Speed: ${n.speed} km/s | Miss: ${n.miss} km</div></div>`;
   });
-  const saved=localStorage.getItem('elite_waypoints');
-  if(saved){waypoints=JSON.parse(saved);wpCount=waypoints.length;waypoints.forEach(addWPButton);}
+ }else h+='<p style="color:var(--pri-d)">Loading NEO data...</p>';
+ return h;
+}
+function refreshDrawer(){
+ const body=document.getElementById('drawer-body');
+ switch(activeTab){
+  case'info':body.innerHTML=renderInfo(player.currentSystem);break;
+  case'trade':body.innerHTML=renderTrade(player.currentSystem);break;
+  case'ship':body.innerHTML=renderShip();break;
+  case'route':body.innerHTML=renderRoute();break;
+  case'nasa':body.innerHTML=renderNasa();break;
+ }
+}
+function openDrawer(tab){
+ if(tab)setTab(tab);
+ document.getElementById('drawer').classList.add('open');
+ refreshDrawer();
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
+function setTab(tab){
+ activeTab=tab;
+ document.querySelectorAll('.dtab').forEach(b=>{b.classList.toggle('act',b.dataset.tab===tab);});
+ refreshDrawer();
 }
 
-function addWPButton(wp){
-  const box=document.getElementById('wp-list');
-  const btn=document.createElement('button');
-  btn.className='wp-btn'+(wp.locked?' locked':'');
-  btn.textContent=(wp.locked?'🔒 ':'')+wp.name;
-  btn.dataset.wpId=wp.id;
-  btn.onclick=()=>flyTo(new THREE.Vector3(wp.position.x,wp.position.y,wp.position.z),0);
-  btn.oncontextmenu=e=>{e.preventDefault();showCtx(e,wp.id);};
-  box.appendChild(btn);
-}
-
-function addWaypoint(){
-  wpCount++;
-  const p=camera.position;
-  const wp={id:Date.now(),name:`Метка ${wpCount}`,position:{x:p.x,y:p.y,z:p.z},locked:false};
-  waypoints.push(wp);localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
-  addWPButton(wp);showMsg(`Метка "${wp.name}" сохранена`);
-}
-
-let ctxWP=null;
-function showCtx(e,wpId){
-  ctxWP=wpId;const m=document.getElementById('ctx-menu');
-  m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';
-  const wp=waypoints.find(w=>w.id===wpId);
-  document.getElementById('ctx-lock').style.display=wp&&!wp.locked?'block':'none';
-  document.getElementById('ctx-unlock').style.display=wp&&wp.locked?'block':'none';
-}
-function hideCtx(){document.getElementById('ctx-menu').style.display='none';ctxWP=null;}
-document.addEventListener('click',e=>{if(!e.target.closest('#ctx-menu'))hideCtx();});
-document.getElementById('ctx-rename').onclick=()=>{
-  const wp=waypoints.find(w=>w.id===ctxWP);if(!wp)return hideCtx();
-  const n=prompt('Новое имя:',wp.name);if(n){wp.name=n;localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
-  const b=document.querySelector(`[data-wp-id="${wp.id}"]`);if(b)b.textContent=(wp.locked?'🔒 ':'')+wp.name;}hideCtx();
-};
-document.getElementById('ctx-lock').onclick=()=>{
-  const wp=waypoints.find(w=>w.id===ctxWP);if(wp){wp.locked=true;localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
-  const b=document.querySelector(`[data-wp-id="${wp.id}"]`);if(b){b.classList.add('locked');b.textContent='🔒 '+wp.name;}}hideCtx();
-};
-document.getElementById('ctx-unlock').onclick=()=>{
-  const wp=waypoints.find(w=>w.id===ctxWP);if(wp){wp.locked=false;localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
-  const b=document.querySelector(`[data-wp-id="${wp.id}"]`);if(b){b.classList.remove('locked');b.textContent=wp.name;}}hideCtx();
-};
-document.getElementById('ctx-delete').onclick=()=>{
-  const wp=waypoints.find(w=>w.id===ctxWP);if(wp&&!wp.locked){waypoints=waypoints.filter(w=>w.id!==ctxWP);
-  localStorage.setItem('elite_waypoints',JSON.stringify(waypoints));
-  const b=document.querySelector(`[data-wp-id="${ctxWP}"]`);if(b)b.remove();showMsg('Метка удалена');}hideCtx();
-};
-
-// ═══════════════════════════════════════════════════
+// ============================================================
 //  TRADING
-// ═══════════════════════════════════════════════════
+// ============================================================
 function openTrade(idx){
-  player.docked=true;
-  const s=starData[idx];
-  document.getElementById('st-name').textContent=s.hip?`HIP ${s.hip}`:'Станция';
-  let h='';GOODS.forEach((g,i)=>{
-    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #332200;">
-    <span>${g.name} — ${s.prices[i]} Cr</span>
-    <span><button class="btn" onclick="buyG(${i},${s.prices[i]})">Купить</button>
-    <button class="btn" onclick="sellG(${i},${s.prices[i]})">Продать</button>
-    <span class="val">[${player.cargo[i]}]</span></span></div>`;
-  });
-  document.getElementById('trade-items').innerHTML=h;
-  document.getElementById('trade-panel').style.display='block';
+ player.docked=true;player.currentSystem=idx;updateHUD();
+ openDrawer('trade');
 }
 window.buyG=function(id,price){
-  if(player.cargo.reduce((a,b)=>a+b,0)+GOODS[id].unit>player.cargoMax){showMsg('Нет места',true);return;}
-  if(player.credits<price){showMsg('Нет денег',true);return;}
-  player.credits-=price;player.cargo[id]++;updateHUD();openTrade(player.currentSystem);
+ if(player.cargo.reduce((a,b)=>a+b,0)+GOODS[id].unit>player.cargoMax){toast('No space',true);return;}
+ if(player.credits<price){toast('No credits',true);return;}
+ player.credits-=price;player.cargo[id]++;updateHUD();refreshDrawer();
 };
 window.sellG=function(id,price){
-  if(player.cargo[id]<=0)return;
-  player.credits+=price;player.cargo[id]--;updateHUD();openTrade(player.currentSystem);
+ if(player.cargo[id]<=0)return;
+ player.credits+=price;player.cargo[id]--;updateHUD();refreshDrawer();
+};
+window.buyEquip=function(id){
+ const eq=player.equipment.find(e=>e.id===id);if(!eq)return;
+ if(player.credits<eq.cost){toast('Not enough credits',true);return;}
+ const slot=player.slots.indexOf(null);if(slot===-1){toast('No empty slots',true);return;}
+ player.credits-=eq.cost;eq.equipped=true;player.slots[slot]=eq.id;
+ updateHUD();refreshDrawer();toast(eq.name+' installed!');
+};
+window.openEquipTab=function(){openDrawer('ship');};
+window.selectRoute=function(i){
+ routeLines.forEach(l=>scene.remove(l));routeLines=[];
+ const r=routeAll[i];
+ for(let s=0;s<r.path.length-1;s++){
+  const a=starData[r.path[s]].position,b=starData[r.path[s+1]].position;
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),
+   new THREE.LineBasicMaterial({color:new THREE.Color(r.color),transparent:true,opacity:1}));
+  scene.add(line);routeLines.push(line);
+ }
+ toast('Route #'+(i+1)+' selected');
 };
 
-function openEquip(){
-  let h='';
-  for(let i=0;i<5;i++){
-    const eq=player.slots[i]?player.equipment.find(e=>e.id===player.slots[i]):null;
-    h+=`<div style="background:#111;border:2px solid ${eq?'#ffaa00':'#442200'};padding:8px;text-align:center;font-size:12px;min-height:50px;display:flex;align-items:center;justify-content:center;">${eq?eq.name:'—'}</div>`;
+// ============================================================
+//  NASA
+// ============================================================
+async function fetchNASA(){
+ try{
+  const r=await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
+  if(r.ok){nasaData.apod=await r.json();if(activeTab==='nasa')refreshDrawer();}
+ }catch(e){}
+ try{
+  const today=new Date().toISOString().split('T')[0];
+  const r=await fetch('https://api.nasa.gov/neo/rest/v1/feed?start_date='+today+'&api_key=DEMO_KEY');
+  if(r.ok){
+   const d=await r.json();
+   const objs=Object.values(d.near_earth_objects||{}).flat();
+   nasaData.neo=objs.slice(0,10).map(o=>({
+    name:o.name,
+    size:Math.round((o.estimated_diameter?.meters?.estimated_diameter_max||0)),
+    speed:Math.round(o.close_approach_data?.[0]?.relative_velocity?.kilometers_per_second||0),
+    miss:Math.round(o.close_approach_data?.[0]?.miss_distance?.kilometers||0)
+   }));
+   if(activeTab==='nasa')refreshDrawer();
   }
-  document.getElementById('equip-slots').innerHTML=h;
-  document.getElementById('equip-panel').style.display='block';
+ }catch(e){}
 }
 
-// ═══════════════════════════════════════════════════
-//  NEWS
-// ═══════════════════════════════════════════════════
-function initNews(){
-  const tick=document.getElementById('news-tick');
-  tick.innerHTML=NEWS.slice(0,5).map(n=>`<div class="news-item-sm">📍${n.sys}: ${n.title}</div>`).join('');
-  document.getElementById('news-toggle').onclick=()=>{
-    const m=document.getElementById('news-modal');m.style.display=m.style.display==='block'?'none':'block';
-    if(m.style.display==='block'){
-      document.getElementById('news-full').innerHTML=NEWS.map(n=>
-        `<div style="border-bottom:1px solid #553311;padding:8px 0;"><div style="color:#ffff88;font-weight:bold;">${n.title}</div><div style="font-size:11px;color:#886622;">📍 ${n.sys}</div><div style="font-size:13px;margin-top:4px;">${n.text}</div></div>`
-      ).join('');
-    }
-  };
-  document.getElementById('news-close').onclick=()=>{document.getElementById('news-modal').style.display='none';};
-}
-
-// ═══════════════════════════════════════════════════
+// ============================================================
 //  ROUTE CALCULATION
-// ═══════════════════════════════════════════════════
+// ============================================================
 function startRouteSelect(){
-  routeActive=true;routeStart=null;routeEnd=null;
-  document.getElementById('star-select').style.display='block';
-  document.getElementById('sel-status').textContent='Выберите точку входа (ПКМ по звезде)';
-  document.getElementById('sel-calc').disabled=true;
-  document.getElementById('r-start').textContent='—';
-  document.getElementById('r-end').textContent='—';
-  clearSelRings();clearNameLabels();
-  showMsg('ПКМ по звезде для выбора точек маршрута');
+ routeActive=true;routeStart=null;routeEnd=null;
+ document.getElementById('route-sel').classList.remove('hidden');
+ document.getElementById('route-status').textContent='RMB on star = start point';
+ document.getElementById('route-calc').disabled=true;
+ document.getElementById('rp-start').textContent='START: \u2014';
+ document.getElementById('rp-end').textContent='END: \u2014';
+ clearSelRings();clearNameLabels();
 }
 function cancelRouteSelect(){
-  routeActive=false;routeStart=null;routeEnd=null;
-  document.getElementById('star-select').style.display='none';
-  clearSelRings();clearNameLabels();
+ routeActive=false;routeStart=null;routeEnd=null;
+ document.getElementById('route-sel').classList.add('hidden');
+ clearSelRings();clearNameLabels();
 }
 function clearSelRings(){selRings.forEach(r=>scene.remove(r));selRings=[];}
 function clearNameLabels(){nameLabels.forEach(l=>scene.remove(l));nameLabels=[];}
-
 function addSelRing(pos,col){
-  const ring=new THREE.Mesh(
-    new THREE.RingGeometry(25,30,64),
-    new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:.6})
-  );
-  ring.position.copy(pos);scene.add(ring);selRings.push(ring);
+ const ring=new THREE.Mesh(new THREE.RingGeometry(25,30,64),
+  new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:.6}));
+ ring.position.copy(pos);scene.add(ring);selRings.push(ring);
 }
 function addNameLabel(pos,name){
-  const div=document.createElement('div');div.className='star-label';div.textContent=name;
-  const lbl=new THREE.CSS2DObject(div);lbl.position.copy(pos);lbl.position.y+=20;
-  scene.add(lbl);nameLabels.push(lbl);
+ const div=document.createElement('div');div.className='star-label';div.textContent=name;
+ const lbl=new THREE.CSS2DObject(div);lbl.position.copy(pos);lbl.position.y+=20;
+ scene.add(lbl);nameLabels.push(lbl);
 }
-
 function startCalc(){
-  if(routeStart===null||routeEnd===null)return;
-  routeCalcing=true;routeStopped=false;routeAll=[];routeBest=null;
-  document.getElementById('star-select').style.display='none';
-  document.getElementById('route-panel').style.display='block';
-  document.getElementById('r-fill').style.width='0%';
-  document.getElementById('r-count').textContent=`0/${MAX_PATHS}`;
-  document.getElementById('r-best').textContent='—';
-  document.getElementById('r-dist').textContent='—';
-  document.getElementById('r-stars').textContent='—';
-  document.getElementById('route-list').innerHTML='';
-  routeLines.forEach(l=>scene.remove(l));routeLines=[];
-  clearNameLabels();
-  calcNext(0);
+ if(routeStart===null||routeEnd===null)return;
+ routeCalcing=true;routeStopped=false;routeAll=[];routeBest=null;
+ document.getElementById('route-sel').classList.add('hidden');
+ routeLines.forEach(l=>scene.remove(l));routeLines=[];clearNameLabels();
+ calcNext(0);
 }
-
-function stopCalc(){
-  routeStopped=true;routeCalcing=false;
-  document.getElementById('r-fill').style.width='100%';
-  showMsg('Поиск остановлен',true);
-  if(routeBest)finalizeRoutes();
-}
-
 function calcNext(idx){
-  if(routeStopped||idx>=MAX_PATHS){
-    routeCalcing=false;
-    document.getElementById('r-fill').style.width='100%';
-    if(!routeStopped)showMsg('Просчёт завершён!');
-    if(routeBest)finalizeRoutes();
-    return;
+ if(routeStopped||idx>=MAX_PATHS){
+  routeCalcing=false;if(routeBest)finalizeRoutes();
+  toast('Route calculation complete');openDrawer('route');return;
+ }
+ const path=findPath(routeStart,routeEnd,idx);
+ const hue=(idx*360/MAX_PATHS)%360;path.color=`hsl(${hue},70%,50%)`;
+ routeAll.push(path);
+ let seg=0;
+ function drawSeg(){
+  if(seg>=path.path.length-1){
+   if(!routeBest||path.totalDist<routeBest.totalDist)routeBest=path;
+   setTimeout(()=>calcNext(idx+1),30);return;
   }
-  const path=findPath(routeStart,routeEnd,idx);
-  const hue=(idx*360/MAX_PATHS)%360;
-  path.color=`hsl(${hue},70%,50%)`;
-  routeAll.push(path);
-
-  // animate path building quickly
-  let seg=0;
-  function drawSeg(){
-    if(seg>=path.path.length-1){
-      document.getElementById('r-count').textContent=`${idx+1}/${MAX_PATHS}`;
-      document.getElementById('r-fill').style.width=((idx+1)/MAX_PATHS*100)+'%';
-      if(!routeBest||path.totalDist<routeBest.totalDist){
-        routeBest=path;
-        document.getElementById('r-best').textContent=`#${idx+1}`;
-        document.getElementById('r-dist').textContent=path.totalDist.toFixed(1)+' ед.';
-        document.getElementById('r-stars').textContent=path.path.length;
-      }
-      renderRouteList();
-      setTimeout(()=>calcNext(idx+1),50);
-      return;
-    }
-    const a=starData[path.path[seg]].position,b=starData[path.path[seg+1]].position;
-    const line=new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a,b]),
-      new THREE.LineBasicMaterial({color:new THREE.Color(path.color),transparent:true,opacity:.4})
-    );
-    scene.add(line);routeLines.push(line);
-    seg++;
-    setTimeout(drawSeg,20);
-  }
-  drawSeg();
+  const a=starData[path.path[seg]].position,b=starData[path.path[seg+1]].position;
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),
+   new THREE.LineBasicMaterial({color:new THREE.Color(path.color),transparent:true,opacity:.4}));
+  scene.add(line);routeLines.push(line);seg++;setTimeout(drawSeg,15);
+ }
+ drawSeg();
 }
-
-function findPath(startIdx,endIdx,variation){
-  const path=[startIdx];let cur=startIdx;
-  const visited=new Set([startIdx]);
-  let dist=0;
-  const endPos=starData[endIdx].position;
-  const directDist=starData[startIdx].position.distanceTo(endPos);
-
-  for(let step=0;step<50&&cur!==endIdx;step++){
-    const curPos=starData[cur].position;
-    let best=null,bestW=Infinity;
-    const candidates=[];
-    for(let i=0;i<starData.length;i++){
-      if(visited.has(i))continue;
-      const d=curPos.distanceTo(starData[i].position);
-      const toEnd=starData[i].position.distanceTo(endPos);
-      const w=d*(.5+toEnd/directDist*.5)*(1+(Math.random()-.5)*.2*variation);
-      candidates.push({idx:i,w,d});
-    }
-    candidates.sort((a,b)=>a.w-b.w);
-    const pick=candidates[Math.min(Math.floor(Math.random()*5),candidates.length-1)];
-    if(!pick)break;
-    path.push(pick.idx);dist+=pick.d;visited.add(pick.idx);cur=pick.idx;
-  }
-  if(cur!==endIdx){dist+=starData[cur].position.distanceTo(endPos);path.push(endIdx);}
-  return {path,totalDist:dist,variation};
-}
-
-function renderRouteList(){
-  const box=document.getElementById('route-list');box.innerHTML='';
-  routeAll.forEach((r,i)=>{
-    const div=document.createElement('div');div.className='route-item';
-    const names=r.path.map(j=>starName(j)).join(' → ');
-    div.innerHTML=`<div class="route-dot" style="background:${r.color}"></div>
-      <div style="flex:1;"><div style="font-size:11px;color:#cc8800;">#${i+1} · ${r.totalDist.toFixed(1)} ед. · ${r.path.length} звёзд</div>
-      <div style="font-size:10px;color:#886622;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${names}">${names}</div></div>`;
-    div.onclick=()=>{
-      routeLines.forEach(l=>scene.remove(l));routeLines=[];
-      for(let s=0;s<r.path.length-1;s++){
-        const a=starData[r.path[s]].position,b=starData[r.path[s+1]].position;
-        const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),
-          new THREE.LineBasicMaterial({color:new THREE.Color(r.color),transparent:true,opacity:1}));
-        scene.add(line);routeLines.push(line);
-      }
-      showMsg(`Маршрут #${i+1} выбран`);
-    };
-    box.appendChild(div);
-  });
-}
-
-function finalizeRoutes(){
-  routeLines.forEach(l=>{l.material.opacity=.2;});
-  if(routeBest){
-    addNameLabel(starData[routeBest.path[0]].position,starName(routeBest.path[0]));
-    addNameLabel(starData[routeBest.path[routeBest.path.length-1]].position,starName(routeBest.path[routeBest.path.length-1]));
-    showMsg(`Лучший: ${routeBest.path.length} звёзд, ${routeBest.totalDist.toFixed(1)} ед.`,false,6000);
-    // fuel panel
-    const ly=routeBest.totalDist*3.26;
-    const need=.5*ly*ly;
-    document.getElementById('f-dist').textContent=ly.toFixed(1)+' св.лет';
-    document.getElementById('f-need').textContent=need.toFixed(2)+' т';
-    document.getElementById('f-have').textContent=player.fuel.toFixed(1)+' т';
-    const ok=need<=player.fuel;
-    document.getElementById('f-status').textContent=ok?'✅ ДОСТУПНО':'❌ МАЛО';
-    document.getElementById('f-status').style.color=ok?'#00ff88':'#ff4444';
-    document.getElementById('fuel-panel').style.display='block';
-  }
-}
-
-// ═══════════════════════════════════════════════════
-//  STAR PICKING (double-click & right-click)
-// ═══════════════════════════════════════════════════
-function pickStar(ex,ey,threshold=30){
-  let best=Infinity,bestI=-1;
+function findPath(si,ei,v){
+ const path=[si];let cur=si;const visited=new Set([si]);let dist=0;
+ const ep=starData[ei].position;const dd=starData[si].position.distanceTo(ep);
+ for(let step=0;step<50&&cur!==ei;step++){
+  const cp=starData[cur].position;let best=null,bestW=Infinity;const cands=[];
   for(let i=0;i<starData.length;i++){
-    const v=starData[i].position.clone().project(camera);
-    if(v.z>1)continue;
-    const sx=(v.x*.5+.5)*window.innerWidth, sy=(-v.y*.5+.5)*window.innerHeight;
-    const d=Math.hypot(sx-ex,sy-ey);
-    if(d<threshold&&d<best){best=d;bestI=i;}
+   if(visited.has(i))continue;
+   const d=cp.distanceTo(starData[i].position);
+   const te=starData[i].position.distanceTo(ep);
+   const w=d*(.5+te/dd*.5)*(1+(Math.random()-.5)*.2*v);
+   cands.push({idx:i,w,d});
   }
-  return bestI;
+  cands.sort((a,b)=>a.w-b.w);
+  const pick=cands[Math.min(Math.floor(Math.random()*5),cands.length-1)];
+  if(!pick)break;path.push(pick.idx);dist+=pick.d;visited.add(pick.idx);cur=pick.idx;
+ }
+ if(cur!==ei){dist+=starData[cur].position.distanceTo(ep);path.push(ei);}
+ return{path,totalDist:dist,variation:v};
+}
+function finalizeRoutes(){
+ routeLines.forEach(l=>{l.material.opacity=.15;});
+ if(routeBest){
+  addNameLabel(starData[routeBest.path[0]].position,starName(routeBest.path[0]));
+  addNameLabel(starData[routeBest.path[routeBest.path.length-1]].position,starName(routeBest.path[routeBest.path.length-1]));
+ }
 }
 
+// ============================================================
+//  STAR PICKING
+// ============================================================
+function pickStar(ex,ey,threshold=30){
+ let best=Infinity,bestI=-1;
+ for(let i=0;i<starData.length;i++){
+  const v=starData[i].position.clone().project(camera);
+  if(v.z>1)continue;
+  const sx=(v.x*.5+.5)*window.innerWidth,sy=(-v.y*.5+.5)*window.innerHeight;
+  const d=Math.hypot(sx-ex,sy-ey);
+  if(d<threshold&&d<best){best=d;bestI=i;}
+ }
+ return bestI;
+}
 function onDblClick(e){
-  if(player.docked||routeActive)return;
-  const idx=pickStar(e.clientX,e.clientY);
-  if(idx!==-1){
-    flyTo(starData[idx].position,50);
-    player.currentSystem=idx;updateHUD();
-    if(window.hubMsg)window.hubMsg({type:'location_update',system:starName(idx)});
-  }
+ if(player.docked||routeActive)return;
+ const idx=pickStar(e.clientX,e.clientY);
+ if(idx!==-1){
+  flyTo(starData[idx].position,50);
+  player.currentSystem=idx;updateHUD();
+  openDrawer('info');
+  if(window.hubMsg)window.hubMsg({type:'location_update',system:starName(idx)});
+ }
 }
-
 function onRightClick(e){
-  if(!routeActive||e.target.closest('.panel,.modal-panel'))return;
-  e.preventDefault();
-  const idx=pickStar(e.clientX,e.clientY);
-  if(idx===-1)return;
-  if(routeStart===null){
-    routeStart=idx;
-    document.getElementById('r-start').textContent=starName(idx);
-    document.getElementById('sel-status').textContent='Выберите точку выхода (ПКМ)';
-    addSelRing(starData[idx].position,0x88cc44);
-  } else if(routeEnd===null){
-    routeEnd=idx;
-    document.getElementById('r-end').textContent=starName(idx);
-    document.getElementById('sel-status').textContent='Готово!';
-    document.getElementById('sel-calc').disabled=false;
-    addSelRing(starData[idx].position,0x4488cc);
-  }
+ if(!routeActive||e.target.closest('#drawer,.act-btn,#route-sel'))return;
+ e.preventDefault();
+ const idx=pickStar(e.clientX,e.clientY);if(idx===-1)return;
+ if(routeStart===null){
+  routeStart=idx;document.getElementById('rp-start').textContent='START: '+starName(idx);
+  document.getElementById('route-status').textContent='RMB on star = end point';
+  addSelRing(starData[idx].position,0x40ff80);
+ }else if(routeEnd===null){
+  routeEnd=idx;document.getElementById('rp-end').textContent='END: '+starName(idx);
+  document.getElementById('route-status').textContent='Ready!';
+  document.getElementById('route-calc').disabled=false;
+  addSelRing(starData[idx].position,0x40a0ff);
+ }
 }
 
-// ═══════════════════════════════════════════════════
-//  HOVER INFO
-// ═══════════════════════════════════════════════════
+// ============================================================
+//  HOVER
+// ============================================================
 let hoverTimer=null;
 document.addEventListener('mousemove',e=>{
-  if(hoverTimer)clearTimeout(hoverTimer);
-  $hover.style.display='none';
-  hoverTimer=setTimeout(()=>{
-    if(!starData.length||!camera)return;
-    const idx=pickStar(e.clientX,e.clientY,25);
-    if(idx===-1)return;
-    const s=starData[idx];
-    const name=s.hip?'HIP '+s.hip:(s.proper||'Звезда '+idx);
-    const sp=s.spect||'—';
-    const distPc=s.dist?s.dist.toFixed(1)+' пк':'—';
-    const distLy=s.dist?(s.dist*3.2616).toFixed(1)+' св.лет':'—';
-    const mag=s.mag!==undefined?s.mag.toFixed(2):'—';
-    let spInfo='';
-    const c=(sp||'')[0];
-    if(c==='O')spInfo='Горячий голубой гигант (>30000K)';
-    else if(c==='B')spInfo='Бело-голубая (10000-30000K)';
-    else if(c==='A')spInfo='Белая (7500-10000K)';
-    else if(c==='F')spInfo='Жёлто-белая (6000-7500K)';
-    else if(c==='G')spInfo='Жёлтый карлик (5200-6000K)';
-    else if(c==='K')spInfo='Оранжевая (3700-5200K)';
-    else if(c==='M')spInfo='Красный карлик (<3700K)';
-    $hover.innerHTML=`<div style="color:#ffff88;font-weight:bold;">${name}</div>`+
-      `<div>Спектр: <span style="color:#ffff88">${sp}</span></div>`+
-      (spInfo?`<div style="color:#88ccff;font-size:12px;">${spInfo}</div>`:'')+
-      `<div>Расст.: ${distPc} (${distLy})</div>`+
-      `<div>Зв. вел.: ${mag}</div>`;
-    $hover.style.display='block';$hover.style.left=e.clientX+'px';$hover.style.top=(e.clientY-10)+'px';
-  },350);
+ if(hoverTimer)clearTimeout(hoverTimer);
+ document.getElementById('hover').classList.remove('show');
+ hoverTimer=setTimeout(()=>{
+  if(!starData.length||!camera)return;
+  const idx=pickStar(e.clientX,e.clientY,25);if(idx===-1)return;
+  const s=starData[idx];
+  document.getElementById('hv-name').textContent=starName(idx);
+  let b=`<div class="d-row"><span class="lab">Economy</span><span class="val">${s.econName||'?'}</span></div>`;
+  b+=`<div class="d-row"><span class="lab">Tech</span><span class="val">${s.tech||'?'}</span></div>`;
+  if(s.distance_pc)b+=`<div class="d-row"><span class="lab">Dist</span><span class="val">${(s.distance_pc*3.26).toFixed(1)} ly</span></div>`;
+  document.getElementById('hv-body').innerHTML=b;
+  const hv=document.getElementById('hover');
+  hv.style.left=Math.min(e.clientX+15,window.innerWidth-290)+'px';
+  hv.style.top=Math.max(e.clientY-80,10)+'px';
+  hv.classList.add('show');
+ },300);
 });
 
-// ═══════════════════════════════════════════════════
+// ============================================================
+//  SEARCH
+// ============================================================
+function toggleSearch(){
+ const s=document.getElementById('search');
+ s.classList.toggle('hidden');
+ if(!s.classList.contains('hidden')){
+  const inp=document.getElementById('search-input');inp.value='';inp.focus();
+  document.getElementById('search-results').innerHTML='';
+ }
+}
+document.getElementById('search-input').addEventListener('input',e=>{
+ const q=e.target.value.trim().toLowerCase();
+ const box=document.getElementById('search-results');
+ if(!q){box.innerHTML='';return;}
+ const hits=starData.filter((s,i)=>{
+  const name=starName(i).toLowerCase();return name.includes(q);
+ }).slice(0,20);
+ box.innerHTML=hits.map((s,i)=>{
+  const idx=starData.indexOf(s);
+  return`<div class="sr-item" onclick="searchGo(${idx})"><div class="sr-name">${starName(idx)}</div>
+  <div class="sr-sub">${s.econName} | Tech ${s.tech} | ${s.planetType}</div></div>`;
+ }).join('');
+});
+window.searchGo=function(idx){
+ toggleSearch();flyTo(starData[idx].position,50);
+ player.currentSystem=idx;updateHUD();openDrawer('info');
+};
+
+// ============================================================
 //  KEYBOARD
-// ═══════════════════════════════════════════════════
+// ============================================================
 document.addEventListener('keydown',e=>{
-  if(solarMode){
-    if(e.code==='KeyW'){camera.position.lerp(controls.target,.05);e.preventDefault();}
-    if(e.code==='KeyS'){camera.position.sub(new THREE.Vector3().subVectors(controls.target,camera.position).multiplyScalar(.05));e.preventDefault();}
-    return;
-  }
-  switch(e.code){
-    case'KeyW':moveF=true;e.preventDefault();break;case'KeyS':moveB=true;e.preventDefault();break;
-    case'KeyA':moveL=true;e.preventDefault();break;case'KeyD':moveR=true;e.preventDefault();break;
-    case'KeyQ':moveU=true;e.preventDefault();break;case'KeyE':moveD=true;e.preventDefault();break;
-    case'ShiftLeft':speed*=3;e.preventDefault();break;
-  }
+ if(e.target.tagName==='INPUT')return;
+ if(e.key==='/'){e.preventDefault();toggleSearch();return;}
+ if(e.key==='Escape'){
+  if(!document.getElementById('search').classList.contains('hidden'))toggleSearch();
+  else closeDrawer();return;
+ }
+ if(solarMode){
+  if(e.code==='KeyW'){camera.position.lerp(controls.target,.05);e.preventDefault();}
+  if(e.code==='KeyS'){camera.position.sub(new THREE.Vector3().subVectors(controls.target,camera.position).multiplyScalar(.05));e.preventDefault();}
+  return;
+ }
+ switch(e.code){
+  case'KeyW':moveF=1;e.preventDefault();break;case'KeyS':moveB=1;e.preventDefault();break;
+  case'KeyA':moveL=1;e.preventDefault();break;case'KeyD':moveR=1;e.preventDefault();break;
+  case'KeyQ':moveU=1;e.preventDefault();break;case'KeyE':moveD=1;e.preventDefault();break;
+  case'ShiftLeft':speed*=3;e.preventDefault();break;
+ }
 });
 document.addEventListener('keyup',e=>{
-  if(solarMode)return;
-  switch(e.code){
-    case'KeyW':moveF=false;break;case'KeyS':moveB=false;break;
-    case'KeyA':moveL=false;break;case'KeyD':moveR=false;break;
-    case'KeyQ':moveU=false;break;case'KeyE':moveD=false;break;
-    case'ShiftLeft':speed/=3;break;
-  }
+ if(solarMode)return;
+ switch(e.code){
+  case'KeyW':moveF=0;break;case'KeyS':moveB=0;break;
+  case'KeyA':moveL=0;break;case'KeyD':moveR=0;break;
+  case'KeyQ':moveU=0;break;case'KeyE':moveD=0;break;
+  case'ShiftLeft':speed/=3;break;
+ }
 });
 
-// ═══════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════
-async function init(){
-  scene=new THREE.Scene();scene.background=new THREE.Color(0x050510);
-  camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1e7);
-  camera.position.set(0,500,2000);
-  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  document.body.appendChild(renderer.domElement);
-
-  labelRenderer=new THREE.CSS2DRenderer();
-  labelRenderer.setSize(window.innerWidth,window.innerHeight);
-  labelRenderer.domElement.style.position='absolute';
-  labelRenderer.domElement.style.top='0';
-  labelRenderer.domElement.style.left='0';
-  labelRenderer.domElement.style.pointerEvents='none';
-  labelRenderer.domElement.style.zIndex='500';
-  document.body.appendChild(labelRenderer.domElement);
-
-  // Load stars
-  const raw=await loadStars();
-  document.getElementById('star-count').textContent=`Звёзд: ${raw.length}`;
-  starData=raw.map((s,i)=>{
-    const pos=new THREE.Vector3(s.x,s.y,s.z);
-    const col=starColor(s.bv,s.mag);
-    const sz=Math.max(.5,2.5-(s.mag+5)/5);
-    const props=systemProps(s,i);
-    return {...s,position:pos,color:col,size:sz,...props};
-  });
-
-  // Points mesh
-  const positions=new Float32Array(starData.length*3);
-  const colors=new Float32Array(starData.length*3);
-  const sizes=new Float32Array(starData.length);
-  starData.forEach((s,i)=>{
-    positions[i*3]=s.x;positions[i*3+1]=s.y;positions[i*3+2]=s.z;
-    colors[i*3]=s.color.r;colors[i*3+1]=s.color.g;colors[i*3+2]=s.color.b;
-    sizes[i]=s.size;
-  });
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  geo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
-  starsMat=new THREE.PointsMaterial({size:13,vertexColors:true,map:makeSprite(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
-  starsMesh=new THREE.Points(geo,starsMat);
-  scene.add(starsMesh);
-
-  // Solar system & massive stars
-  createSolarSystem();
-  highlightMassive();
-
-  // Controls
-  controls=new THREE.OrbitControls(camera,renderer.domElement);
-  controls.enableDamping=true;controls.dampingFactor=.08;
-  controls.screenSpacePanning=true;controls.minDistance=5;controls.maxDistance=50000;
-  controls.zoomSpeed=2;controls.rotateSpeed=.6;controls.target.set(0,0,0);
-
-  player.position=camera.position.clone();
-
-  // Events
-  renderer.domElement.addEventListener('dblclick',onDblClick);
-  renderer.domElement.addEventListener('contextmenu',onRightClick);
-
-  // Planet click
-  renderer.domElement.addEventListener('click',e=>{
-    if(!solarGroup||!solarGroup.visible)return;
-    const mouse=new THREE.Vector2((e.clientX/window.innerWidth)*2-1,-(e.clientY/window.innerHeight)*2+1);
-    const rc=new THREE.Raycaster();rc.setFromCamera(mouse,camera);
-    const hits=rc.intersectObjects(planets);
-    if(hits.length){
-      const pl=hits[0].object,nm=pl.userData.name||'?';
-      document.getElementById('h-planet').textContent=nm;
-      showMsg('🪐 '+nm+': '+pl.userData.desc,false,5000);
-      controls.target.copy(pl.position);
-      if(window.hubMsg){window.hubMsg({type:'location_update',system:'Sol',body:nm});window.hubMsg({type:'status_msg',text:'🪐 '+nm});}
-    }
-  });
-
-  // UI bindings
-  document.getElementById('sl-size').oninput=e=>{starsMat.size=+e.target.value;document.getElementById('v-size').textContent=e.target.value;};
-  document.getElementById('sl-speed').oninput=e=>{speed=+e.target.value;document.getElementById('v-speed').textContent=e.target.value;};
-  document.getElementById('sl-bright').oninput=e=>{starsMat.opacity=+e.target.value;document.getElementById('v-bright').textContent=e.target.value;};
-  document.getElementById('btn-sun').onclick=()=>{if(solarMode)exitSolar();flyTo(new THREE.Vector3(0,0,0),50);};
-  document.getElementById('btn-solar').onclick=()=>{solarMode?exitSolar():enterSolar();};
-  document.getElementById('btn-lines').onclick=()=>{if(solarMode)exitSolar();toggleMassiveLines();};
-  document.getElementById('btn-trade').onclick=()=>{if(solarMode)exitSolar();toggleTrade();};
-  document.getElementById('btn-route').onclick=()=>{if(solarMode)exitSolar();startRouteSelect();};
-  document.getElementById('btn-save').onclick=saveProgress;
-  document.getElementById('btn-load').onclick=loadProgress;
-  document.getElementById('btn-equip').onclick=()=>{if(solarMode)exitSolar();openEquip();};
-  document.getElementById('btn-missions').onclick=()=>{if(solarMode)exitSolar();document.getElementById('missions-panel').style.display='block';};
-  document.getElementById('btn-addwp').onclick=addWaypoint;
-  document.getElementById('sel-calc').onclick=startCalc;
-  document.getElementById('sel-cancel').onclick=cancelRouteSelect;
-  document.getElementById('close-route').onclick=()=>{document.getElementById('route-panel').style.display='none';};
-  document.getElementById('stop-route').onclick=stopCalc;
-  document.getElementById('close-fuel').onclick=()=>{document.getElementById('fuel-panel').style.display='none';};
-  document.getElementById('close-trade').onclick=()=>{document.getElementById('trade-panel').style.display='none';player.docked=false;};
-  document.getElementById('close-equip').onclick=()=>{document.getElementById('equip-panel').style.display='none';};
-  document.getElementById('close-missions').onclick=()=>{document.getElementById('missions-panel').style.display='none';};
-
-  // Start
-  initQuickTravel();
-  buildTradeRoutes();
-  initNews();
-  camera.position.set(100,80,100);controls.target.set(0,0,0);controls.update();
-  updateHUD();
-  animate();
-}
-
-// ═══════════════════════════════════════════════════
-//  ANIMATION LOOP
-// ═══════════════════════════════════════════════════
+// ============================================================
+//  ANIMATION
+// ============================================================
 function animate(){
-  requestAnimationFrame(animate);
-  const dt=Math.min(clock.getDelta(),.1);
-
-  if(traveling&&travelTo&&travelFrom){
-    travelT+=dt/1.0;
-    let t=travelT;t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-    const cur=new THREE.Vector3().lerpVectors(travelFrom,travelTo,t);
-    controls.target.copy(cur);camera.position.copy(cur.clone().add(new THREE.Vector3(0,30,60)));
-    if(travelT>=1)traveling=false;
-  } else if(solarMode){
-    controls.target.set(0,0,0);
-  } else {
-    const fwd=new THREE.Vector3();camera.getWorldDirection(fwd);
-    const right=new THREE.Vector3().crossVectors(fwd,camera.up).normalize();
-    const mv=new THREE.Vector3();
-    if(moveF)mv.addScaledVector(fwd,speed*dt);
-    if(moveB)mv.addScaledVector(fwd,-speed*dt);
-    if(moveR)mv.addScaledVector(right,speed*dt);
-    if(moveL)mv.addScaledVector(right,-speed*dt);
-    if(moveU)mv.y+=speed*dt;
-    if(moveD)mv.y-=speed*dt;
-    camera.position.add(mv);controls.target.add(mv);
+ requestAnimationFrame(animate);
+ const dt=Math.min(clock.getDelta(),.1);
+ if(traveling&&travelTo&&travelFrom){
+  travelT+=dt;let t=travelT;t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const cur=new THREE.Vector3().lerpVectors(travelFrom,travelTo,t);
+  controls.target.copy(cur);camera.position.copy(cur.clone().add(new THREE.Vector3(0,30,60)));
+  if(travelT>=1)traveling=false;
+ }else if(solarMode){controls.target.set(0,0,0);}
+ else{
+  const fwd=new THREE.Vector3();camera.getWorldDirection(fwd);
+  const right=new THREE.Vector3().crossVectors(fwd,camera.up).normalize();
+  const mv=new THREE.Vector3();
+  if(moveF)mv.addScaledVector(fwd,speed*dt);if(moveB)mv.addScaledVector(fwd,-speed*dt);
+  if(moveR)mv.addScaledVector(right,speed*dt);if(moveL)mv.addScaledVector(right,-speed*dt);
+  if(moveU)mv.y+=speed*dt;if(moveD)mv.y-=speed*dt;
+  camera.position.add(mv);controls.target.add(mv);
+ }
+ controls.update();
+ if(tradeVisible&&dynPoints){
+  const arr=dynPoints.geometry.attributes.position.array;
+  for(let i=0;i<dynData.length;i++){
+   dynData[i].t+=dynData[i].speed*dt;if(dynData[i].t>1)dynData[i].t=0;
+   const p=dynData[i].curve.getPoint(dynData[i].t);
+   arr[i*3]=p.x;arr[i*3+1]=p.y;arr[i*3+2]=p.z;
   }
-  controls.update();
-
-  // Trade route particles
-  if(tradeVisible&&dynPoints){
-    const arr=dynPoints.geometry.attributes.position.array;
-    for(let i=0;i<dynData.length;i++){
-      dynData[i].t+=dynData[i].speed*dt;if(dynData[i].t>1)dynData[i].t=0;
-      const p=dynData[i].curve.getPoint(dynData[i].t);
-      arr[i*3]=p.x;arr[i*3+1]=p.y;arr[i*3+2]=p.z;
-    }
-    dynPoints.geometry.attributes.position.needsUpdate=true;
-    // cull distant ship labels
-    const cp=camera.position;
-    shipLabels.forEach(s=>{const dx=s.position.x-cp.x,dy=s.position.y-cp.y,dz=s.position.z-cp.z;s.visible=tradeVisible&&(dx*dx+dy*dy+dz*dz<640000);});
-  }
-
-  // Planets orbit
-  if(solarGroup&&solarGroup.visible){
-    planets.forEach(p=>{p.userData.angle+=p.userData.speed*dt;p.position.x=Math.cos(p.userData.angle)*p.userData.radius;p.position.z=Math.sin(p.userData.angle)*p.userData.radius;});
-  }
-
-  // Billboard rings
-  massiveRings.forEach(r=>r.quaternion.copy(camera.quaternion));
-  selRings.forEach(r=>r.quaternion.copy(camera.quaternion));
-
-  renderer.render(scene,camera);
-  labelRenderer.render(scene,camera);
+  dynPoints.geometry.attributes.position.needsUpdate=true;
+  const cp=camera.position;
+  shipLabels.forEach(s=>{const dx=s.position.x-cp.x,dy=s.position.y-cp.y,dz=s.position.z-cp.z;
+   s.visible=tradeVisible&&(dx*dx+dy*dy+dz*dz<640000);});
+ }
+ if(solarGroup&&solarGroup.visible){
+  planets.forEach(p=>{p.userData.angle+=p.userData.speed*dt;
+   p.position.x=Math.cos(p.userData.angle)*p.userData.radius;
+   p.position.z=Math.sin(p.userData.angle)*p.userData.radius;});
+ }
+ selRings.forEach(r=>r.quaternion.copy(camera.quaternion));
+ renderer.render(scene,camera);
+ labelRenderer.render(scene,camera);
 }
 
-// Resize
+// ============================================================
+//  INIT
+// ============================================================
+async function init(){
+ scene=new THREE.Scene();
+ scene.background=makeBgTexture();
+ camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1e7);
+ camera.position.set(0,500,2000);
+ renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+ renderer.setSize(window.innerWidth,window.innerHeight);
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+ document.body.appendChild(renderer.domElement);
+ labelRenderer=new THREE.CSS2DRenderer();
+ labelRenderer.setSize(window.innerWidth,window.innerHeight);
+ labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:500';
+ document.body.appendChild(labelRenderer.domElement);
+
+ const raw=await loadStars();
+ document.getElementById('star-count').textContent=raw.length+' STARS';
+ starData=raw.map((s,i)=>{
+  const pos=new THREE.Vector3(s.x,s.y,s.z);
+  const col=starColor(s.mag);
+  const sz=Math.max(.5,2.5-(s.mag+5)/5);
+  const props=systemProps(s,i);
+  return{...s,position:pos,color:col,size:sz,...props};
+ });
+
+ // GLOW LAYER (large soft sprites)
+ const gPos=new Float32Array(starData.length*3);
+ const gCol=new Float32Array(starData.length*3);
+ const gSiz=new Float32Array(starData.length);
+ starData.forEach((s,i)=>{
+  gPos[i*3]=s.x;gPos[i*3+1]=s.y;gPos[i*3+2]=s.z;
+  gCol[i*3]=s.color.r*.6;gCol[i*3+1]=s.color.g*.6;gCol[i*3+2]=s.color.b*.6;
+  gSiz[i]=s.size*3;
+ });
+ const gGeo=new THREE.BufferGeometry();
+ gGeo.setAttribute('position',new THREE.BufferAttribute(gPos,3));
+ gGeo.setAttribute('color',new THREE.BufferAttribute(gCol,3));
+ glowMesh=new THREE.Points(gGeo,new THREE.PointsMaterial({
+  size:30,vertexColors:true,map:makeSprite(true),transparent:true,
+  blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true,opacity:.4
+ }));
+ scene.add(glowMesh);
+
+ // CORE LAYER (sharp bright sprites)
+ const cPos=new Float32Array(starData.length*3);
+ const cCol=new Float32Array(starData.length*3);
+ starData.forEach((s,i)=>{
+  cPos[i*3]=s.x;cPos[i*3+1]=s.y;cPos[i*3+2]=s.z;
+  cCol[i*3]=s.color.r;cCol[i*3+1]=s.color.g;cCol[i*3+2]=s.color.b;
+ });
+ const cGeo=new THREE.BufferGeometry();
+ cGeo.setAttribute('position',new THREE.BufferAttribute(cPos,3));
+ cGeo.setAttribute('color',new THREE.BufferAttribute(cCol,3));
+ starsMesh=new THREE.Points(cGeo,new THREE.PointsMaterial({
+  size:12,vertexColors:true,map:makeSprite(false),transparent:true,
+  blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true
+ }));
+ scene.add(starsMesh);
+
+ addNebulae();
+ createSolarSystem();
+ highlightMassive();
+
+ controls=new THREE.OrbitControls(camera,renderer.domElement);
+ controls.enableDamping=true;controls.dampingFactor=.08;
+ controls.screenSpacePanning=true;controls.minDistance=5;controls.maxDistance=50000;
+ controls.zoomSpeed=2;controls.rotateSpeed=.6;
+
+ renderer.domElement.addEventListener('dblclick',onDblClick);
+ renderer.domElement.addEventListener('contextmenu',onRightClick);
+ renderer.domElement.addEventListener('click',e=>{
+  if(!solarGroup||!solarGroup.visible)return;
+  const mouse=new THREE.Vector2((e.clientX/window.innerWidth)*2-1,-(e.clientY/window.innerHeight)*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(mouse,camera);
+  const hits=rc.intersectObjects(planets);
+  if(hits.length){
+   const pl=hits[0].object;
+   toast(pl.userData.name+': '+pl.userData.desc,false,5000);
+   controls.target.copy(pl.position);
+  }
+ });
+
+ // UI bindings
+ document.getElementById('act-solar').onclick=()=>{solarMode?exitSolar():enterSolar();};
+ document.getElementById('act-trade').onclick=()=>{if(solarMode)exitSolar();toggleTrade();};
+ document.getElementById('act-route').onclick=()=>{if(solarMode)exitSolar();startRouteSelect();};
+ document.getElementById('act-panel').onclick=()=>{
+  document.getElementById('drawer').classList.contains('open')?closeDrawer():openDrawer();};
+ document.getElementById('act-search').onclick=toggleSearch;
+ document.getElementById('act-nasa').onclick=()=>openDrawer('nasa');
+ document.getElementById('act-save').onclick=()=>{saveProgress();};
+ document.getElementById('drawer-close').onclick=closeDrawer;
+ document.querySelectorAll('.dtab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+ document.getElementById('route-calc').onclick=startCalc;
+ document.getElementById('route-cancel').onclick=cancelRouteSelect;
+ document.getElementById('help').onclick=function(){this.style.display='none';};
+ document.getElementById('search').addEventListener('click',e=>{if(e.target.id==='search')toggleSearch();});
+
+ buildTradeRoutes();
+ camera.position.set(100,80,100);controls.target.set(0,0,0);controls.update();
+ updateHUD();fetchNASA();animate();
+
+ // Mobile
+ if('ontouchstart' in window||navigator.maxTouchPoints>0){
+  document.getElementById('mob-toggle').addEventListener('click',()=>{
+   const mc=document.getElementById('mob-controls');
+   mc.style.display=mc.style.display==='flex'?'none':'flex';
+  });
+  const acts={fwd:'moveF',back:'moveB',left:'moveL',right:'moveR',up:'moveU',down:'moveD'};
+  document.querySelectorAll('.touch-btn').forEach(btn=>{
+   const act=btn.dataset.act;
+   if(acts[act]){
+    btn.addEventListener('touchstart',e=>{e.preventDefault();
+     switch(act){case'fwd':moveF=1;break;case'back':moveB=1;break;case'left':moveL=1;break;
+      case'right':moveR=1;break;case'up':moveU=1;break;case'down':moveD=1;break;}},{passive:false});
+    btn.addEventListener('touchend',e=>{e.preventDefault();
+     switch(act){case'fwd':moveF=0;break;case'back':moveB=0;break;case'left':moveL=0;break;
+      case'right':moveR=0;break;case'up':moveU=0;break;case'down':moveD=0;break;}},{passive:false});
+   }
+   if(act==='solar')btn.addEventListener('click',()=>{solarMode?exitSolar():enterSolar();});
+   if(act==='fast'){
+    btn.addEventListener('touchstart',e=>{e.preventDefault();speed*=3;},{passive:false});
+    btn.addEventListener('touchend',e=>{e.preventDefault();speed/=3;},{passive:false});
+   }
+  });
+  let lastTap=0;
+  document.addEventListener('touchend',e=>{
+   const now=Date.now();
+   if(now-lastTap<300){
+    const touch=e.changedTouches[0];
+    if(touch&&!e.target.closest('#drawer,.act-btn,.touch-btn,#mob-toggle,#mob-controls,#search,#route-sel')){
+     const idx=pickStar(touch.clientX,touch.clientY,40);
+     if(idx!==-1){flyTo(starData[idx].position,50);player.currentSystem=idx;updateHUD();openDrawer('info');}
+    }
+   }
+   lastTap=now;
+  });
+ }
+}
+
 window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  labelRenderer.setSize(window.innerWidth,window.innerHeight);
+ camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
+ renderer.setSize(window.innerWidth,window.innerHeight);
+ labelRenderer.setSize(window.innerWidth,window.innerHeight);
 });
 
-// Help overlay
-document.getElementById('help').addEventListener('click',function(){this.style.display='none';});
-
-// ═══════════════════════════════════════════════════
-//  MOBILE TOUCH CONTROLS
-// ═══════════════════════════════════════════════════
-(function initMobile(){
-  const isMob = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  if (!isMob) return;
-
-  // Toggle controls panel
-  document.getElementById('mobile-toggle').addEventListener('click', () => {
-    document.getElementById('controls').classList.toggle('mob-open');
-  });
-
-  // Touch movement buttons
-  const actions = {fwd:'moveF',back:'moveB',left:'moveL',right:'moveR',up:'moveU',down:'moveD'};
-  document.querySelectorAll('.touch-btn').forEach(btn => {
-    const act = btn.dataset.act;
-    if (actions[act]) {
-      const setMove = (val) => {
-        switch(act){
-          case'fwd':moveF=val;break;case'back':moveB=val;break;
-          case'left':moveL=val;break;case'right':moveR=val;break;
-          case'up':moveU=val;break;case'down':moveD=val;break;
-        }
-      };
-      btn.addEventListener('touchstart', e => { e.preventDefault(); setMove(true); }, {passive:false});
-      btn.addEventListener('touchend', e => { e.preventDefault(); setMove(false); }, {passive:false});
-      btn.addEventListener('touchcancel', e => { setMove(false); });
-    }
-    if (act === 'solar') {
-      btn.addEventListener('click', () => { solarMode ? exitSolar() : enterSolar(); });
-    }
-    if (act === 'fast') {
-      btn.addEventListener('touchstart', e => { e.preventDefault(); speed *= 3; }, {passive:false});
-      btn.addEventListener('touchend', e => { e.preventDefault(); speed /= 3; }, {passive:false});
-    }
-  });
-
-  // Double-tap to fly to star
-  let lastTap = 0;
-  document.addEventListener('touchend', e => {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      const touch = e.changedTouches[0];
-      if (touch && !e.target.closest('.panel,.modal-panel,.touch-btn,#mobile-toggle,#mobile-controls')) {
-        const idx = pickStar(touch.clientX, touch.clientY, 40);
-        if (idx !== -1) {
-          flyTo(starData[idx].position, 50);
-          player.currentSystem = idx; updateHUD();
-        }
-      }
-    }
-    lastTap = now;
-  });
-})();
-
-// Launch
 init().catch(console.error);
 </script>
-
-<!-- Parent frame communication -->
 <script>
 window._gs=null;
 window.addEventListener('message',e=>{if(e.data&&e.data.type==='game_state')window._gs=e.data.state;});
